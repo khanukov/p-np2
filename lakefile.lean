@@ -307,6 +307,20 @@ lean_lib PnP3 where
     -- bridge, or language acceptance is claimed.
     Glob.one
       `Complexity.Uniform.V1.FixedContentTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown,
+    -- Part A G3k: the fixed 4-state, 12-row trailing-content-marker erasure, then that whole G3j
+    -- composite, as one closed 151-state, 453-row table.  H7 is newly executed by the marker-erase
+    -- phase's one live routed row -- `qErase` on `some true`, its only row targeting its accept once
+    -- the accept's own absorbing three are excluded -- into index 4 at the length-only first arrival
+    -- N+3, which is also the phase's own clock, the routed row writing `none` so the composed table
+    -- performs the marker erasure itself; H8 to H17 are inherited.  The marker-erase reject has
+    -- exactly two live rows, proved the only ones and each routed to 150, and `erase_first_arrival`
+    -- shows neither is taken out of this startConfig.  `handoff_exact` takes no hypothesis at all.
+    -- Eleven handoffs of seventeen; the start still retags the actual origin-alignment endpoint, the
+    -- lane stays unfenced, both inherited rejecting branches are forward-direction only and the
+    -- mismatched one is timed only at the gate's length-only deadline, and no raw-input execution,
+    -- first arrival of the composed accept, pnp4 bridge, or language acceptance is claimed.
+    Glob.one
+      `Complexity.Uniform.V1.FixedPairContentMarkerEraseTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
@@ -919,6 +933,8 @@ lean_lib PnP3 where
       `Tests.UniformV1FixedContentGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests,
     Glob.one
       `Tests.UniformV1FixedContentTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests,
+    Glob.one
+      `Tests.UniformV1FixedPairContentMarkerEraseTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,

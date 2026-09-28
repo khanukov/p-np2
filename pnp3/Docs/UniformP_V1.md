@@ -2665,3 +2665,112 @@ the composed clock.  The composed `accept` is the countdown's phase-local `qDone
 a retagged actual prior endpoint is neither halting on a raw input nor language acceptance.  The table
 is fixed and complete but not claimed state-minimal.  Neither `SearchMCSPWeakLowerBound` nor
 `VerifiedNPDAGLowerBoundSource` is reduced.  It is infrastructure, not P-vs-NP mainline progress.
+
+The Part A G3k
+`Complexity.Uniform.V1.FixedPairContentMarkerEraseTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown`
+executes the handoff one block further left again, **H7** -- the trailing content-marker erasure into
+G1's content tag gate -- with **no new table row**, no new combinator and no landed module's code
+edited.  `machine` is `FixedPairContentMarkerErase.machine.seq` the whole G3j composite: the erasure's
+fixed 4-state, 12-row scan-and-erase on `[0, 4)` and G3j's 147 states on `[4, 151)`, one closed
+151-state, 453-row table with accept `149` and reject `150`.  H7 has exactly **one** live routed row --
+`qErase` on `some true`, the marker-erase table's only row targeting its accept once the accept's own
+absorbing three are excluded (`accept_row_unique`) -- which `seq` retargets to G3j's start `tailStart`
+at index `4`, writing `none` and **staying**, in that same transition and at no cost.  That written
+`none` *is* the erasure of the trailing content marker: this routed row does not rewrite the symbol it
+read but blanks it, so the composed table performs the mutation itself, in the very transition that
+hands over.  Write `N = a + m` and `d = borrow x w zeros`.
+
+The reject side is where this slice differs from every earlier one, and in the opposite direction from
+G3j's.  The marker-erase reject is the target of exactly **two** live rows -- `qErase` on `some false`
+and on `none`, the malformed-candidate exits -- and `reject_rows_unique` proves those two the only ones
+over all four states and all three symbols once both verdicts' own absorbing rows are excluded, so
+this is the first slice of the chain whose live reject list is both **complete** and **plural**: the
+terminator's was one row proved unique, the anchor's six pinned individually with no uniqueness, the
+gate's many and only quantified.  `reject_rows_routed` sends each of the two to the composed reject
+`150` with the symbol written and the move unchanged.  Neither is *taken* out of this slice's
+`startConfig`: `erase_first_arrival` proves the left block is never in its reject at any time whatever,
+so the composed reject is reachable only through the right block.  The left copies of the two
+marker-erase verdicts are dead: no composed row targets either, the two injective, disjoint block maps
+having domain sizes `4` and `147` that sum to the composed state count, so that the two block row
+equations of `table_and_resource_pins` account for every composed row and block disjointness excludes
+right-block targets from the dead left copies as well.  H8 (`16 -> 19`), H9 (`19 -> 22`), H10
+(`25 -> 28`) and H11 (six rows inside `[28, 56)`, all into `56`) to H17 (`137 -> 140`) are inherited
+from G3j, its indices shifted by four and located by `(inTail q).val = 4 + q.val` with the universal
+right-block row equation.
+
+Unlike the gate's, the strict first arrival H7 needs was already exported in the shape
+`UniformTM.seq_handoff` consumes, and hypothesis-free: the landed `strict_first_terminal` gives both
+halves against the phase's `qAccept` and `qReject`, which its own landed `table_and_resource_pins`
+identifies with `machine.accept` and `machine.reject`.  `erase_first_arrival` therefore only
+repackages it at `switchTime N = N + 3`, adds that this time **is** the phase's own landed `clock`, and
+adds from the landed `post_clock_absorption` the never-rejects consequence.  The arrival is
+length-only, neither width- nor path-dependent: `N + 1` rightward steps walk the content and its
+trailing marker and stop on the first physical blank, one step left returns to the marker, and one more
+reads it, erases it and accepts.  `gate_start_at_first_arrival` records the semantic dependency
+hypothesis-free -- G1's `startConfig` is built field for field out of the marker-erase `finalConfig`,
+which the landed `run_exact` shows *is* the phase's run at `switchTime N` for every input -- so
+`handoff_exact` takes **no hypothesis at all**, the first executed handoff of this chain that takes
+none: no tag, no width, no room, no budget.  It concludes that the run out of `startConfig` is in
+neither composed verdict at any time up to and **including** `N + 3` (at the switch time itself the
+control is `tailStart`, so the bound is `<=`), is the marker-erase phase's own run routed at every such
+time as whole-`Config` equality, at exactly `N + 3` **is** G3j's landed `startConfig B x w`
+re-embedded, and takes a G3j step at every later time.  `handoff_endpoint_pins` reads that
+configuration back as both G3j's and G1's own `startConfig` projections, with the head on the boundary
+cell `N`, the tape the erased `contentTape`, and every allocated cell from `N` on blank there, the
+trailing marker included.
+
+`tagged_inherited_switch` locates the inherited H8 at `N + 3 + (3 * N + 7)` at composed index `19`,
+`tagged_inherited_terminator_switch` the inherited H9 at `N + 3 + (3 * N + 7 + (zeros + 1))` at index
+`22`, `tagged_inherited_anchor_switch` the inherited H10 at
+`N + 3 + (3 * N + 7 + (zeros + 1 + (2 * zeros + 5)))` at index `28`, and
+`tagged_inherited_dispatcher_switch` the inherited H11 at
+`N + 3 + (3 * N + 7 + (zeros + 1 + (2 * zeros + 5 + C)))` at index `56`, each on exactly the head and
+tape the landed `startConfig` of that phase carries and with `C` produced existentially at or below
+G2m's deadline rather than chosen.  The drained theorem takes G3j's **eight** hypotheses unchanged and
+lands the composed accept `149` at exactly
+`eraseChainClock C N zeros d v = N + 3 + gateChainClock C N zeros d v` on the separator blank
+`N + 2 + zeros` with tape `loopTape B x w zeros 0 v`, persisting; `v` is universally quantified and
+unsupplied, and persistence is not first arrival.  Two rejecting branches are inherited, both forward
+direction only.  On a matching tag whose physical suffix holds no gamma terminator the whole prefix
+hands over and `malformed_reject_handoff` lands the composed reject `150` from
+`N + 3 + (3 * N + 7 + (N - 7))` on, on the blank boundary cell `N` over the erased content tape, the
+anchor never running.  On a mismatched tag `mismatched_tag_reject_handoff` lands the composed reject
+`150` from `N + 3 + (3 * N + 7)` on, on the gate's own `finalConfig` head over that same tape, the
+gamma blocks never running; that branch is deliberately **not** timed exactly, for the reason G3j
+records -- on a nonempty content the gate's own first rejection is at `3 * N + j` for its mismatch cell
+`j`, which this chain does not derive from `tagMatches (Fin.append x w) = false`, the value of
+`FixedContentTagGate.finalConfig`'s head being the only public trace of the `badIndex` that defines it
+-- so the composed run may already be in the composed reject strictly before the time stated, and
+nothing here says when.
+
+The surface test reuses G3j's nine words.  Because the marker-erase switch is length-only the seven
+well-formed words switch at `20`, `16`, `15`, `15`, `14`, `14` and `13`, always on the boundary cell
+`N` whatever the width and whatever the tag: `badTag` and `malformedWord` switch on time too, the left
+block reading neither a tag cell nor a gamma cell.  It derives H7 at the widest and the narrowest
+fixture, both routed reject rows and the absence of any `qScan` row into the reject, the drain at
+`B = 22` after `1212` steps -- `20` for the marker erasure, `58` for the gate, `5` for the terminator,
+`13` for the anchor, `18` for the dispatcher, `1098` for G3e -- with the register value `24 > N`
+supplied by hand, the malformed reject at `58` and the mismatched reject at `54`; and it independently
+reduces, with no slice theorem used, the marker-erase walk and the erasing switch (cell `17` still
+`some true` at step `19` and `none` at step `20`), all nine H7 switches, the inherited H8, H9, H10 and
+H11, the inherited H12 at steps `132`/`133`, the composed reject `150` at `58` on the malformed
+fixture, and the composed reject on `badTag` at rejection time `47`, at mismatch cell `0`, one step
+after a control in neither composed verdict and seven steps before the `54` the theorem states.
+
+Deferred by G3k, and deliberately not claimed.  **Eleven handoffs of seventeen**: `startConfig` is the
+marker-erase phase's own routed into the composed control, so it still retags the actual
+origin-alignment `finalConfig` and embeds every earlier phase; the six handoffs before H7 stay
+proof-level retags -- `handoff_pins` records H7's predecessor H6 as a hypothesis-free identification
+and pins no earlier phase's table row -- no raw-input `initialConfig` is executed, and no clock counts
+a step of any earlier phase.  **No first arrival of the composed accept**: the arrivals proved are the
+marker-erase phase's and, as a hypothesis, the dispatcher's, each inside its own block.  **No exact
+time on the mismatched branch**, as above.  The **fence** (all twelve tables are uncapped), every
+**converse** -- so neither composed reject implies anything about the input -- a **footprint** theorem
+and the **model connection** (caveat 6 of `VERIFIER_RETARGET_PLAN.md`) stay open, and there is **no
+pnp4 bridge**: the standalone phases' pnp4 semantics are unchanged and no `ContentVerifierBridge`,
+raw-input acceptance, `AcceptsAt`, `DecidesWithin` or `UniformP` theorem appears, nor is it proved that
+the cubic budget still dominates the composed clock.  The composed `accept` is the countdown's
+phase-local `qDone`: reaching it out of a retagged actual prior endpoint is neither halting on a raw
+input nor language acceptance.  The table is fixed and complete but not claimed state-minimal.  Neither
+`SearchMCSPWeakLowerBound` nor `VerifiedNPDAGLowerBoundSource` is reduced.  It is infrastructure, not
+P-vs-NP mainline progress.

@@ -159,8 +159,8 @@ def eraseChainClock (C N zeros d v : Nat) : Nat := switchTime N + gateChainClock
 /-! ### Table, resource, handoff and clock pins -/
 
 set_option maxRecDepth 40000 in
-/-- The composed table, pinned: the composition itself spelled out, the state and row counts of both
-blocks and of the whole, the marker-erase start and verdicts with their indices, G3j's three
+/-- The composed table, pinned: the composition itself spelled out, both blocks' state counts, the
+composed state and row counts, the marker-erase start and verdicts with their indices, G3j's three
 distinguished states with theirs, the composed distinguished states with theirs, the block injections
 with their offsets and disjointness, `tailStart` at `4`, the three routing cases, every left row as
 the routed marker-erase row, every right row as the G3j row, the public step against the composed raw

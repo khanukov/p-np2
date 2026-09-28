@@ -214,23 +214,23 @@ proof-level retags; G3k above has since executed H7 as well, taking the counts t
   control in neither composed verdict, and seven steps before the length-only deadline `40` the
   theorem states.
 
-Deferred and deliberately not claimed. **Seven of the seventeen handoffs remain proof-level**: the
-composed `startConfig` is G1's own routed into the composed control, so it still retags the actual
-marker-erase `finalConfig` and embeds every earlier phase, no raw-input `initialConfig` is executed,
-and no clock counts a step of any earlier phase; `handoff_pins` records H7 as a hypothesis-free
-identification and pins no earlier phase's table row. **No pnp4 bridge**: the standalone phases' pnp4
-semantics are unchanged and no `ContentVerifierBridge`, raw-input acceptance, `AcceptsAt`,
-`DecidesWithin` or `UniformP` runtime theorem appears; whether the cubic budget still dominates the
-composed clock is not proved here, and no advice-freedom or wrapper-level claim is made. **No first
-arrival of the composed accept**: the arrivals proved are the gate's and, as a hypothesis, the
-dispatcher's, each inside its own block. **No exact time on the mismatched branch**, as above. The
-**fence** is unchanged — all eleven tables are uncapped, so an oversized register still times out; no
-**footprint** theorem; no **converse**, so neither composed reject implies anything about the input.
-The endpoints reached are internal states out of a retagged actual prior endpoint, neither halting on
-a raw input nor language acceptance. The **model connection** remains open (caveat 6 of
-`VERIFIER_RETARGET_PLAN.md`). Neither `SearchMCSPWeakLowerBound` nor
-`VerifiedNPDAGLowerBoundSource` is reduced. This is infrastructure, not P-vs-NP mainline progress,
-and it makes no `P ≠ NP` claim.
+Deferred and deliberately not claimed. **Seven of the seventeen handoffs remained proof-level** as
+of this slice (G3k above has since taken H7, leaving six): the composed `startConfig` is G1's own
+routed into the composed control, so it still retags the actual marker-erase `finalConfig` and
+embeds every earlier phase, no raw-input `initialConfig` is executed, and no clock counts a step of
+any earlier phase; `handoff_pins` records H7 as a hypothesis-free identification and pins no earlier
+phase's table row. **No pnp4 bridge**: the standalone phases' pnp4 semantics are unchanged and no
+`ContentVerifierBridge`, raw-input acceptance, `AcceptsAt`, `DecidesWithin` or `UniformP` runtime
+theorem appears; whether the cubic budget still dominates the composed clock is not proved here, and
+no advice-freedom or wrapper-level claim is made. **No first arrival of the composed accept**: the
+arrivals proved are the gate's and, as a hypothesis, the dispatcher's, each inside its own block.
+**No exact time on the mismatched branch**, as above. The **fence** is unchanged — all eleven tables
+are uncapped, so an oversized register still times out; no **footprint** theorem; no **converse**,
+so neither composed reject implies anything about the input. The endpoints reached are internal
+states out of a retagged actual prior endpoint, neither halting on a raw input nor language
+acceptance. The **model connection** remains open (caveat 6 of `VERIFIER_RETARGET_PLAN.md`). Neither
+`SearchMCSPWeakLowerBound` nor `VerifiedNPDAGLowerBoundSource` is reduced. This is infrastructure,
+not P-vs-NP mainline progress, and it makes no `P ≠ NP` claim.
 
 **Part A G3i, the executed gamma-terminator → gamma-anchor handoff H9: the same sequential
 composition applied a ninth time, one block further left, with no new table row and no new

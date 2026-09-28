@@ -2563,3 +2563,105 @@ appears, nor is it proved that the cubic budget still dominates the composed clo
 is neither halting on a raw input nor language acceptance.  The table is fixed and complete but not
 claimed state-minimal.  Neither `SearchMCSPWeakLowerBound` nor `VerifiedNPDAGLowerBoundSource` is
 reduced.  It is infrastructure, not P-vs-NP mainline progress.
+
+The Part A G3j
+`Complexity.Uniform.V1.FixedContentTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown`
+executes the handoff one block further left again, **H8** -- G1's content tag gate into G2's gamma
+terminator -- with **no new table row**, no new combinator and no landed module's code edited.
+`machine` is `FixedContentTagGate.machine.seq` the whole G3i composite: the gate's fixed 15-state,
+45-row rewind-and-tag-check on `[0, 15)` and G3i's 132 states on `[15, 147)`, one closed 147-state,
+441-row table with accept `145` and reject `146`.  H8 has exactly **one** live routed row -- the last
+tag state `12` on `some false`, the gate's only row targeting its accept once the accept's own
+absorbing three are excluded (`accept_row_unique`) -- which `seq` retargets to G3i's start `tailStart`
+at `15`, writing `some false` and moving **right**, in that same transition and at no cost.  On the
+reject side, the terminator had one live row, proved unique, and the anchor had six, each pinned
+individually; the gate's reject is the target of *many* live rows -- the mismatch exits of the eight
+tag positions and the rewind's defensive rows -- so no uniqueness holds there and no count is
+claimed.  Rather than enumerate them, `reject_rows_routed` proves that `seq` sends every live row
+targeting the gate's reject to the composed reject `146`, symbol written and move unchanged, with the
+two verdicts' own rows excluded because both of their left copies are dead
+(`table_and_resource_pins`).  H9 (`15 -> 18`), H10 (`21 -> 24`) and H11 (six rows inside `[24, 52)`,
+all into `52`) to H17 (`133 -> 136`) are inherited from G3i by the offset equation
+`(inTail q).val = 15 + q.val` and the universal right-block row equation.
+
+The feasibility spike run before the slice was built found no blocker.  The gate has exactly two
+absorbing states, `qAccept` and `qReject` -- its raw states `13` and `14`, three rows each -- so the
+landed `seq` routes both and no `mergeAccept` is needed, as for H9 and H10 and unlike H11.  Its
+strict first arrival was *not* exported in the shape `UniformTM.seq_handoff` consumes: the landed
+`exact_terminal_contract` gives the strictness but lands in a private endpoint configuration, so
+`gate_first_arrival` assembles the `state = accept` form from that contract and the landed
+`run_deadline`, with no room premise.  On a matching tag the gate is in neither verdict before
+`switchTime N = 3 * N + 7` and in `finalConfig` at it, and that time **is** its own length-only
+deadline -- `gate_first_arrival` pins that identity, so nothing is lost by the fact that a running
+composed machine cannot wait for a deadline; the theorem also returns the `8 <= N` the matching tag
+forces.  Its endpoint is compatible with the right block's start by construction: G2's `startConfig`
+retags the gate's `finalConfig` itself, which `run_deadline` shows *is* the gate's run at
+`switchTime N` for
+**every** input, matching tag or not, and `terminator_start_at_first_arrival` records that
+hypothesis-free.  So the switch hands over exactly the head and tape G3i's own `startConfig` carries:
+the unchanged `contentTape`, on the gamma cell `8`.  The switch time is length-only, neither width-
+nor path-dependent, so it adds a linear prefix to the composed clock and no new room premise.
+
+`handoff_exact` takes the matching tag and nothing else -- **one** hypothesis, no width, no room, no
+budget, one fewer than G3i's.  The composed run is in neither verdict at any time up to and
+**including** `3 * N + 7` (at the switch itself the control is `tailStart`, so the bound is `<=`), is
+the gate's own run routed at every such time as whole-`Config` equality, at exactly `3 * N + 7`
+**is** G3i's landed `startConfig B x w` re-embedded, and takes G3i steps afterwards.
+`handoff_endpoint_pins` reads that switch configuration back as G2's own `startConfig` projections --
+the control as `tailStart`, the head and the whole tape as G2's own -- with the head on the gamma cell
+`8`, the tape the unchanged `contentTape`, and cell `7` carrying the tag's own last bit `some false`
+there.  `tagged_inherited_switch` locates the inherited H9 at `3 * N + 7 + (zeros + 1)` at index `18`
+on G2a's own head and tape, `tagged_inherited_anchor_switch` the inherited H10 at
+`3 * N + 7 + (zeros + 1 + (2 * zeros + 5))` at index `24` on G2k's own head and tape,
+`tagged_inherited_dispatcher_switch` the inherited H11 at
+`3 * N + 7 + (zeros + 1 + (2 * zeros + 5 + C))` at index `52` with `C` produced rather than chosen,
+and the drained theorem lands the composed accept `145` at exactly
+`gateChainClock C N zeros d v = 3 * N + 7 + terminatorChainClock C N zeros d v` under G3i's eight
+hypotheses unchanged, on the separator blank `N + 2 + zeros` with tape `loopTape B x w zeros 0 v`,
+persisting.
+
+Two rejecting branches are proved, and the second is new to the chain.  On a matching tag whose
+physical suffix holds no gamma terminator the gate hands over, the terminator rejects at exactly its
+own deadline `N - 7` and not before, the anchor never runs, and `malformed_reject_handoff` lands the
+composed reject `146` from `3 * N + 7 + (N - 7)` on, forward direction only.  On a **mismatched** tag
+-- `mismatched_tag_reject_handoff`, the first statement of this chain that assumes the tag does *not*
+match -- the right block never runs at all and the composed reject `146` holds from the gate's
+length-only deadline `3 * N + 7` on, on the gate's own `finalConfig` head over the unchanged content
+tape, forward direction only.  That branch is deliberately **not** timed exactly.  On a nonempty
+content the gate's own rejection *time* is `3 * N + j` for its mismatch *cell* `j` -- with `j` the
+blank cell `N` itself, so `4 * N`, exactly when the word is too short to carry the whole tag *and*
+every bit it does carry already agrees with the tag prefix, a word with an earlier mismatch keeping
+that mismatch's own `3 * N + j` -- and its
+landed `exact_terminal_contract` proves exactly that, strictness included, for a `j` characterised by
+the public `physicalSymbol` and `expectedTagBit`; this slice derives no such `j` from its single
+hypothesis `tagMatches (Fin.append x w) = false`, the `badIndex` defining it being private and its
+only public trace the value of `finalConfig.head`, so no "and not before" accompanies the deadline.
+
+The surface test reuses G3f's, G3g's, G3h's and G3i's eight words and adds `badTag`, that tag with its
+first bit flipped.  Because the gate's switch is length-only the seven well-formed words switch at
+`58`, `43`, `40`, `40`, `37`, `46` and `43` -- always on the gamma cell `8`, whatever the width -- and
+the test derives H8 at the widest and the narrowest fixture, the drain at `B = 22` after `1192` steps
+(`58` gate, `5` terminator, `13` anchor, `18` dispatcher, `1098` G3e) with the register value `24`
+supplied by hand, the malformed reject at `44` and the mismatched reject at `40`; and it independently
+reduces, with no slice theorem used, the gate's rewind and tag scan, all seven H8 switches, the
+inherited H9, H10 and H11, the inherited H12 at steps `112`/`113`, the composed reject `146` at `44`
+on the malformed fixture, and the composed reject on `badTag` at rejection time `33`, at mismatch
+cell `0`, one step after a control in neither composed verdict and seven steps before the length-only
+deadline `40` the theorem states.
+
+Deferred by G3j, and deliberately not claimed.  **Ten handoffs of seventeen**: `startConfig` is G1's
+own routed into the composed control, so it still retags the actual marker-erase `finalConfig` and
+embeds every earlier phase; the seven handoffs before H8 stay proof-level retags -- `handoff_pins`
+records H8's predecessor H7 as a hypothesis-free identification and pins no earlier phase's table row
+-- no raw-input `initialConfig` is executed, and no clock counts a step of any earlier phase.  **No
+first arrival of the composed accept**: the arrivals proved are the gate's and, as a hypothesis, the
+dispatcher's, each inside its own block.  **No exact time on the mismatched branch**, as above.  The
+**fence** (all eleven tables are uncapped), every **converse** -- so neither composed reject implies
+anything about the input -- a **footprint** theorem and the **model connection** (caveat 6 of
+`VERIFIER_RETARGET_PLAN.md`) stay open, and there is **no pnp4 bridge**: the standalone phases' pnp4
+semantics are unchanged and no `ContentVerifierBridge`, raw-input acceptance, `AcceptsAt`,
+`DecidesWithin` or `UniformP` theorem appears, nor is it proved that the cubic budget still dominates
+the composed clock.  The composed `accept` is the countdown's phase-local `qDone`: reaching it out of
+a retagged actual prior endpoint is neither halting on a raw input nor language acceptance.  The table
+is fixed and complete but not claimed state-minimal.  Neither `SearchMCSPWeakLowerBound` nor
+`VerifiedNPDAGLowerBoundSource` is reduced.  It is infrastructure, not P-vs-NP mainline progress.

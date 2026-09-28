@@ -24,7 +24,8 @@
 > automated `qodo-code-review` pass submitted as **COMMENTED**, while the
 > separate Qodo summary comment is a generated description and not a review.
 > `main`'s copy of that slice's record, which this branch's copy predated, is
-> what the merge commit carrying this sentence brings into this tree, and
+> what the first of this branch's two integration merges of `main`, `4abaac92`,
+> brought into this tree, and
 > `TMVERIFIER_FREEZE.md` now carries it in full; none of it transfers to
 > GN-E2-5a. **GN-E2-5a has had no full `./scripts/check.sh`
 > at any head**, only targeted builds at stage (a) and the freeze checker at
@@ -38,26 +39,30 @@
 > its two exact-head reviews — Codex **APPROVE** with one P3 note, Claude
 > **BLOCK** on four documentation findings, neither reporting a Lean,
 > execution, surface or freeze-content defect. The docs-only correction
-> carrying this paragraph resolves those four findings and changes the head
-> again, so no independent review of the resulting head is claimed for it.
+> `3195ffc1` resolves those four findings and changed the head again, as each
+> integration merge of `main` has since, so no independent review of any of
+> those later heads is claimed.
 > GN-E2-5a still owes the complete `./scripts/check.sh`, a review of the
 > corrected head, final-head remote CI and freeze-policy success, the owner's
 > exact full-SHA attestation and label — reissued against whatever head is
-> finally merged, since every later commit, this merge included, moves it — the
-> required PR review, and a non-squash
+> finally merged, since every later commit, both integration merges of `main`
+> included, moves it — the required PR review, and a non-squash
 > merge preserving both of its stage commits. The `≤ 1500` changed-Lean-LOC gate
 > of §6.1 of
 > `pnp4/Pnp4/Frontier/ContractExpansion/VERIFIER_RETARGET_PLAN.md` is measured
-> against the current merge base with `main`, which is now `13f36c1d` — this
-> slice's own base — because PR #1801 merged, and there the branch measures
-> **1497 lines across 8 modules**, inside both bounds, so the gate is **green**.
+> against the current merge base with `main`, which is now `9445a93e` after this
+> branch's two integration merges of `main`, and there the branch measures
+> **1497 lines across 8 modules**, inside both bounds, so the gate is **green**;
+> the same 1497 stood at both superseded bases, `13f36c1d` — this slice's own
+> base, which PR #1801 made the merge base — and `71179c6d`.
 > It stood recorded red, not waived, at 2496 lines against the older merge base
 > `20850b93` while GN-E2-4a's 1041 lines were unmerged underneath, and the merge
-> cleared it. The merge commit carrying this sentence brings `main` — now
+> cleared it. Two merge commits bring `main` into this branch: `4abaac92` brought
 > `71179c6d`, with the G3j and G3k uniform-V1 slices and `main`'s copy of the
-> GN-E2-4a record — into this branch; it changes no frozen byte, no pinned
-> constant and no Lean source of this slice, and it carries no gate result of its
-> own. No green gate beyond the ones
+> GN-E2-4a record, and the merge commit carrying this sentence brings `9445a93e`,
+> with PR #1802's Part A G3l origin-alignment handoff. Neither changes a frozen
+> byte, a pinned constant or a Lean source of this slice, and neither carries a
+> gate result of its own. No green gate beyond the ones
 > `TMVERIFIER_FREEZE.md` names is claimed here.
 > GN-E2-3b was merged by PR #1777 on 2026-09-23 as the merge commit `48151689`,
 > which preserved history, so its provenance commit `7b53a08f` is an ancestor of
@@ -4697,8 +4702,10 @@ The rescope hit its target: against this slice's own base `13f36c1d`, stage (a)
 changes **1497 Lean lines (1467 added, 30 deleted) across 8 `.lean` modules**,
 inside both the `<=1500`-line and `<=10`-module bounds, and the Codex review at
 `311abc6b` reproduced that count independently.  Since PR #1801 merged GN-E2-4a
-into `main`, `13f36c1d` is also `git merge-base main HEAD`, so that is now the
-measurement §6.1 prescribes and the gate is green.  It was red at **2496 lines
+into `main`, `13f36c1d` became `git merge-base main HEAD`, and this branch's two
+integration merges of `main` have moved that base on to `71179c6d` and then to
+`9445a93e`; the same 1497 lines across the same 8 modules is what §6.1
+prescribes at each of the three, and the gate is green.  It was red at **2496 lines
 across the same 8 modules** against the older merge base `20850b93` while
 GN-E2-4a's 1041 lines were unmerged underneath; `TMVERIFIER_FREEZE.md` records
 both measurements, red then green, and neither was waived.

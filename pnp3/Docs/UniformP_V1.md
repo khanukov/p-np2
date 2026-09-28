@@ -2774,3 +2774,136 @@ phase-local `qDone`: reaching it out of a retagged actual prior endpoint is neit
 input nor language acceptance.  The table is fixed and complete but not claimed state-minimal.  Neither
 `SearchMCSPWeakLowerBound` nor `VerifiedNPDAGLowerBoundSource` is reduced.  It is infrastructure, not
 P-vs-NP mainline progress.
+
+The Part A G3l
+`Complexity.Uniform.V1.FixedPairOriginAlignmentContentMarkerEraseTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown`
+executes the handoff one block further left again, **H6** -- the pair origin alignment into the
+trailing content-marker erasure -- with **no new table row**, no new combinator and no landed module's
+code edited.  `machine` is `FixedPairOriginAlignment.machine.seq` the whole G3k composite: the
+alignment phase's fixed 26-state, 78-row block-to-origin shift on `[0, 26)` and G3k's 151 states on
+`[26, 177)`, one closed 177-state, 531-row table with accept `175` and reject `176`.
+
+In forward execution order H6 is the first handoff of this chain with more than one live routed row --
+the already-executed H11, further right, routes six -- and it has **three**: the alignment
+states `10`, `11` and `12` on `none`, which `accept_rows_unique` proves the only rows targeting the
+phase's accept once the accept's own absorbing three are excluded.  `seq` retargets all three to
+G3k's start `tailStart` at index `26`, each keeping its own written symbol -- `none`, `some false`,
+`some true`, the three restoration writes -- and its **left** move, in that same transition and at no
+cost.  The alignment phase's working state names are `private`, and no landed theorem identifies the
+control one step before the clock, so **which** of the three fires on a given input is not claimed
+here; the surface test exhibits each of the three by kernel reduction at a fixture.  The endpoint head
+is `0`, which is what `seq_handoff` transports: it uses the post-move head, and `run_exact` pins that
+to `0`.  That routed `.left` move is a genuine step onto the origin, **not** a clamp: the landed
+`boundary_clamps` puts the phase's sole left clamp two steps earlier, at source time `clock - 3`,
+where the head is already `0` and `moveHead_left_zero` (the V1-namespace lemma in `Machine.lean`)
+applies; `check_h6_literal_probe` exhibits the switch carrying the head from cell `1` to `0`.  On the
+reject side every row of the alignment table targeting its reject is one of **21** -- the five `none`
+rows of states `4, 5, 6, 16, 18` and the sixteen Boolean rows of states `0, 13, 14, 15, 19, 20, 21,
+23` -- `reject_rows_unique` proves that list exhaustive over all `26` states and all three symbols
+once both verdicts' own absorbing rows are excluded, in that one direction only, and
+`reject_rows_routed` sends each to the
+composed reject `176` with the symbol written and the move unchanged.  None is *taken* out of this
+`startConfig`: `alignment_first_arrival` proves the left block never enters its reject there at any
+time, so the composed reject is reachable only through the right block.  The left copies of the two
+alignment verdicts are dead: no composed row targets either, and the composed start is neither
+(`table_and_resource_pins`).  H7 (`27 -> 30`), H8 (`42 -> 45`), H9 (`45 -> 48`), H10 (`51 -> 54`) and
+H11 (six rows inside `[54, 82)`, all into `82`) to H17 (`163 -> 166`) are inherited from G3k, its
+indices shifted by twenty-six and located by `(inTail q).val = 26 + q.val` with the universal
+right-block row equation.
+
+The alignment phase has exactly two absorbing states, `qAccept` and `qReject` -- its raw states `24`
+and `25`, three rows each -- so the landed `seq` routes both and no `mergeAccept` is needed, as for H7
+to H10 and unlike H11.  Its strict first arrival *was* already exported in the shape
+`UniformTM.seq_handoff` consumes: the landed `strict_first_terminal` gives both halves against the
+phase's `qAccept` and `qReject`, which its own landed `resource_pins` identifies with `machine.accept`
+and `machine.reject`, and it takes **no hypothesis at all**, so `alignment_first_arrival` only
+repackages it at `switchTime a m = clock a m` and adds the never-rejects consequence, from the landed
+`accepting_absorption`.  `run_exact` alone would **not** suffice: it is one endpoint identity, and an
+absorbing phase satisfies it at every later time too, while `seq_handoff` starts the right machine
+inside the accepting transition and so needs the absence of any earlier acceptance.  The endpoint is
+compatible with the right block's start by construction: the marker-erase `startConfig` is built
+field-for-field out of the alignment `finalConfig`, which `run_exact` shows *is* the alignment run at
+`switchTime a m` for every input, and `marker_erase_start_at_first_arrival` records that
+hypothesis-free as whole-`Config` equality.  So the switch hands over exactly the head and tape the
+right block's own `startConfig` carries -- the `alignedTape`, on the origin cell `0`, the trailing
+marker at `N` still present, erased `N + 3` steps later by the inherited H7 row.
+
+**The switch time is the first in this chain to depend on the split lengths `a` and `m` separately.**
+The landed switch times are of three kinds, none of them a function of the split: length-only in
+`N = a + m` (H7's `N + 3`, H8's `3 * N + 7`), width-only in the decoded `zeros` (H9's `zeros + 1`,
+H10's `successTime zeros = 2 * zeros + 5`) and input-dependent (H11's `C`, for which no length formula
+exists).  The alignment clock `(10 * a + 7) * (a + m + 1) + 3 * a` is
+quadratic in `a` and reads the two lengths apart, so `switchTime` here takes **two**
+arguments and so does `alignmentChainClock`.  `clock_pins` records that break explicitly and exhibits
+three different values at one `N`: `switchTime 0 2 = 21`, `switchTime 1 1 = 54`, `switchTime 2 0 =
+87`.  The composed clock is therefore quadratic in `a`, and whether the cubic budget still dominates
+it is *not* proved.
+
+`handoff_exact` takes **no hypothesis** -- no tag, no width, no room, no positive budget, no
+budget-dominates-clock premise: the run out of `startConfig` stays strictly inside the left block
+`[0, 26)` at every time strictly before `switchTime a m`, is in neither composed verdict at any time
+up to and including it (at the switch time itself the control is `tailStart`, so that bound is `<=`),
+is the alignment phase's own run routed at every such time as whole-`Config` equality, at exactly
+`switchTime a m` **is** G3k's landed `startConfig B x w` re-embedded, and every later step is a G3k
+step.  `handoff_endpoint_pins` reads that switch configuration back as G3k's own and as the
+marker-erase phase's own `startConfig` projections, and records the origin head `0`, the
+`alignedTape`, the marker `some true` still on cell `N`, and blanks above it.
+`inherited_marker_erase_switch` locates the inherited H7 at `switchTime a m + (N + 3)`, at index `30`,
+on exactly the head and tape G1's own `startConfig` carries.  The four deeper inherited locators -- H8
+at `45`, H9 at `48`, H10 at `54`, H11 at `82` -- are **not** re-wrapped here: `handoff_exact`'s last
+conjunct is a universal suffix equality, so G3k's own `tagged_inherited_switch`,
+`tagged_inherited_terminator_switch`, `tagged_inherited_anchor_switch` and
+`tagged_inherited_dispatcher_switch` transport into this machine by composing that one equation with
+`UniformTM.seqEmbedRight_state/_head/_tape` and `(inTail q).val = 26 + q.val`, exactly as
+`inherited_marker_erase_switch` does for H7; no fact is lost and none is claimed that is not proved.
+The drained theorem lands the composed accept `175` at exactly
+`alignmentChainClock C a m zeros d v = switchTime a m + eraseChainClock C N zeros d v` under G3k's
+eight hypotheses unchanged, on the separator blank `N + 2 + zeros` with tape
+`loopTape B x w zeros 0 v`, persisting; `v` is universally quantified and unsupplied, and persistence
+is not first arrival of the composed accept.  Two rejecting branches are inherited, both forward
+direction only.  On a matching tag whose physical suffix holds **no** gamma terminator the whole
+prefix hands over and `malformed_reject_handoff` lands the composed reject `176` from
+`switchTime a m + (N + 3 + (3 * N + 7 + (N - 7)))` on.  On a **mismatched** tag
+`mismatched_tag_reject_handoff` lands it from `switchTime a m + (N + 3 + (3 * N + 7))` on, the gamma
+blocks never running; that branch is deliberately **not** timed exactly, for the reason G3j and G3k
+record -- on a nonempty content the gate's own first rejection is at `3 * N + j` for its mismatch cell
+`j`, which this chain does not derive from `tagMatches (Fin.append x w) = false`, the value of
+`FixedContentTagGate.finalConfig`'s head being the only public trace of the `badIndex` that defines it
+-- and the composed run may already be in the composed reject before the time stated.
+
+Kernel reduction of `machine.run` is quadratic in the step count, and the tagged fixtures all have
+`a = 8`, so `switchTime 8 m` is already `981` or more and reducing to the switch overflows the kernel
+stack.  The independent `check_*_probe` theorems -- which use **no** slice theorem -- therefore run on
+new tiny tag-free fixtures, which is sound because the alignment phase scans those cells but does not
+test their tag, gamma, or bit meaning; it only shifts the block to the origin: empty inputs
+(`switchTime 0 0 = 7`) exercise the
+routed row of state `10`, `![true]`/`![false]` (`switchTime 1 1 = 54`) that of state `11`, and
+`![true]`/`![true]` that of state `12`, so all three live H6 rows are exhibited, together with
+`B = 1`, the inherited H7 firing `N + 3` later, and the composed reject `176` entered through the
+**right** block when the inherited tag gate rejects the two-cell content.  The tagged fixtures are
+kept for the `check_*_literal*` theorems, which are **derived** from the slice's own theorems and so
+cost no reduction: `tag`/`physWord` switches at `1590` and drains at `1590 + 1212 = 2802`, the
+malformed fixture rejects from `1126` on and the mismatched one from `1122` on.
+
+Deferred by G3l, and deliberately not claimed.  **Twelve handoffs of seventeen**: `startConfig` is the
+alignment phase's own routed into the composed control, so it still retags the actual
+origin-shift-bootstrap `finalConfig` and embeds every earlier phase; the five handoffs before H6 stay
+proof-level retags -- `handoff_pins` records H6's predecessor H5 as a hypothesis-free identification
+and pins no earlier phase's table row -- no raw-input `initialConfig` is executed, and no clock counts
+a step of any phase *before* origin alignment; this clock does count the alignment phase's own
+`(10 * a + 7) * (N + 1) + 3 * a` steps, which no landed clock in this chain did.  **No first arrival
+of the composed accept**: the arrivals proved are the alignment phase's and, as a hypothesis, the
+dispatcher's, each inside its own block.  **No exact time on the mismatched branch**, as above.  The
+**fence** (all thirteen tables are uncapped, and `hfence` is a proof premise the tables do not
+enforce, so an oversized register still times out), every **converse** -- so neither composed reject
+implies anything about the input -- a **footprint** theorem, the alignment phase's own bounding its
+head only through its own clock and saying nothing about the right block, and the **model connection**
+(caveat 6 of `VERIFIER_RETARGET_PLAN.md`) stay open, and there is **no pnp4 bridge**: the standalone
+phases' pnp4 semantics are unchanged and no `ContentVerifierBridge`, raw-input acceptance,
+`AcceptsAt`, `DecidesWithin` or `UniformP` theorem appears, nor is it proved that the cubic budget
+still dominates the now quadratic-in-`a` composed clock.  The composed `accept` is the countdown's
+phase-local `qDone`: reaching it out of a retagged actual prior endpoint is neither halting on a raw
+input nor language acceptance.  `run` permits more steps than `B`, which fixes the tape extent and is
+not a timeout guard.  The table is fixed and complete but not claimed state-minimal.  Neither
+`SearchMCSPWeakLowerBound` nor `VerifiedNPDAGLowerBoundSource` is reduced.  It is infrastructure, not
+P-vs-NP mainline progress.

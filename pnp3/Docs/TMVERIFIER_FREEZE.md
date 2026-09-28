@@ -12,15 +12,19 @@ returned **APPROVE** with no blocking finding and one P3 documentation note,
 and Claude returned **BLOCK** on four documentation findings. Neither reported
 a Lean, execution, surface, size-gate-arithmetic or freeze-content defect; both
 are recorded with their verdicts, evidence and limits in the GN-E2-5a record
-below. The docs-only commit carrying this sentence is the fix for those
-findings, and it changes the head again. The complete final-head gate, a fresh
+below. The docs-only commit `3195ffc1` is the fix for those findings, and it
+changed the head again; this branch's two integration merges of `main` —
+`4abaac92`, which brought in `main` at `71179c6d`, and the merge commit carrying
+this sentence, which brings in `main` at `9445a93e` — have each moved the head
+once more, and no review, gate run, attestation or label is claimed for any of
+those three later heads. The complete final-head gate, a fresh
 exact-head review of the corrected head, remote CI, owner attestation, PR
 review and merge are still owed and are not claimed here.
 The GN-E2-4a migration, whose pins GN-E2-5a's stage (b) replaced, has since been
 merged into `main` by PR #1801 as the merge commit `71179c6d`; what it
 discharged and what it still owes are listed in its own record, not here, in
-`main`'s copy of that record, which the merge commit that carries this sentence
-brings into this file. The reviews recorded there are named with their reviewed
+`main`'s copy of that record, which the first of those two integration merges
+brought into this file. The reviews recorded there are named with their reviewed
 head and verdict: at the stage-(b) head `e2c3ee33`, two were reported as
 **APPROVE** and one as **REQUEST_CHANGES** on documentation; at the docs head
 `4e182c03`, both the Codex and Claude reruns returned **BLOCK** on contradictory
@@ -240,8 +244,10 @@ the GN-E2-5a first-request values/tail writer slice under the same two-stage
 rule. It is deliberately rescoped to the zero-input first-gate path to stay
 inside the ordinary 1,500 changed-Lean-LOC cap, which is **not waived**; that
 measurement is stated exactly in the GN-E2-5a record below, where it is green
-at 1497 lines across 8 modules against the current merge base `13f36c1d`, now
-that PR #1801 has merged GN-E2-4a out from underneath this branch. Later
+at 1497 lines across 8 modules against the current merge base `9445a93e`, and is
+unchanged from the two superseded bases — `13f36c1d`, which PR #1801 produced by
+merging GN-E2-4a out from underneath this branch, and `71179c6d`, which this
+branch's first integration merge of `main` produced in turn. Later
 value-copy rounds, launch, next-gate looping, verdict and
 acceptance remain paused. The stage the paragraph above calls `E2-4b` was
 never taken under that name: GN-E2-5a landed its carried-`data` exit route,
@@ -1171,7 +1177,7 @@ previous `main` `789350ee` and the slice's final head
 rebase, so history was preserved and the provenance audit required above passes:
 `git merge-base --is-ancestor b35bdca2cb24af709144998af5c4402d42a18aa5
 origin/main` exits `0`. This branch's own copy of that record stood as it was at
-`13f36c1d`; the merge commit carrying this paragraph brings `main`'s later copy
+`13f36c1d`; the first integration merge, `4abaac92`, brought `main`'s later copy
 in, so the "Exact-head reviews, full gate and attestation" and "Still owed"
 paragraphs above are that copy verbatim, and they — not this branch — are the
 authority for what the slice discharged before the merge: an exact-head Codex
@@ -1227,22 +1233,27 @@ Lean source changes in stage (b).
 `pnp4/Pnp4/Frontier/ContractExpansion/VERIFIER_RETARGET_PLAN.md` takes the gate
 against `git merge-base main HEAD`. That merge base was
 `13f36c1dbde4ade4ce6cb5e7798a64e1085c8a83` — this slice's own base, which became
-the merge base when PR #1801 merged GN-E2-4a into `main` — and is now
-`71179c6d42a895504e16391a93421c980b3fd98f`, because the merge commit carrying
-this sentence brings that `main` into the branch and makes it an ancestor. The
-measurement is the same at both, and coincides with the slice-local one:
+the merge base when PR #1801 merged GN-E2-4a into `main` — then
+`71179c6d42a895504e16391a93421c980b3fd98f`, once this branch's first integration
+merge `4abaac92` brought that `main` in and made it an ancestor, and is now
+`9445a93e763b4ab6377426bca9078ea73a726fbb`, because the merge commit carrying
+this sentence brings in the `main` that PR #1802 created with the Part A G3l
+origin-alignment handoff. The
+measurement is the same at all three, and coincides with the slice-local one:
 **1497 changed Lean lines (1467 added, 30 deleted) across 8 `.lean` modules**,
 inside both the `≤ 1500`-line and `≤ 10`-module bounds. The gate is **green**.
-Merging `main` in did not enlarge it: `main`'s own G3j and G3k modules became
-shared history and dropped out of the diff, leaving exactly the eight modules
-this slice touches. Against the superseded base `13f36c1d` the same working tree
-now measures 4425 changed lines across 12 `.lean` files, because that diff also
-carries `main`'s two G3j/G3k modules, their two surface tests and their
-`lakefile.lean` and `AxiomsAudit.lean` registrations, none of which is this
-slice's content; that is no longer the prescribed measurement and is not
-reported as one. That is the number the rescope was
+Neither merge of `main` enlarged it: `main`'s own G3j and G3k modules became
+shared history and dropped out of the diff at the first, its G3l module and that
+module's surface test did the same at the second, and what is left is exactly the
+eight modules this slice touches. Against the superseded bases the same working
+tree now measures 2880 changed Lean lines across 10 `.lean` files at `71179c6d`
+and 5808 across 14 at `13f36c1d`, because those diffs also carry `main`'s G3j,
+G3k and G3l modules, their surface tests and their `lakefile.lean` and
+`AxiomsAudit.lean` registrations, none of which is this slice's content; neither
+is the prescribed measurement any longer and neither is reported as one. 1497 is
+the number the rescope was
 designed to hit, and the Codex review at `311abc6b` independently reproduced it
-against `13f36c1d` before this merge.
+against `13f36c1d` before either merge.
 
 Before that merge the same gate was **red at 2496 Lean lines (2485 added, 11
 deleted) across the same 8 modules**, measured against the then-current merge
@@ -1256,12 +1267,41 @@ unavailable to this branch: rebasing would rewrite `11dc8e82`, which is the
 provenance commit the pin names, so the conflict between that instruction and
 the no-rebase requirement below is real and is left for the merge decision, not
 resolved here. It no longer bears on the size gate, which is green at the
-current merge base. `main` advanced to `71179c6d` while this slice was open, and
-this branch took the only route left open to it: a merge commit, which is what
+current merge base. `main` advanced to `71179c6d`, and then to `9445a93e`, while
+this slice was open, and this branch took the only route left open to it both
+times: a merge commit, which is what
 the "Merge with a merge commit" requirement above already demands for bringing
-`main` into this branch. That merge is documentation and integration only — no
+`main` into this branch. Both merges are documentation and integration only — no
 frozen byte, pinned constant, manifest entry or Lean source of this slice
-changes in it — and it carries no gate result of its own.
+changes in either — and neither carries a gate result of its own.
+
+**The second integration merge, the commit carrying this paragraph.** Its two
+parents are this branch's docs head `4abaac92` and `main` at
+`9445a93e763b4ab6377426bca9078ea73a726fbb`, in that order, so the stage-(a) →
+stage-(b) ancestry is untouched: `11dc8e82` and `311abc6b` remain distinct
+commits on the first-parent path, and `git merge-base --is-ancestor 11dc8e82
+HEAD` and `… 311abc6b HEAD` both exit `0`. What `main` brings in is PR #1802's
+Part A G3l origin-alignment handoff — one new
+`Complexity.Uniform.V1` module, its surface test, and their `lakefile.lean`,
+`pnp3/Tests/AxiomsAudit.lean`, `STATUS.md`, `TODO.md`,
+`pnp3/Docs/UniformP_V1.md` and pnp4 `README` entries — all of it outside the
+frozen tree and disjoint from every GN surface. The three files both sides touch
+were resolved additively and both sides' surfaces are retained: `lakefile.lean`
+keeps G3l's `Complexity.Uniform.V1.FixedPairOriginAlignment…Countdown` and
+`Tests.UniformV1FixedPairOriginAlignment…CountdownSurfaceTests` registrations
+alongside GN-E2-5a's `…TuringToolkit.GateNValuesWriter` and
+`Tests.TMGateNValuesWriterSurfaceTests`; `pnp3/Tests/AxiomsAudit.lean` keeps
+both import pairs and both root blocks, G3l's 58 `#print axioms` roots and
+GN-E2-5a's 28, for 5122 roots where `71179c6d` had 5036, `4abaac92` 5064 and
+`9445a93e` 5094 — the sum, so neither side's roots were dropped or duplicated;
+and `STATUS.md` keeps G3l's slice entry and GN-E2-5a's freeze and slice prose. The frozen subtree of the merge result is bit-for-bit the pinned
+tree `4213b315075f67468451a6736afc04486df0350c`, so `FROZEN_COMMIT`,
+`FROZEN_TREE`, `SCHEMA_VERSION`, `spec/tmverifier_freeze.json` and the
+`[snapshot.tmverifier_freeze]` row are all untouched by it and the freeze
+checker's provenance cross-check still resolves `11dc8e82` to that tree. Beyond
+the mechanical merge it changes only prose that named the superseded merge base
+or spoke of a single integration merge: this record, `STATUS.md` and
+`TMVerifier_Session_Plan.md`.
 
 **Reviews at the stage-(b) head `311abc6b` — which reviewer, which verdict.**
 Two independent read-only exact-head reviews ran against this head, both with
@@ -1306,10 +1346,10 @@ neither disputed the size arithmetic above.
   stated; it also did not run `check.sh`, did not verify this record's
   "targeted builds completed" claim, and verified nothing remote.
 
-The commit carrying this paragraph is the fix for B1–B4. It changes no frozen
+The docs-only commit `3195ffc1` is the fix for B1–B4. It changes no frozen
 byte, no Lean source, no pinned constant and no manifest entry, so it does not
 disturb either review's content findings — and, by the same token, neither
-verdict transfers to the head it creates. A fresh exact-head review is owed.
+verdict transfers to the head it created. A fresh exact-head review is owed.
 
 **Nonblocking notes, and their disposition.** **N2** — raised by Codex as its
 P3 and by Claude as a note — is fixed: `TMVerifier_Session_Plan.md` said "four

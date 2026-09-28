@@ -2,6 +2,147 @@
 
 Updated: 2026-09-28
 
+**Part A G3l, the executed origin-alignment → marker-erase handoff H6: the same sequential
+composition applied a twelfth time, one block further left, with no new table row and no new
+combinator (infrastructure only).** One new pnp3 module,
+`Complexity.Uniform.V1.FixedPairOriginAlignmentContentMarkerEraseTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown`,
+with its surface test. **No new table row and no landed module's code edited**; the landed generic
+`UniformTM.seq` is reused unchanged and no `mergeAccept` is needed. The machine is the fixed
+26-state, 78-row pair origin alignment on the left block `[0, 26)` followed by the whole landed G3k
+151-state composite on `[26, 177)`, as one closed 177-state, 531-row table,
+`FixedPairOriginAlignment.machine.seq
+FixedPairContentMarkerEraseTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.machine`,
+with accept `175` and reject `176`. Write `N = a+m` and `d = borrow x w zeros`. **Twelve** of the
+seventeen handoffs are now performed by a finite table and **five** remain proof-level retags.
+
+* **H6 is executed by three live routed rows, not one.** Over all twenty-six alignment states and
+  all three symbols, with the accept's own absorbing three excluded, a target of the phase's accept
+  forces one of the classification states `10`, `11`, `12` on `none` (`accept_rows_unique`), and
+  `seq` retargets all three to the right block's start `tailStart` at index `26`, each keeping its
+  own written symbol — `none`, `some false`, `some true`, the three restoration writes — and its
+  **left** move, in that same transition and at no cost. In **forward execution order** this is the
+  first handoff of the chain whose live accept list is plural — the already-executed H11, further
+  right, routes six — and the three rows write three different symbols. **Which** of them fires on a
+  given input is *not* claimed: those states are `private` in the landed phase and no landed theorem
+  identifies the control one step before the clock; the surface test exhibits each of the three by
+  kernel reduction at a fixture. The endpoint head is `0`, which is what `seq_handoff` transports: it
+  uses the post-move head and `run_exact` pins that to `0`. That routed `.left` move is a genuine
+  step onto the origin, **not** a clamp: the landed `boundary_clamps` puts the phase's sole left
+  clamp two steps earlier, at source time `clock - 3`, and `check_h6_literal_probe` exhibits the
+  switch carrying the head from cell `1` to `0`. On the reject side every row of the alignment table
+  targeting its reject is one of **21** — the five `none` rows of states `4, 5, 6, 16, 18` and the
+  sixteen Boolean rows of states `0, 13, 14, 15, 19, 20, 21, 23` — and `reject_rows_unique` proves
+  that list exhaustive over all `26` states and all three symbols once both verdicts' own absorbing
+  rows are excluded, in that one direction only, while `reject_rows_routed` sends each to the
+  composed reject `176` with the symbol written and the move unchanged. None is
+  *taken* out of this slice's `startConfig`: `alignment_first_arrival` proves the left block is never
+  in its reject at any time whatever, so the composed reject is reachable only through the right
+  block. The six rows of the two left verdict copies are dead, no left-block row targeting either
+  verdict, and the composed start is neither. The injective, disjoint block maps cover all `177`
+  states because their domain sizes are `26` and `151`; together with the two block row equations in
+  `table_and_resource_pins`, this accounts for every composed row and excludes right-block targets
+  from the dead left copies. H7 (`27 → 30`), H8 (`42 → 45`), H9 (`45 → 48`), H10 (`51 → 54`) and H11
+  (six rows inside `[54, 82)`, all into `82`) to H17 (`163 → 166`) are inherited from G3k, its
+  indices shifted by twenty-six, located by `(inTail q).val = 26 + q.val` and the universal
+  right-block row equation.
+* **The strict arrival H6 needs was already exported, and takes no hypothesis.** The alignment phase
+  has exactly two absorbing states, `qAccept` and `qReject` — its raw states `24` and `25`, three
+  rows each — so the landed `seq` routes both, as for H7 to H10 and unlike H11. Its strict first
+  arrival was landed in the shape `seq_handoff` consumes: the landed `strict_first_terminal` gives
+  both halves against the phase's `qAccept` and `qReject`, which its own landed `resource_pins`
+  identifies with `machine.accept` and `machine.reject`, and it takes **no hypothesis at all**.
+  `alignment_first_arrival` therefore only repackages it at `switchTime a m = clock a m` and adds,
+  from the landed `accepting_absorption`, the never-rejects consequence. `run_exact` alone would
+  **not** suffice: it is one endpoint identity, and an absorbing phase satisfies it at every later
+  time too, while `seq_handoff` starts the right machine inside the accepting transition and so needs
+  the absence of any earlier acceptance.
+* **The switch time is the first in this chain to depend on the split lengths `a` and `m`
+  separately.** The landed switch times are of three kinds, none of them a function of the split:
+  length-only in `N = a + m` (H7's `N + 3`, H8's `3 * N + 7`), width-only in the decoded `zeros`
+  (H9's `zeros + 1`, H10's `successTime zeros = 2 * zeros + 5`) and input-dependent (H11's `C`, for
+  which no length formula exists). The alignment clock `(10 * a + 7) * (a + m + 1) + 3 * a` is
+  quadratic in `a` and reads the two lengths apart, so `switchTime` here takes **two** arguments and
+  so does `alignmentChainClock`. `clock_pins` records that break explicitly and exhibits three
+  different values at one `N` — `switchTime 0 2 =
+  21`, `switchTime 1 1 = 54`, `switchTime 2 0 = 87` — so no reformulation of this chain's clock on
+  `N` alone is possible. The composed clock is therefore quadratic in `a`, and whether the cubic
+  budget still dominates it is **not** proved. This clock is also the first in the chain that counts
+  the alignment phase's own steps, which no landed clock in this chain did.
+* **What the switch hands over is exactly what the marker-erase scan reads.**
+  `marker_erase_start_at_first_arrival` records the semantic dependency and executes nothing, and it
+  needs **no hypothesis**: the marker-erase `startConfig` is built field for field out of the
+  alignment `finalConfig`, which the landed `run_exact` shows *is* the phase's run at
+  `switchTime a m` for every input. `handoff_exact` therefore takes **no hypothesis at all** — no
+  tag, no width, no room, no positive budget, no budget-dominates-clock premise — and concludes: the
+  control is strictly inside the left block `[0, 26)` at every time strictly before `switchTime a m`;
+  no composed verdict at any time up to and **including** it (at the switch time itself the control
+  is `tailStart`, so that bound is `≤`); the composed run is the alignment phase's own run routed at
+  every such time, as whole-`Config` equality; at exactly `switchTime a m` it **is** G3k's landed
+  `startConfig B x w` re-embedded; and every later step is a G3k step. `handoff_endpoint_pins` reads
+  that configuration back as both G3k's and the marker-erase phase's own `startConfig` projections,
+  with the head on the origin cell `0`, the tape the `alignedTape`, the trailing content marker
+  **still** `some true` on cell `N` — the inherited H7 row erases it `N + 3` steps later — and every
+  allocated cell above `N` blank.
+* **The inherited switches and the composed run.** `inherited_marker_erase_switch` locates the
+  inherited H7 at `switchTime a m + (N + 3)` at composed index `30`, on exactly the head and tape
+  G1's own `startConfig` carries, with the trailing marker gone. The four deeper inherited locators —
+  H8 at `45`, H9 at `48`, H10 at `54`, H11 at `82` — are **not** re-wrapped here: `handoff_exact`'s
+  last conjunct is a universal suffix equality, so G3k's own four transport into this machine by
+  composing that one equation with `UniformTM.seqEmbedRight_state/_head/_tape` and
+  `(inTail q).val = 26 + q.val`, exactly as `inherited_marker_erase_switch` does for H7; no fact is
+  lost and none is claimed that is not proved. The drained theorem takes G3k's **eight** hypotheses
+  unchanged and lands the composed accept `175` at exactly
+  `alignmentChainClock C a m zeros d v = switchTime a m + eraseChainClock C N zeros d v` on the
+  separator blank `N+2+zeros` with tape `loopTape B x w zeros 0 v`, persisting; `v` is universally
+  quantified and unsupplied, and persistence is not first arrival.
+* **Two inherited rejecting branches, both forward direction only.** On a matching tag whose physical
+  suffix holds no gamma terminator the whole prefix hands over and `malformed_reject_handoff` lands
+  the composed reject `176` from `switchTime a m + (N + 3 + (3 * N + 7 + (N - 7)))` on, on the blank
+  boundary cell `N` over the erased content tape, the anchor never running. On a **mismatched** tag
+  `mismatched_tag_reject_handoff` lands the composed reject `176` from
+  `switchTime a m + (N + 3 + (3 * N + 7))` on, on the gate's own `finalConfig` head over that same
+  tape, the gamma blocks never running. Neither is a converse, and the mismatched one is deliberately
+  **not** timed exactly, for the reason G3j and G3k record: on a nonempty content the gate's own
+  first rejection is at `3 * N + j` for its mismatch *cell* `j`, which this chain does not derive
+  from `tagMatches (Fin.append x w) = false`, the value of `FixedContentTagGate.finalConfig`'s head
+  being the only public trace of the `badIndex` that defines it. So the composed run may already be
+  in the composed reject strictly before the time stated, and nothing here says when.
+* **Probes.** Kernel reduction of `machine.run` is quadratic in the step count and the tagged
+  fixtures all have `a = 8`, so `switchTime 8 m` is already `981` or more and reducing to the switch
+  overflows the kernel stack. The independent `check_*_probe` theorems — which use **no** slice
+  theorem — therefore run on new tiny tag-free fixtures, which is sound because the alignment phase
+  scans those cells but does not test their tag, gamma, or bit meaning; it only shifts the block to
+  the origin: empty inputs (`switchTime 0 0 = 7`) exercise the routed row of state `10`,
+  `![true]`/`![false]`
+  (`switchTime 1 1 = 54`) that of state `11`, and `![true]`/`![true]` that of state `12`, so all
+  three live H6 rows are exhibited, together with `B = 1`, the inherited H7 firing `N + 3` later, and
+  the composed reject `176` entered through the **right** block when the inherited tag gate rejects
+  the two-cell content. The tagged fixtures are kept for the `check_*_literal*` theorems, which are
+  **derived** from the slice's own theorems and so cost no reduction: `tag`/`physWord` switches at
+  `1590` and drains at `1590 + 1212 = 2802` with the register value `24 > N` supplied **by hand** (an
+  execution fixture, not an accepted-content one), the malformed fixture rejects from `1126` on and
+  the mismatched one from `1122` on.
+
+Deferred and deliberately not claimed. **Five of the seventeen handoffs remain proof-level**: the
+composed `startConfig` is the alignment phase's own routed into the composed control, so it still
+retags the actual origin-shift-bootstrap `finalConfig` and embeds every earlier phase, no raw-input
+`initialConfig` is executed, and no clock counts a step of any phase *before* origin alignment;
+`handoff_pins` records H5 as a hypothesis-free identification and pins no earlier phase's table row.
+**No pnp4 bridge**: the standalone phases' pnp4 semantics are unchanged and no
+`ContentVerifierBridge`, raw-input acceptance, `AcceptsAt`, `DecidesWithin` or `UniformP` runtime
+theorem appears; whether the cubic budget still dominates the now quadratic-in-`a` composed clock is
+not proved here, and no advice-freedom or wrapper-level claim is made. **No first arrival of the
+composed accept**: the arrivals proved are the alignment phase's and, as a hypothesis, the
+dispatcher's, each inside its own block. **No exact time on the mismatched branch**, as above. The
+**fence** is unchanged — all thirteen tables are uncapped, so an oversized register still times out;
+no **footprint** theorem, the alignment phase's own bounding its head only through its own clock and
+saying nothing about the right block; no **converse**, so neither composed reject implies anything
+about the input. The endpoints reached are internal states out of a retagged actual prior endpoint,
+neither halting on a raw input nor language acceptance. The **model connection** remains open (caveat
+6 of `VERIFIER_RETARGET_PLAN.md`). Neither `SearchMCSPWeakLowerBound` nor
+`VerifiedNPDAGLowerBoundSource` is reduced. This is infrastructure, not P-vs-NP mainline progress,
+and it makes no `P ≠ NP` claim.
+
 **Part A G3k, the executed marker-erase → tag-gate handoff H7: the same sequential composition
 applied an eleventh time, one block further left, with no new table row and no new combinator
 (infrastructure only).** One new pnp3 module,
@@ -13,7 +154,8 @@ with its surface test. **No new table row and no landed module's code edited**; 
 `FixedPairContentMarkerErase.machine.seq
 FixedContentTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.machine`,
 with accept `149` and reject `150`. Write `N = a+m` and `d = borrow x w zeros`. **Eleven** of the
-seventeen handoffs are now performed by a finite table and **six** remain proof-level retags.
+seventeen handoffs were performed by a finite table when this slice landed and **six** remained
+proof-level retags; G3l above has since executed H6 as well, taking the counts to twelve and five.
 
 * **H7 is executed by one live routed row, which performs the erasure itself.** Over all four
   marker-erase states and all three symbols, with the accept's own absorbing three excluded, a target
@@ -2632,8 +2774,9 @@ that PR #1801 carried no approving review, its only GitHub review being an
 automated `qodo-code-review` pass submitted as **COMMENTED**, which is not an
 approval, while the separate Qodo summary comment is a generated description and
 not a review at all — and `main`'s copy of that slice's record, which this
-branch's copy predated, is the copy the merge commit described below brings into
-this tree and is authoritative for it; and the authorized
+branch's copy predated, is the copy the first of the two integration merges
+described below brought into this tree and is authoritative for it; and the
+authorized
 GN-E2-5a values/tail writer slice described above, whose stage (a) `11dc8e82`
 landed the new frozen bytes and whose stage (b) `311abc6b` repinned the freeze
 onto them, so the freeze checker passes on this tree again. **GN-E2-5a has had
@@ -2647,30 +2790,35 @@ GN-E2-5a's stage-(b) head `311abc6b` the two exact-head reviews split: Codex
 **APPROVE** with one P3 documentation note, Claude **BLOCK** on four
 documentation findings, neither reporting a Lean, execution, surface or
 freeze-content defect. The freeze record names the reviewed heads, verdicts,
-evidence and finding dispositions. This docs-only correction resolves those
-four findings and changes the head again; no independent review of the
-resulting head is claimed. GN-E2-5a still owes that review, the complete
-`./scripts/check.sh`, final-head remote CI and freeze-policy success, the
-owner's exact full-SHA attestation and label, the required PR review, and a
-non-squash merge preserving both stage commits, with the owner's attestation and
-label reissued against whatever head is finally merged — none is claimed). The
-`≤ 1500` changed-Lean-LOC gate is measured against the current merge base with
-`main`, which was `13f36c1d` — GN-E2-5a's own base — once PR #1801 merged, and is
-now **`71179c6d`**, because this branch has merged that `main` in; the
-measurement is the same at both and the gate is **green**: **1497 changed Lean
-lines (1467 added, 30 deleted) across 8 modules**, inside that bound and the
-`≤ 10`-module bound. Merging `main` in did not enlarge it — `main`'s G3j and G3k
-modules became shared history and left the diff — and a measurement against the
-superseded base `13f36c1d` would now count those main-only modules too, so it is
-not the prescribed one and is not reported as one. The gate was
+evidence and finding dispositions. The docs-only correction `3195ffc1` resolves
+those four findings, and every commit after `311abc6b` — that correction and
+both integration merges of `main` — changes the head again; no independent
+review of any of those later heads is claimed. GN-E2-5a still owes that review,
+the complete `./scripts/check.sh`, final-head remote CI and freeze-policy
+success, the owner's exact full-SHA attestation and label, the required PR
+review, and a non-squash merge preserving both stage commits, with the owner's
+attestation and label reissued against whatever head is finally merged — none is
+claimed). The `≤ 1500` changed-Lean-LOC gate is measured against the current
+merge base with `main`, which was `13f36c1d` — GN-E2-5a's own base — once
+PR #1801 merged, became **`71179c6d`** when this branch merged that `main` in,
+and is now **`9445a93e`**, the `main` that PR #1802 created when it merged the
+Part A G3l origin-alignment handoff, because this branch has since merged that
+`main` in too; the measurement is the same at all three and the gate is
+**green**: **1497 changed Lean lines (1467 added, 30 deleted) across 8
+modules**, inside that bound and the `≤ 10`-module bound. Neither merge of
+`main` enlarged it — `main`'s G3j and G3k modules became shared history and left
+the diff at the first, and its G3l module and that module's surface test did the
+same at the second — and a measurement against either superseded base,
+`13f36c1d` or `71179c6d`, would now count those main-only modules too, so
+neither is the prescribed one and neither is reported as one. The gate was
 recorded **red, not waived**, before PR #1801, at 2496 lines against the
 older merge base `20850b93`, because GN-E2-4a's 1041 then-unmerged lines sat
 underneath GN-E2-5a's 1497, and that merge cleared it exactly as the record
-said it would. These migrations, this prose correction and the integration merge
-of `main` are **Infrastructure only**: neither `VerifiedNPDAGLowerBoundSource`
-nor `SearchMCSPWeakLowerBound` is reduced. Do not resume GN-E2-5b or later
-gate-by-gate construction. Active model-repair work must use the versioned
-uniform complexity foundation outside that tree.
+said it would. These migrations, this prose correction and both integration
+merges of `main` are **Infrastructure only**: neither
+`VerifiedNPDAGLowerBoundSource` nor `SearchMCSPWeakLowerBound` is reduced. Do
+not resume GN-E2-5b or later gate-by-gate construction. Active model-repair work
+must use the versioned uniform complexity foundation outside that tree.
 
 **P1a/P1c uniform foundation (infrastructure only).** The independent namespace
 `Pnp3.Complexity.Uniform.V1` provides finite `UniformTM` data with the distinct

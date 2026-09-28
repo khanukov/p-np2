@@ -251,12 +251,40 @@ at all** — the first executed handoff of the chain that takes none. Its reject
 is both complete and plural: exactly **two** live rows (`qErase` on `some false` and on `none`),
 proved the only ones once both verdicts' own absorbing rows are excluded and each routed to the
 composed reject, and neither ever taken out of this slice's start. **Eleven** of the seventeen
-handoffs are therefore now performed by a finite table; the **six** earlier ones remain proof-level
-identifications, the composed accept is still the countdown's phase-local `qDone`, G3k's two inherited
-rejecting branches (malformed suffix, mismatched tag) are forward-direction only and the mismatched
-one is timed only at the gate's length-only deadline, and G3k likewise constructs no
+handoffs were therefore then performed by a finite table; the **six** earlier ones remained
+proof-level identifications, the composed accept is still the countdown's phase-local `qDone`, G3k's
+two inherited rejecting branches (malformed suffix, mismatched tag) are forward-direction only and
+the mismatched one is timed only at the gate's length-only deadline, and G3k likewise constructs no
 `ContentVerifierBridge` or other pnp4 bridge, no fence, no raw-input acceptance and no
-advice-freedom claim, so it too is no P-vs-NP mainline progress.
+advice-freedom claim, so it too is no P-vs-NP mainline progress. Part A G3l then executes the one
+before *that*, **H6** — the pair origin alignment into the trailing content-marker erasure — inside a
+single composed 177-state, 531-row machine, `FixedPairOriginAlignment.machine.seq` the G3k composite,
+once again with **no new table row** and no new combinator: the alignment phase too has exactly two
+absorbing states, so the landed `UniformTM.seq` routes both. In **forward execution order** H6 is the
+first handoff of the chain whose live accept list is **plural** — the already-executed H11, further
+right, routes six: **three** rows, the classification states `10`, `11` and `12` on `none`, proved by
+`accept_rows_unique` the only ones targeting the phase's accept once the accept's own absorbing three
+are excluded, each routed to index `26` keeping its own restoration write (`none`, `some false`,
+`some true`) and its **left** move, a genuine step onto the origin and **not** a clamp: the landed
+`boundary_clamps` puts the phase's sole left clamp two steps earlier, at source time `clock - 3`.
+Which of the three fires on a given input is **not** claimed — those states are `private` in the
+landed phase — and the surface test exhibits each of them by kernel reduction at a tiny fixture. Its
+reject side is the longest such list so far: every row targeting it is one of **21**, five `none` and
+sixteen Boolean, proved exhaustive in that one direction once both verdicts' own absorbing rows are
+excluded and each routed to the composed reject, none ever taken out of this slice's start. Because
+the phase's strict first arrival was already landed in the shape `seq` consumes and is
+hypothesis-free, `handoff_exact` here takes **no hypothesis at all** and additionally pins strict
+left-block confinement before the switch. This switch time, `(10 * a + 7) * (a + m + 1) + 3 * a`, is
+the **first in the chain to depend on the split lengths `a` and `m` separately** — the landed ones
+are length-only in `N = a + m`, width-only in the decoded `zeros`, or input-dependent — and
+`clock_pins` exhibits `21`, `54` and `87` at `N = 2`, so `switchTime` and the chain clock take two
+length arguments, the composed clock is quadratic in `a`, and it is **not** proved that
+the cubic budget still dominates it. **Twelve** of the seventeen handoffs are therefore now performed
+by a finite table; the **five** earlier ones remain proof-level identifications, the composed accept
+is still the countdown's phase-local `qDone`, G3l's two inherited rejecting branches are
+forward-direction only with the mismatched one timed only at the gate's length-only deadline, and G3l
+likewise constructs no `ContentVerifierBridge` or other pnp4 bridge, no fence, no raw-input acceptance
+and no advice-freedom claim, so it too is no P-vs-NP mainline progress.
 This is Infrastructure only. Wrapper-level `L'`
 padding invariance and formal runtime/advice enforcement also remain open; complete-word
 `ContentAccepts` padding invariance does not close either item. The original length-gated

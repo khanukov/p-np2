@@ -5842,17 +5842,19 @@ end DeprecatedAC0CompatibilityAxiomAudit
 -- the whole G3i composite, as one closed 147-state, 441-row table with no new row.  H8 is executed
 -- by the gate's single live routed row -- the last tag state 12 on `some false`, its only row
 -- targeting its accept once the accept's own absorbing three are excluded -- into index 15 at the
--- gate's length-only strict first arrival 3N+7, which is also the gate's own deadline.  Its reject,
--- unlike the terminator's and the anchor's, is the target of many live rows (the mismatch exits of
--- the eight tag positions and of the rewind), so no reject-row uniqueness is claimed and
--- `reject_rows_routed` instead routes every one of them to the composed reject 146; the right block
--- keeps its own inherited rows into 146; and both left verdict copies are dead.  H9 to H17 are
+-- gate's length-only strict first arrival 3N+7, which is also the gate's own deadline.  The
+-- terminator's reject took one live row, proved unique; the anchor's took six, each pinned
+-- individually; the gate's is the target of many live rows (the mismatch exits of the eight tag
+-- positions and of the rewind), so no reject-row uniqueness and no count is claimed, and the
+-- quantified `reject_rows_routed` instead routes every one of them to the composed reject 146; the
+-- right block keeps its own inherited rows into 146; and both left verdict copies are dead.  Two of
+-- those live reject rows are instantiated at literals in the surface test.  H9 to H17 are
 -- inherited from G3i.  Ten handoffs of seventeen; the start still retags the actual marker-erase
 -- endpoint, the lane stays unfenced, and both rejecting branches are forward direction only and no
 -- converse.  The new mismatched-tag branch is timed only at the length-only deadline 3N+7, not at
 -- the gate's own rejection time 3N+j for its mismatch cell j on a nonempty content: the gate's
--- landed `exact_terminal_contract` does prove that time, but j is not recoverable from
--- `tagMatches (Fin.append x w) = false` alone, the `badIndex` defining it being private and its only
+-- landed `exact_terminal_contract` does prove that time, but this slice derives no such j from
+-- `tagMatches (Fin.append x w) = false`, the `badIndex` defining it being private and its only
 -- public trace the value of `finalConfig.head`.  No first arrival of the composed accept and no pnp4
 -- bridge is proved; reaching the composed accept is neither halting on a raw input nor acceptance.
 #print axioms Pnp3.Complexity.Uniform.V1.FixedContentTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.machine
@@ -5904,6 +5906,7 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedContentTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_malformed_reject_handoff
 #print axioms Pnp3.Tests.UniformV1FixedContentTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_mismatched_tag_reject_handoff
 #print axioms Pnp3.Tests.UniformV1FixedContentTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_clock_values
+#print axioms Pnp3.Tests.UniformV1FixedContentTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_reject_row_literals
 #print axioms Pnp3.Tests.UniformV1FixedContentTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_handoff_literal
 #print axioms Pnp3.Tests.UniformV1FixedContentTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_drained_literal_endpoint
 #print axioms Pnp3.Tests.UniformV1FixedContentTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_malformed_literal

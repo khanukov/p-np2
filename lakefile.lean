@@ -297,10 +297,11 @@ lean_lib PnP3 where
     -- 441-row table.  H8 is newly executed by the gate's one live routed row -- the last tag state
     -- 12 on `some false`, its only row targeting its accept once the accept's own absorbing three
     -- are excluded -- into index 15 at the gate's length-only first arrival 3N+7, which is also the
-    -- gate's own deadline; H9 to H17 are inherited.  Unlike the terminator's and the anchor's, the
-    -- gate's reject is the target of many live rows (the mismatch exits), so no reject-row
-    -- uniqueness is claimed and `reject_rows_routed` routes them all to 146 instead.  Ten handoffs
-    -- of seventeen; the start still retags the actual marker-erase endpoint, the lane stays
+    -- gate's own deadline; H9 to H17 are inherited.  The terminator's reject took one live row
+    -- proved unique and the anchor's six pinned individually; the gate's is the target of many (the
+    -- mismatch exits), so no reject-row uniqueness and no count is claimed and the quantified
+    -- `reject_rows_routed` routes them all to 146 instead.  Ten handoffs of seventeen; the start
+    -- still retags the actual marker-erase endpoint, the lane stays
     -- unfenced, the new mismatched-tag reject is forward-direction only and timed only at the
     -- length-only deadline, and no raw-input execution, first arrival of the composed accept, pnp4
     -- bridge, or language acceptance is claimed.

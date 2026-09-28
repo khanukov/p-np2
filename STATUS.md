@@ -16,17 +16,21 @@ with accept `145` and reject `146`. Write `N = a+m` and `d = borrow x w zeros`. 
 seventeen handoffs are now performed by a finite table and **seven** remain proof-level retags.
 
 * **H8 is executed by one live routed row; the reject side is routed but not unique.** Over all
-  fifteen gate states and all three symbols, with the accept's own absorbing row excluded, a target
-  of the gate's accept forces the last tag state `12` on `some false` (`accept_row_unique`), and
-  `seq` retargets that row to the right block's start `tailStart` at index `15`, writing
-  `some false` and moving **right**, in that same transition and at no cost. Unlike the terminator's
-  and the anchor's, the gate's reject is the target of *many* live rows — the mismatch exits of the
-  eight tag positions and the rewind's defensive rows — so no reject-row uniqueness holds, and
-  neither it nor a count is claimed; `reject_rows_routed` proves instead that `seq` sends every live
-  row targeting the gate's reject to the composed reject `146`, symbol written and move unchanged.
-  The six rows of the two left verdict copies are dead, no left-block row targeting either verdict;
-  together with the right-block row equation and the block disjointness `inGate p ≠ inTail q` — both
-  in `table_and_resource_pins` — that accounts for every composed row. H9 (`15 → 18`), H10
+  fifteen gate states and all three symbols, with the accept's own absorbing three excluded, a
+  target of the gate's accept forces the last tag state `12` on `some false` (`accept_row_unique`),
+  and `seq` retargets that row to the right block's start `tailStart` at index `15`, writing
+  `some false` and moving **right**, in that same transition and at no cost. The reject side differs
+  from block to block: the terminator's reject took **one** live row, proved unique
+  (`verdict_rows_unique`); the anchor's took **six**, each pinned individually and no uniqueness
+  claimed; the gate's is the target of *many* live rows — the mismatch exits of the eight tag
+  positions and the rewind's defensive rows — so no reject-row uniqueness holds, and neither it nor a
+  count is claimed; rather than enumerate them, `reject_rows_routed` proves that `seq` sends every
+  live row targeting the gate's reject to the composed reject `146`, symbol written and move
+  unchanged.
+  The six rows of the two left verdict copies are dead, no left-block row targeting either verdict.
+  The injective, disjoint block maps cover all `147` states because their domain sizes are `15` and
+  `132`; together with the two block row equations in `table_and_resource_pins`, this accounts for
+  every composed row and excludes right-block targets from the dead left copies. H9 (`15 → 18`), H10
   (`21 → 24`) and H11 (six rows inside `[24, 52)`, all into `52`) to H17 (`133 → 136`) are inherited
   from G3i, its indices shifted by fifteen, located by `(inTail q).val = 15 + q.val` and the
   universal right-block row equation.
@@ -75,10 +79,9 @@ seventeen handoffs are now performed by a finite table and **seven** remain proo
   short to carry the whole tag *and* every bit it does carry already agrees with the tag prefix, a
   word with an earlier mismatch keeping that mismatch's own `3 * N + j` — and its landed
   `exact_terminal_contract` proves exactly that, strictness
-  included, for a `j` characterised by the public `physicalSymbol` and `expectedTagBit`; what the
-  single hypothesis `tagMatches (Fin.append x w) = false` does not let this slice recover is `j`
-  itself, the `badIndex` defining it being private and its only public trace the value of
-  `finalConfig.head`.
+  included, for a `j` characterised by the public `physicalSymbol` and `expectedTagBit`; this slice
+  derives no such `j` from its single hypothesis `tagMatches (Fin.append x w) = false`, the
+  `badIndex` defining it being private and its only public trace the value of `finalConfig.head`.
 * **Probes.** The surface test reuses G3f's, G3g's, G3h's and G3i's eight words and adds `badTag`,
   that tag with its first bit flipped. Because the gate's switch is length-only the seven well-formed
   words switch at `58`, `43`, `40`, `40`, `37`, `46` and `43` — always on the gamma cell `8`,

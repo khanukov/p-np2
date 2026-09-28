@@ -18,12 +18,14 @@ Classification (AGENTS.md): **Infrastructure**.
 executed one, and it has exactly **one** live routed row: the last tag state `12` on `some false`,
 the gate's only row targeting its accept outside the accept's own absorbing three
 (`accept_row_unique`), which `seq` retargets to the right block's start `tailStart` at index `15`,
-writing `some false` and moving **right**, in that same transition and at no cost.  Unlike the
-terminator's and the anchor's, the gate's reject is the target of *many* live rows — the mismatch
-exits of the eight tag positions and the rewind's defensive rows — and `reject_rows_routed` sends
-every one of them to the composed reject `146`.  The left copies of the two gate verdicts are dead:
-no composed row targets either (`table_and_resource_pins`).  H9 (`15 → 18`, the terminator's `qScan`
-on `some true`), H10
+writing `some false` and moving **right**, in that same transition and at no cost.  The reject side
+differs from block to block: the terminator's reject has **one** live row, proved unique (G3i's
+`verdict_rows_unique`); the anchor's has **six**, each pinned individually with no uniqueness
+claimed; the gate's is the target of *many* live rows — the mismatch exits of the eight tag
+positions and the rewind's defensive rows — so neither uniqueness nor a count is claimed here, and
+`reject_rows_routed` quantifies over them instead, sending every one to the composed reject `146`.
+The left copies of the two gate verdicts are dead: no composed row targets either
+(`table_and_resource_pins`).  H9 (`15 → 18`, the terminator's `qScan` on `some true`), H10
 (`21 → 24`, the anchor's `qReturn` on `some true`) and H11 (six rows inside `[24, 52)`, all into
 `52`) to H17 (`133 → 136`) are inherited from G3i, its indices shifted by fifteen and located by
 `(inTail q).val = 15 + q.val` with the universal right-block row equation.
@@ -72,12 +74,12 @@ branch is **not** timed exactly.  Its rejection *time* is `3 * N + j` for the ga
 `j` whenever the content is nonempty — with `j` the blank cell `N` itself, so `4 * N`, exactly when
 the word is too short to carry the whole tag *and* every bit it does carry already agrees with the
 tag prefix, a word with an earlier mismatch keeping that mismatch's own `3 * N + j` — and `2` when
-`N = 0`; the gate's landed
-`exact_terminal_contract` does prove exactly those times, strictness included, for a `j`
-characterised by the public `physicalSymbol` and `expectedTagBit`.  What is unavailable here is `j`
-itself: from `tagMatches (Fin.append x w) = false` alone it cannot be recovered, the `badIndex` that
-defines it being private and its only public trace the value of `finalConfig.head`.  So only the
-length-only deadline `3 * N + 7` is claimed, and no "and not before" accompanies it.  No
+`N = 0`; the gate's landed `exact_terminal_contract` does prove exactly those times, strictness
+included, for a `j` characterised by the public `physicalSymbol` and `expectedTagBit`.  This slice
+does not derive that witness from `tagMatches (Fin.append x w) = false`; its mismatch theorem
+exposes the head through `finalConfig.head`.  The private definition of `badIndex` does not prevent
+deriving a first-mismatch witness from the public tag contract.  Only the deadline `3 * N + 7` is
+claimed, and no "and not before" accompanies it.  No
 **first arrival** of the composed accept (the arrivals proved are the gate's and, as a hypothesis,
 the dispatcher's, each inside its own block); the **fence** (all eleven tables are uncapped); every
 **converse**, so neither composed reject implies anything about the input; a **footprint** theorem;
@@ -166,9 +168,10 @@ distinguished states with their indices, the block injections with their offsets
 `tailStart` at `15`, the routing cases, every left row as the routed gate row, every right row as
 the G3i row, the public step against the composed raw table, the one live routed row — the last tag
 state `12` on `some false`, moving right — the two dead verdict copies' three rows each, and that no
-**left-block** row targets either dead copy, which together with the right-block row equation and
-`inGate p ≠ inTail q`, both conjuncts above, is every composed row.  Inherited rows are not
-restated: the right-block row equation transports every G3i row verbatim. -/
+**left-block** row targets either dead copy.  The two injective, disjoint block maps have domain
+sizes `15` and `132`, summing to the composed state count `147`, so they cover every state.  Thus the
+two block equations account for every composed row, and block disjointness excludes right-block
+targets from the dead left copies as well.  The right-block equation transports every G3i row. -/
 theorem table_and_resource_pins :
     machine.stateCount = 147 ∧ Fintype.card (Fin machine.stateCount × Option Bool) = 441 ∧
       FixedContentTagGate.machine.start.val = 0 ∧
@@ -255,12 +258,13 @@ theorem accept_row_unique (q : Fin FixedContentTagGate.stateCount) (s : Option B
   revert q
   decide
 
-/-- **Every live row targeting the gate's reject is routed to the composed reject `146`.**  Unlike
-the terminator's and the anchor's, the gate's reject is the target of many live rows — the mismatch
-exits of the eight tag positions and the rewind's defensive rows — so no uniqueness holds and none is
-claimed; what holds is that `seq` sends all of them to the composed reject, with the symbol written
-and the move unchanged.  No count is claimed either.  The two verdicts' own rows are excluded: both
-of their left copies are dead. -/
+/-- **Every live row targeting the gate's reject is routed to the composed reject `146`.**  The
+terminator's reject has one live row, which G3i proves unique; the anchor's has six, which G3h pins
+one by one; the gate's is the target of many — the mismatch exits of the eight tag positions and the
+rewind's defensive rows — so no uniqueness holds here and none is claimed, and rather than enumerate
+the rows this quantifies over them: `seq` sends all of them to the composed reject, with the symbol
+written and the move unchanged.  No count is claimed either.  The two verdicts' own rows are
+excluded: both of their left copies are dead. -/
 theorem reject_rows_routed (q : Fin FixedContentTagGate.stateCount) (s : Option Bool)
     (ha : q ≠ FixedContentTagGate.machine.accept)
     (hq : q ≠ FixedContentTagGate.machine.reject)
@@ -368,9 +372,9 @@ theorem gate_first_arrival {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
 /-- **The tag gate's rejecting arrival, at its length-only deadline.**  On a mismatched tag its run
 at `switchTime N` **is** its `finalConfig` and its control its reject.  There is deliberately no
 "and not before": on a nonempty content the gate first rejects at `3 * N + j` for its mismatch cell
-`j`, a time its landed `exact_terminal_contract` does prove, but that `j` is not recoverable from
-`tagMatches (Fin.append x w) = false` alone — the `badIndex` defining it is private and its only
-public trace is the value of `finalConfig.head`. -/
+`j`, a time its landed `exact_terminal_contract` does prove, but this slice derives no such `j` from
+`tagMatches (Fin.append x w) = false` — the `badIndex` defining it is private and its only public
+trace is the value of `finalConfig.head`. -/
 theorem gate_reject_arrival {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = false) :
     FixedContentTagGate.machine.run (switchTime (a + m))
@@ -726,9 +730,9 @@ theorem malformed_reject_handoff {a m B : Nat} (x : Bitstring a) (w : Bitstring 
 does not match.**  From the gate's length-only deadline `3 * N + 7` on, the composed run is in the
 composed reject `146`, on the gate's own `finalConfig` head — its mismatch cell, clamped to `N` —
 over the unchanged content tape; the right block never runs.  Forward direction only, and **not**
-timed exactly: on a nonempty content the gate first rejects at `3 * N + j` for that cell `j`, and `j`
-is not recoverable from `tagMatches (Fin.append x w) = false` alone, its only public trace being the
-value of `finalConfig.head`.  **Not** a converse either. -/
+timed exactly: on a nonempty content the gate first rejects at `3 * N + j` for that cell `j`, which
+this slice does not derive from `tagMatches (Fin.append x w) = false`; the private `badIndex` that
+defines it has `finalConfig.head` as its only public trace.  **Not** a converse either. -/
 theorem mismatched_tag_reject_handoff {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
     (htag : FixedContentTagGate.tagMatches (Fin.append x w) = false) :
     ∀ s, switchTime (a + m) ≤ s →

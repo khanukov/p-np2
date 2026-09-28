@@ -781,16 +781,17 @@ routed reject is forward-direction only and tag-gated. Part A G3j (pnp3 only) ha
 length-only strict first arrival `3N + 7` (which is also the gate's own deadline, assembled here from
 its landed `exact_terminal_contract` and `run_deadline`) through its single live row targeting its
 accept — taking the count to **ten of seventeen** with **seven** earlier handoffs still proof-level;
-the nine-and-eight counts just given are the ones G3i left. Unlike the terminator's and the anchor's,
-the gate's reject is the target of many live rows, so G3j claims no reject-row uniqueness and routes
-them all to the composed reject instead. G3j is Infrastructure only and likewise builds **no pnp4
+the nine-and-eight counts just given are the ones G3i left. The terminator's reject took one live row
+proved unique and the anchor's six pinned individually; the gate's is the target of many, so G3j
+claims neither reject-row uniqueness nor a count and instead routes them all to the composed reject
+by one quantified theorem. G3j is Infrastructure only and likewise builds **no pnp4
 bridge**: no `ContentVerifierBridge`, no raw-input acceptance, no advice-freedom claim and no P-vs-NP
 mainline progress; the standalone phases' pnp4 semantics are unchanged, this chained run still starts
 at G3e's composite, and both of G3j's routed rejects are forward-direction only, the new
 mismatched-tag one timed only from the gate's length-only deadline `3N + 7` on, with no claim about
 any earlier time: on a nonempty content the gate's own rejection lands at `3N + j` for a mismatch
-cell `j ≤ 7`, at or before that deadline, and on empty content (`N = 0`) at `2`; that `j` is not
-recoverable from the mismatch hypothesis alone. No first arrival of the G3e composed accept is
+cell `j ≤ 7`, at or before that deadline, and on empty content (`N = 0`) at `2`; G3j derives no such
+`j` from the mismatch hypothesis. No first arrival of the G3e composed accept is
 proved (the first arrival proved is G2p-a's, inside the left block), the lane is still unfenced, the
 composed accept is still the countdown's phase-local `qDone` rather than language acceptance, the
 machine is a V1 `UniformTM` on `Option Bool` cells against `pairLength a m` and not

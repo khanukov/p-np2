@@ -2573,12 +2573,13 @@ terminator -- with **no new table row**, no new combinator and no landed module'
 441-row table with accept `145` and reject `146`.  H8 has exactly **one** live routed row -- the last
 tag state `12` on `some false`, the gate's only row targeting its accept once the accept's own
 absorbing three are excluded (`accept_row_unique`) -- which `seq` retargets to G3i's start `tailStart`
-at `15`, writing `some false` and moving **right**, in that same transition and at no cost.  The
-reject side is where this slice differs from every earlier one: the gate's reject is the target of
-*many* live rows -- the mismatch exits of the eight tag positions and the rewind's defensive rows --
-so no uniqueness holds there and no count is claimed; `reject_rows_routed` instead proves that `seq`
-sends every live row targeting the gate's reject to the composed reject `146`, symbol written and move
-unchanged, with the two verdicts' own rows excluded because both of their left copies are dead
+at `15`, writing `some false` and moving **right**, in that same transition and at no cost.  On the
+reject side, the terminator had one live row, proved unique, and the anchor had six, each pinned
+individually; the gate's reject is the target of *many* live rows -- the mismatch exits of the eight
+tag positions and the rewind's defensive rows -- so no uniqueness holds there and no count is
+claimed.  Rather than enumerate them, `reject_rows_routed` proves that `seq` sends every live row
+targeting the gate's reject to the composed reject `146`, symbol written and move unchanged, with the
+two verdicts' own rows excluded because both of their left copies are dead
 (`table_and_resource_pins`).  H9 (`15 -> 18`), H10 (`21 -> 24`) and H11 (six rows inside `[24, 52)`,
 all into `52`) to H17 (`133 -> 136`) are inherited from G3i by the offset equation
 `(inTail q).val = 15 + q.val` and the universal right-block row equation.
@@ -2632,10 +2633,9 @@ blank cell `N` itself, so `4 * N`, exactly when the word is too short to carry t
 every bit it does carry already agrees with the tag prefix, a word with an earlier mismatch keeping
 that mismatch's own `3 * N + j` -- and its
 landed `exact_terminal_contract` proves exactly that, strictness included, for a `j` characterised by
-the public `physicalSymbol` and `expectedTagBit`; what the single hypothesis
-`tagMatches (Fin.append x w) = false` does not let this slice recover is `j` itself, the `badIndex`
-defining it being private and its only public trace the value of `finalConfig.head`, so no "and not
-before" accompanies the deadline.
+the public `physicalSymbol` and `expectedTagBit`; this slice derives no such `j` from its single
+hypothesis `tagMatches (Fin.append x w) = false`, the `badIndex` defining it being private and its
+only public trace the value of `finalConfig.head`, so no "and not before" accompanies the deadline.
 
 The surface test reuses G3f's, G3g's, G3h's and G3i's eight words and adds `badTag`, that tag with its
 first bit flipped.  Because the gate's switch is length-only the seven well-formed words switch at

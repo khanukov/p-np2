@@ -230,10 +230,11 @@ both. H8's one live row — the last tag state `12` on `some false`, the gate's 
 accept once the accept's own absorbing three are excluded — fires at the gate's **length-only**
 strict first arrival `3N + 7`, which is also the gate's own deadline and carries no room premise;
 the arrival itself was not exported in the shape `seq` consumes and is assembled here from the
-gate's landed `exact_terminal_contract` and `run_deadline`. Unlike the terminator's and the
-anchor's, the gate's reject is the target of *many* live rows — the mismatch exits of the eight tag
-positions and the rewind's defensive rows — so no reject-row uniqueness holds or is claimed; every
-one of them is routed to the composed reject instead. **Ten** of the seventeen handoffs are
+gate's landed `exact_terminal_contract` and `run_deadline`. The terminator's reject took **one** live
+row, proved unique; the anchor's took **six**, each pinned individually; the gate's is the target of
+*many* live rows — the mismatch exits of the eight tag positions and the rewind's defensive rows — so
+neither uniqueness nor a count is claimed for it, and rather than enumerate those rows one quantified
+theorem routes every one of them to the composed reject. **Ten** of the seventeen handoffs are
 therefore now performed by a finite table; the **seven** earlier ones remain proof-level
 identifications, the composed accept is still the countdown's phase-local `qDone`, G3j's two
 rejecting branches (malformed suffix, mismatched tag) are forward-direction only and the mismatched

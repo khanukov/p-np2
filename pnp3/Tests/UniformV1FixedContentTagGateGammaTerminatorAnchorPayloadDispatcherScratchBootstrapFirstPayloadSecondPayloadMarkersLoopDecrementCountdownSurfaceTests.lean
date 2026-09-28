@@ -5,10 +5,11 @@ Surface pins for the Part A G3j concrete slice: G1's fixed 15-state, 45-row cont
 followed by the whole landed G3i composite, as **one** closed 147-state, 441-row table.  Its newly
 executed handoff H8 has exactly **one** live routed row — the last tag state `12` on `some false`,
 the gate's only row targeting its accept outside the accept's own three — into G3i's start
-`tailStart` at index `15`, writing `some false` and moving right; unlike the terminator's and the
-anchor's, the gate's reject is the target of **many** live rows, all of which `seq` routes to the
-composed reject `146`; and the two dead left verdict copies are no composed row's target.  H9
-(`15 → 18`), H10 (`21 → 24`) and H11 (six rows inside `[24, 52)`, all into `52`) to H17
+`tailStart` at index `15`, writing `some false` and moving right; where the terminator's reject has
+**one** live row, proved unique, and the anchor's **six**, pinned one by one, the gate's is the
+target of **many**, quantified rather than enumerated and with no count claimed, all of which `seq`
+routes to the composed reject `146`; and the two dead left verdict copies are no composed row's
+target.  H9 (`15 → 18`), H10 (`21 → 24`) and H11 (six rows inside `[24, 52)`, all into `52`) to H17
 (`133 → 136`) are inherited from G3i.  Every public declaration is restated in full.
 
 The probes.  The eight words are G3f's, G3g's, G3h's and G3i's (tag `10110010`) — seven well-formed
@@ -18,8 +19,10 @@ length-only — `3 * (a + m) + 7` — so the seven well-formed words switch at `
 `37`, `46` and `43` on the gamma cell `8`, whatever their widths; the
 inherited H9 then fires `zeros + 1` steps later, the inherited H10 `2 * zeros + 5` after that, and
 the inherited H11 and H12 later still.  The `check_*_literal*` theorems are **derived** from the
-slice's theorems, whose hypotheses they discharge inline at the literals; the drain runs at `B = 22`
-after `1192` steps — `58` for the gate, `5` for the terminator, `13` for the anchor, `18` for the
+slice's theorems, whose hypotheses they discharge inline at the literals.  `check_reject_row_literals`
+instantiates `reject_rows_routed` at the tag state `6` and at `qStart`, each on `some true`, covering a
+tag mismatch and a defensive rewind row.  The drain runs at `B = 22` after `1192` steps — `58` for
+the gate, `5` for the terminator, `13` for the anchor, `18` for the
 dispatcher, `1098` for G3e — with the register value `24 > N` supplied **by hand** (an execution
 fixture, no accepted-content fixture).  The `check_*_probe` theorems reduce the composed machine by
 kernel computation out of the actual `startConfig`, with no slice theorem used: the gate's rewind and
@@ -339,6 +342,20 @@ private def pendVirtWord : Bitstring 4 := ![false, false, true, false]
 
 /-! ### Derived literal handoffs -/
 
+/-- Two of the routed reject rows, **derived**.  `reject_rows_routed` discharged at literals: at the
+first tag state `6` on the wrong bit `some true` — one of the eight tag positions' mismatch exits —
+and at `qStart` (`0`) on `some true` — one of the rewind's defensive rows.  Each composed row keeps
+the gate's own written symbol and its `stay`, and lands in the composed reject `146`.  These are two
+rows of many: the theorem they instantiate claims neither a count nor uniqueness, and neither row
+says anything about the right block, which keeps its own inherited rows into `146`. -/
+theorem check_reject_row_literals :
+    machine.step (inGate ⟨6, by decide⟩) (some true) = (machine.reject, some true, .stay) ∧
+    machine.step (inGate ⟨0, by decide⟩) (some true) = (machine.reject, some true, .stay) ∧
+    machine.reject.val = 146 := by
+  refine ⟨?_, ?_, rfl⟩
+  · exact reject_rows_routed _ (some true) (by decide) (by decide) (by decide)
+  · exact reject_rows_routed _ (some true) (by decide) (by decide) (by decide)
+
 /-- H8 at the widest and the narrowest fixture, **derived**.  On `physWord`: no composed verdict at
 any time up to and including the switch `58`, at which the run **is** G3i's actual
 `startConfig 0 tag physWord` re-embedded, on the gamma cell `8`, with the unchanged content tape
@@ -371,8 +388,8 @@ theorem check_handoff_literal :
 
 /-- The composed endpoint at the physical fixture, derived: the composed accept on the separator
 blank `23` after exactly `1192` steps — `58` for the gate, none for H8, `5` for the terminator, none
-for H9, `13` for the anchor, `18` for the dispatcher, then G3e's `1098` — persisting.  Nothing
-decodes the hand-written `24`. -/
+for H9, `13` for the anchor, none for H10, `18` for the dispatcher, none for H11, then G3e's `1098` —
+persisting.  Nothing decodes the hand-written `24`. -/
 theorem check_drained_literal_endpoint :
     let e := machine.run (gateChainClock 18 (8 + 9) 4 0 24) (startConfig 22 tag physWord)
     e.state = machine.accept ∧ e.head.val = 23 ∧ e.tape = loopTape 22 tag physWord 4 0 24 ∧
@@ -436,9 +453,10 @@ set_option maxRecDepth 4000000 in
 /-- **The tag-gate phase, reduced.**  Out of the actual `startConfig 0 tag physWord`: `qStart` (`0`)
 on the boundary blank `17`, one step left into `qProbe` (`1`) on `16`, then the erase/check/restore
 cycle — `qCheckT` (`3`) and `qReturnT` (`5`) at steps `2` and `3` — three steps per physical cell
-until the first tag state `qTag 0` (`6`) reads cell `1` at step `51`, and the head is on the last tag
-cell `7` at `57`.  That last conjunct pins the head alone; the control there — the last tag state
-`12` — is pinned by `check_h8_probe_reductions` below.  No slice theorem is used. -/
+until the first tag state `qTag 0` (`6`) stands on cell `1` at step `51` — the cell it reads in the
+step to `52` — and the head is on the last tag cell `7` at `57`.  That last conjunct pins the head
+alone; the control there — the last tag state `12` — is pinned by `check_h8_probe_reductions` below.
+No slice theorem is used. -/
 theorem check_gate_rewind_probe :
     (machine.run 0 (startConfig 0 tag physWord)).state.val = 0 ∧
     (machine.run 0 (startConfig 0 tag physWord)).head.val = 17 ∧

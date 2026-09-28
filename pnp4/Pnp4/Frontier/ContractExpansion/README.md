@@ -1703,14 +1703,15 @@ table, again with no new row and no `mergeAccept`, switching through the gate's 
 targeting its accept at the length-only strict first arrival `3N+7`, which is also the gate's own
 deadline and is assembled here from its landed `exact_terminal_contract` and `run_deadline` — taking
 the count to **ten of seventeen** with **seven** earlier handoffs still proof-level; the
-nine-and-eight counts just given are the ones G3i left. The gate's reject, unlike the terminator's and
-the anchor's, is the target of many live rows, so G3j claims no reject-row uniqueness and instead
-routes every one of them to the composed reject. G3j is Infrastructure only and builds **no pnp4
+nine-and-eight counts just given are the ones G3i left. The terminator's reject took one live row
+proved unique and the anchor's six pinned individually; the gate's is the target of many live rows, so
+G3j claims neither reject-row uniqueness nor a count and instead routes every one of them to the
+composed reject by one quantified theorem. G3j is Infrastructure only and builds **no pnp4
 bridge** either: no G3j bridge module exists, this bridge still starts at G3e's composite, both of its
 routed rejects are forward-direction only — the new mismatched-tag one timed only from the gate's
 length-only deadline `3N + 7` on, no earlier time being claimed, the gate's own rejection landing, on
-a nonempty content, at `3N + j` for a mismatch cell `j ≤ 7` that the mismatch hypothesis alone does
-not recover, and on empty content (`N = 0`) at `2` — and no
+a nonempty content, at `3N + j` for a mismatch cell `j ≤ 7` that G3j does not derive from the
+mismatch hypothesis, and on empty content (`N = 0`) at `2` — and no
 `ContentVerifierBridge`, raw-input acceptance, advice-freedom claim or P-vs-NP mainline progress
 follows from it. `S` is the first
 time H12 fires, but no theorem says `C` is the first time the composed accept is entered; the first

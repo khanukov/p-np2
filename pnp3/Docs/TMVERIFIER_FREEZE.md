@@ -7,15 +7,20 @@ stage (b) — commit `e2c3ee33` — re-pins the freeze onto that commit and its
 subtree. The two pinned constants below therefore name the GN-E2-4a stage-(a)
 commit `b35bdca2` and its subtree `c544405f`, and
 `scripts/check_tmverifier_freeze.py` and the freeze preflight of
-`scripts/check.sh` pass on this tree again. What that migration still owes —
-the complete `./scripts/check.sh` on the final head, a review of the final
-head, and the whole remote half — is listed in its record, not here, together
+`scripts/check.sh` pass on this tree again. What that migration has since
+discharged and what it still owes are listed in its record, not here, together
 with the recorded reviews, each named there with its reviewed head and verdict:
 at the stage-(b) head `e2c3ee33`, two were reported as **APPROVE** and one as
 **REQUEST_CHANGES** on documentation; at the docs head `4e182c03`, both the
-Codex and Claude reruns returned **BLOCK** on contradictory review claims.
-This prose correction addresses those findings; it does not constitute an
-independent review of the resulting head. None of the owed items is claimed.
+Codex and Claude reruns returned **BLOCK** on contradictory review claims; and
+at the reviewed head `6718b422`, PR #1801 records an exact-head Codex
+**APPROVE**, an exact-head Fable 5.1 **APPROVE**, a complete
+`./scripts/check.sh` in which all checks passed, the owner's full-SHA
+attestation comment and the `tmverifier-unfreeze` label. What remains owed is
+the remote half, resolution of the required PR review, and a history-preserving
+merge. This record-correction commit advances the head past `6718b422`; it does
+not constitute an independent review of the resulting head, and no gate result
+is claimed for that head.
 The earlier GN-E2-3b migration, whose pins were replaced by `e2c3ee33`, landed
 both of its stages on its own branch and was then merged by PR #1777 on
 2026-09-23 as the merge commit `48151689`, which preserved history, so its
@@ -897,8 +902,9 @@ i.e. Lake considered stage (a)'s artifacts current for that tree and would
 recompile nothing. That is a staleness check against a warm build directory,
 not an independent rebuild from source, and it is the sole basis for the
 corrected audit-root count above. The complete `./scripts/check.sh` was
-**not** run at stage (b) either and is **not** claimed: the whole-gate run is
-reserved for the final head after the exact-head reviews.
+**not** run at stage (b) either and is **not** claimed for it: the whole-gate
+run was reserved for the final head after the exact-head reviews, and the
+record at the end of this file reports it run there.
 
 **Reviews — which head, which verdict.** The known independent read-only review
 outcomes are recorded below. The local evidence paths name external reports,
@@ -1053,14 +1059,38 @@ pin, manifest or Lean source changed. This validation is not an independent
 review, a theorem rebuild, fresh kernel-axiom output, or the complete
 `./scripts/check.sh`; none of those is claimed for the correction.
 
-**Still owed before merge.** A fresh independent review of the current head; the
-complete `./scripts/check.sh`, which has not been run for this GN-E2-4a slice;
-and the entire remote half — `ci.yml` and `lean.yml`
-observed green on the final head, the `TMVerifier Freeze Policy` rollup
-observed passing there, the repository owner's exact full-SHA attestation
-comment `/tmverifier-unfreeze <current-head-sha>`, the `tmverifier-unfreeze`
-label, the required PR review, and a history-preserving merge. No PR or remote
-CI result is claimed for this slice in this record.
+**Exact-head reviews, full gate and attestation (2026-09-28).** The docs-only
+correction above was merged with `origin/main` (`789350ee`) into
+`6718b422a0f8555feed46930a7eada69be007f6a`, and that merge commit is the head
+at which this slice was reviewed. PR #1801 records, against that exact full
+SHA, an independent Codex read-only review returning **APPROVE**, an
+independent Fable 5.1 read-only review returning **APPROVE**, and a complete
+`./scripts/check.sh` run in which all checks passed. The repository owner's
+attestation comment `/tmverifier-unfreeze
+6718b422a0f8555feed46930a7eada69be007f6a` was posted on that PR against the
+same full SHA, and the `tmverifier-unfreeze` label is applied to it. Those
+discharge the fresh review of the final head, the whole-gate run and the
+attestation-and-label pair that the paragraphs above listed as owed. The
+`e2c3ee33` and `4e182c03` verdicts recorded earlier remain the history of how
+that head was reached, not a competing final verdict. This record-correction
+commit advances the head past
+`6718b422a0f8555feed46930a7eada69be007f6a`: it changes only `STATUS.md`, this
+record and `TMVerifier_Session_Plan.md`, and no review, `./scripts/check.sh`
+run, attestation or label is claimed for the resulting head.
+
+**Still owed before merge.** The remote half: `ci.yml` and `lean.yml` observed
+green on the latest head, and the `TMVerifier Freeze Policy` rollup observed
+passing there. No remote CI result is claimed for this slice in this record.
+The required PR review is unresolved — PR #1801 carries no approving review,
+and its only GitHub review is an automated `qodo-code-review` pass submitted as
+**COMMENTED**, whose single governance finding is the staleness this
+correction repairs. That comment-review is not an approval, and the separate
+"PR Summary by Qodo" comment is a generated description, not a review at all;
+neither is counted among the independent reviews recorded above. Finally, the
+history-preserving merge below is still owed. If the merge candidate head moves
+past `6718b422a0f8555feed46930a7eada69be007f6a` — as this correction moves it —
+the owner's attestation and the label must be reissued against the final head
+before merge.
 
 **Merge with a merge commit — required, for provenance.** As for the two
 migrations above, this branch must be merged with a merge commit or an exact

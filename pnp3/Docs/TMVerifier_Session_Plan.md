@@ -12,12 +12,20 @@
 > `e2c3ee33`, Codex and Claude reviews were reported as **APPROVE**, and an
 > earlier Codex pass returned **REQUEST_CHANGES** on documentation. At the docs
 > head `4e182c03`, both the Codex and Claude reruns returned **BLOCK** on
-> contradictory review claims. `TMVERIFIER_FREEZE.md` names each reviewed head,
-> verdict, evidence and finding disposition. This docs-only correction changes
-> the head again, so no independent review of the resulting head is claimed.
-> GN-E2-4a still owes a review of that head, the complete `./scripts/check.sh`
-> (not run for this slice), final-head remote CI and freeze-policy success, the
-> owner's exact full-SHA attestation and label, the required PR review, and a
+> contradictory review claims. Those findings were answered, and at the
+> reviewed head `6718b422a0f8555feed46930a7eada69be007f6a` PR #1801 records an
+> exact-head Codex **APPROVE**, an exact-head Fable 5.1 **APPROVE**, a complete
+> `./scripts/check.sh` in which all checks passed, the owner's attestation
+> comment against that same full SHA, and the `tmverifier-unfreeze` label.
+> `TMVERIFIER_FREEZE.md` names each reviewed head, verdict, evidence and finding
+> disposition. This record-correction commit changes the head again, so no
+> review, `./scripts/check.sh` run, attestation or label is claimed for the
+> resulting head, and the attestation and label must be reissued against
+> whatever head is merged. GN-E2-4a still owes latest-head remote CI and
+> freeze-policy success, resolution of the required PR review — that PR carries
+> no approving review, its only GitHub review being an automated
+> `qodo-code-review` pass submitted as **COMMENTED**, while the separate Qodo
+> summary comment is a generated description and not a review — and a
 > non-squash merge preserving both stage commits. No green gate beyond the ones
 > `TMVERIFIER_FREEZE.md` names is claimed here.
 > GN-E2-3b was merged by PR #1777 on 2026-09-23 as the merge commit `48151689`,

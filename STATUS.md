@@ -2329,23 +2329,50 @@ no pnp4 source obligation, and it is not P-vs-NP mainline progress.
 unfreeze slice continues the frozen GN chain one phase past the landed
 `recordDone` endpoint. It activates that row — previously a stationary
 self-loop — into a read-only right-to-left pass that anchors on the word's
-leading `bof` and stands on p0 of the frame after it, in a new dormant
-`valuesEntry` state, with the physical tape left as the *same term* it was at
-`recordDone`. `gnCS_encodeGN_valuesEntry_exact` is genuine
+leading `bof` and stands on p0 of the frame after it, in a `valuesEntry` state
+that was a new dormant arrival **when this slice landed** — GN-E2-5a below has
+since activated it into the values/tail pass, exactly as stage (a) recorded in
+`GateNValuesRewind.lean` — with the physical tape left as the *same term* it
+was at `recordDone`. `gnCS_encodeGN_valuesEntry_exact` is genuine
 `TM.runConfig (M := GNM)` execution from the real
 `GNM.initialConfig (gnPoint (encodeGN r))` for exactly `gnValuesEntrySteps r g`
 rows, for the actually selected first gate supplied by `hg`. The point of the
 phase is only that the current values the installer still owes the delegated
 request word sit at the left end of the word while the head was at the right
-end. **No value is copied and no frame is written**, and nothing here adds a
-values or tail writer, a completed request word, an extended exit dispatcher, a
-launch, delegation, commit, next-gate loop, total installer clock, verdict,
-acceptance, or any claim that the pure evaluator `evalGNProgram` is executed by
-the machine.
+end. **No value is copied and no frame is written** *in this slice*, and
+GN-E2-4a itself adds no values or tail writer, completed request word, extended
+exit dispatcher, launch, delegation, commit, next-gate loop, total installer
+clock, verdict, acceptance, or any claim that the pure evaluator
+`evalGNProgram` is executed by the machine. Those exclusions are scoped to
+GN-E2-4a as it landed and are **not** the state of the tree at this head:
+GN-E2-5a below adds the values/tail control, the extended exit dispatcher and a
+written tail. It still copies no value on the proved path, and `evalGNProgram`
+is still not executed by this machine.
+
+**GN-E2-5a values/tail control and the input-free first request
+(infrastructure only).** The third authorized unfreeze slice installs the
+complete finite values/tail writer control in the frozen GN machine and proves
+the tail phase. `gnCS_encodeGN_firstRequestReady_exact` is genuine
+`TM.runConfig (M := GNM)` execution from the real
+`GNM.initialConfig (gnPoint (encodeGN r))` for exactly
+`gnFirstRequestReadySteps r g` rows, landing in state `requestReady` at head
+`4 * (F + R + m + 2)` with the complete physical tape pinned, under exactly two
+premises: `hg : r.program.gates[0]? = some g` and `hinputs : r.inputs = []`.
+It writes the fixed `[output false, finish]` tail; the room fact is proved
+internally, not assumed. **The finite data-copy rows are installed and pinned
+but dormant** — with `r.inputs = []` the classification meets the first
+reserved output slot immediately, so no theorem in this slice executes them,
+and the zero-input literal probe is a nonvacuity witness for execution, **not**
+a witness of a values copy. The per-value copy round, its list induction and
+the nonempty-input capstone are GN-E2-5b's, and the label `E2-4b` used in the
+GN-E2-4a prose above is retired in favour of that name. There is no rewind to
+the scratch `bof`, launch, delegation, commit, next-gate loop, total installer
+clock, verdict, acceptance, language-level statement, or any claim that
+`evalGNProgram` is executed by this machine.
 
 **Current engineering priority.** The one-tape `pnp3/Complexity/TMVerifier/`
-tree is frozen at Git tree `c544405f`, the subtree of commit `b35bdca2`; see
-`pnp3/Docs/TMVERIFIER_FREEZE.md`, whose migration record covers the three
+tree is frozen at Git tree `4213b315`, the subtree of commit `11dc8e82`; see
+`pnp3/Docs/TMVERIFIER_FREEZE.md`, whose migration record covers the four
 unfreezes since `42c59881` (the reviewed S11 one-gate acceptance closure; the
 authorized GN-E2-3b body-driver slice, landed by PR #1777 as merge
 commit `48151689` on 2026-09-23, an ancestor of this branch, so its history was
@@ -2353,23 +2380,50 @@ preserved: its exact-head local `./scripts/check.sh`, its two independent
 read-only reviews, the owner attestation and the `tmverifier-unfreeze` label
 were recorded before that merge, while local Git records neither the remote gate
 results against its final head nor the required PR review, so neither is
-claimed here; and the authorized GN-E2-4a values-rewind slice, whose
-stage (a) landed the new frozen bytes and whose stage (b) repinned the freeze
-onto them, so the freeze checker and the `./scripts/check.sh` preflight pass on
-this tree again. At the stage-(b) head `e2c3ee33`, Codex and Claude reviews were
-reported as **APPROVE**, and an earlier Codex pass returned
-**REQUEST_CHANGES** on documentation. At the later docs head `4e182c03`, both
-the Codex and Claude reruns returned **BLOCK** on contradictory review claims.
-The freeze record names the reviewed heads, verdicts, evidence and finding
-dispositions. This docs-only correction changes the head again; no independent
-review of the resulting head is claimed. The slice still owes that review,
-the complete `./scripts/check.sh`, final-head remote CI and freeze-policy
-success, the owner's exact full-SHA attestation and label, the required PR
-review, and a non-squash merge preserving both stage commits — none is claimed).
-This migration and its prose recovery are **Infrastructure only**: neither
-`VerifiedNPDAGLowerBoundSource` nor `SearchMCSPWeakLowerBound` is reduced.
-Do not resume E2-4b or later gate-by-gate construction. Active model-repair work
-must use the versioned uniform complexity foundation outside that tree.
+claimed here; the authorized GN-E2-4a values-rewind slice, whose stage (a)
+landed the new frozen bytes and whose stage (b) repinned the freeze onto them,
+and which **PR #1801 merged into `main` on 2026-09-28 as the merge commit
+`71179c6d`**, preserving history, so its provenance commit `b35bdca2` and its
+final head `a312622f` are both ancestors of `main` and the post-merge
+provenance audit `git merge-base --is-ancestor b35bdca2 origin/main` exits `0`
+— two exact-head **APPROVE** reviews, a complete local `./scripts/check.sh`,
+the owner's full-SHA attestation and the `tmverifier-unfreeze` label were
+recorded against its pre-merge head `6718b422`, the docs-only final head
+`a312622f` that followed carries no gate result of its own, and local Git
+records neither the remote gate results for that merge nor the required PR
+review, so neither is claimed here, with `main`'s copy of that slice's record
+(which this branch's copy predates) authoritative for it; and the authorized
+GN-E2-5a values/tail writer slice described above, whose stage (a) `11dc8e82`
+landed the new frozen bytes and whose stage (b) `311abc6b` repinned the freeze
+onto them, so the freeze checker passes on this tree again. **GN-E2-5a has had
+no full `./scripts/check.sh` at any head** — only targeted builds at stage (a)
+and the freeze checker at stage (b) — and GN-E2-4a's passing run at `6718b422`
+transfers nothing to it. At GN-E2-4a's stage-(b) head `e2c3ee33`, Codex and
+Claude reviews were reported as **APPROVE**, and an earlier Codex pass returned
+**REQUEST_CHANGES** on documentation; at its docs head `4e182c03`, both the
+Codex and Claude reruns returned **BLOCK** on contradictory review claims. At
+GN-E2-5a's stage-(b) head `311abc6b` the two exact-head reviews split: Codex
+**APPROVE** with one P3 documentation note, Claude **BLOCK** on four
+documentation findings, neither reporting a Lean, execution, surface or
+freeze-content defect. The freeze record names the reviewed heads, verdicts,
+evidence and finding dispositions. This docs-only correction resolves those
+four findings and changes the head again; no independent review of the
+resulting head is claimed. GN-E2-5a still owes that review, the complete
+`./scripts/check.sh`, final-head remote CI and freeze-policy success, the
+owner's exact full-SHA attestation and label, the required PR review, and a
+non-squash merge preserving both stage commits — none is claimed). The `≤ 1500`
+changed-Lean-LOC gate is measured against the current merge base with `main`,
+which is now `13f36c1d` — GN-E2-5a's own base — because PR #1801 merged, and
+there this branch measures **1497 Lean lines across 8 modules**, inside both
+that bound and the `≤ 10`-module bound, so the gate is **green**. It was
+recorded **red, not waived**, before that merge, at 2496 lines against the
+older merge base `20850b93`, because GN-E2-4a's 1041 then-unmerged lines sat
+underneath GN-E2-5a's 1497, and the merge cleared it exactly as that record
+said it would. These migrations and this prose correction are
+**Infrastructure only**: neither `VerifiedNPDAGLowerBoundSource` nor
+`SearchMCSPWeakLowerBound` is reduced. Do not resume GN-E2-5b or later
+gate-by-gate construction. Active model-repair work must use the versioned
+uniform complexity foundation outside that tree.
 
 **P1a/P1c uniform foundation (infrastructure only).** The independent namespace
 `Pnp3.Complexity.Uniform.V1` provides finite `UniformTM` data with the distinct
@@ -3335,14 +3389,19 @@ fixed-slice `PpolyDAG` membership:
 ### Canonical-track TM-verifier deliverable (frozen historical roadmap)
 
 > **Freeze note.** This roadmap is paused; the tree snapshot is pinned at Git
-> tree `c544405f`, the subtree of commit `b35bdca2` (three migrations since
+> tree `4213b315`, the subtree of commit `11dc8e82` (four migrations since
 > `42c59881`: the reviewed S11 acceptance closure, the authorized
-> GN-E2-3b body-driver slice, and the authorized GN-E2-4a values-rewind slice,
-> whose stage (a) landed the new frozen bytes and whose stage (b) repinned the
-> freeze onto them, so the freeze checker passes on this tree again; none of
-> them resumed the roadmap, and E2-4b and later gate-by-gate construction stay
-> open and unstarted). The active engineering queue is the versioned uniform
-> complexity foundation outside TMVerifier.
+> GN-E2-3b body-driver slice, the authorized GN-E2-4a values-rewind slice, and
+> the authorized GN-E2-5a values/tail writer slice, the one the current pin
+> names, each of the last three landing a stage (a) that committed the new
+> frozen bytes and a stage (b) that repinned the freeze onto them, so the
+> freeze checker passes on this tree again; none of them resumed the roadmap,
+> and GN-E2-5b — the per-value copy round, formerly called `E2-4b` — and later
+> gate-by-gate construction stay open and unstarted). GN-E2-4a has since been
+> merged into `main` by PR #1801 as the merge commit `71179c6d`, which preserved
+> history; GN-E2-5a is unmerged and has had no full check at any head.
+> The active engineering queue is the versioned uniform complexity foundation
+> outside TMVerifier.
 
 > **Scope note.**  After the canonical iso-strong / promise-YES
 > conclusion-side refutations recorded above, the canonical asymptotic

@@ -73,10 +73,14 @@ branch's copy of that record and merged in here from `main`, the pre-merge head
 **APPROVE**); that slice's final head `a312622f`, and `main`'s merge commit
 `71179c6d` itself, carry no gate result of their own. No outcome is carried
 from one of those heads to another commit on the strength of a shared frozen
-subtree: `b35bdca2`, `e2c3ee33`, `4e182c03`, `13f36c1d`, `6718b422`, `a312622f`
-and `71179c6d` all resolve to tree `c544405f`, and of those seven only
-`e2c3ee33`, `4e182c03` and `6718b422` have review
-outcomes recorded below. The same rule governs the current pin — `11dc8e82` is
+subtree. The commits resolving to tree `c544405f` are not only those heads: at
+least ten do — `b35bdca2`, `23335cc3`, `e2c3ee33`, `4e182c03`, `13f36c1d`,
+`6718b422`, `a312622f`, `71179c6d`, `f2237a68` and `9445a93e` — and of those
+only `23335cc3`, `e2c3ee33`, `4e182c03` and `6718b422` have review
+outcomes recorded below. `23335cc3` is the case that makes the rule bite: it
+carries exactly those bytes **and** a **REQUEST_CHANGES**, and that verdict
+travels no further along the shared subtree than the approving ones do. The
+same rule governs the current pin — `11dc8e82` is
 the GN-E2-5a
 stage-(a) provenance commit and carries no review of its own, and the `4213b315`
 subtree it shares with the stage-(b) head extends no review to it.
@@ -244,16 +248,20 @@ the GN-E2-5a first-request values/tail writer slice under the same two-stage
 rule. It is deliberately rescoped to the zero-input first-gate path to stay
 inside the ordinary 1,500 changed-Lean-LOC cap, which is **not waived**; that
 measurement is stated exactly in the GN-E2-5a record below, where it is green
-at 1497 lines across 8 modules against the current merge base `9445a93e`, and is
-unchanged from the two superseded bases — `13f36c1d`, which PR #1801 produced by
-merging GN-E2-4a out from underneath this branch, and `71179c6d`, which this
-branch's first integration merge of `main` produced in turn. Later
+at 1497 lines across 8 modules against the current merge base `9445a93e`, and
+was the same 1497 at each of the two superseded bases while each of them was the
+current one — `13f36c1d`, this branch's own base commit, which PR #1801 made the
+merge base by merging GN-E2-4a into `main` out from underneath this branch, and
+`71179c6d`, PR #1801's merge commit, which this branch's first integration merge
+of `main` made the merge base in turn. Later
 value-copy rounds, launch, next-gate looping, verdict and
 acceptance remain paused. The stage the paragraph above calls `E2-4b` was
 never taken under that name: GN-E2-5a landed its carried-`data` exit route,
 and the per-value copy it deferred is now **GN-E2-5b**'s, which is paused and
-needs its own fresh authorization. Read every earlier `E2-4b` in this file as
-`GN-E2-5b`.
+needs its own fresh authorization. Read every other `E2-4b` in this file as
+`GN-E2-5b`, whether it stands before this paragraph or after it; the GN-E2-4a
+record's deferral of the carried-`data` exit route is among those standing
+after, and the GN-E2-5a record's notes on the retirement are the rest.
 
 ## Migration record
 
@@ -1193,8 +1201,10 @@ review having been an automated `qodo-code-review` pass submitted as
 **COMMENTED**, not an approval — are not recorded in local Git and are not
 claimed here either way. This branch claims none of it, and none of it transfers
 to GN-E2-5a. What the merge
-does change for GN-E2-5a is the merge base: it is now `13f36c1d`, so the §6.1
-size gate measures this slice alone, as the GN-E2-5a record below records.
+does change for GN-E2-5a is the merge base: it moved to `13f36c1d` then, and
+this branch's two integration merges of `main` have since moved it on to
+`71179c6d` and then to the current `9445a93e`, where the §6.1 size gate measures
+this slice alone, as the GN-E2-5a record below records.
 
 ### 2026-09-28 — GN-E2-5a zero-value first-request writer
 
@@ -1261,8 +1271,9 @@ base `20850b93`, because GN-E2-4a's 1041 changed lines were still unmerged and
 sat between that base and stage (a), so the measurement covered two authorized
 slices at once. It was recorded red rather than waived, with the note that
 GN-E2-4a landing was what would clear it; that is exactly what happened, and the
-excess was never this slice's content. Note also that §6.1's standing
-remedy when `main` moves under an open slice — "rebase, don't merge" — remains
+excess was never this slice's content. Note also that the same plan's standing
+remedy when `main` moves under an open slice — "rebase, don't merge", stated in
+§5 rather than §6.1, with §6 to be re-run after every rebase — remains
 unavailable to this branch: rebasing would rewrite `11dc8e82`, which is the
 provenance commit the pin names, so the conflict between that instruction and
 the no-rebase requirement below is real and is left for the merge decision, not
@@ -1370,17 +1381,80 @@ owner is GN-E2-5b — is recorded outside the frozen tree, in the
 `TMVerifier_Session_Plan.md` header block, and nothing here authorizes that
 later in-tree edit.
 
+**Reviews at the second integration-merge head `d01e2c3e` — which reviewer,
+which verdict.** Two further independent read-only exact-head reviews ran
+against `d01e2c3e635e24b6722d6b3ce31382ab54b1f909`, both comparing it with
+`main` at `9445a93e`. Neither reported a blocking Lean, execution, theorem
+surface, premise, scope, freeze-content, manifest, registration or size defect,
+and they split on documentation.
+
+- **Codex: no blocking theorem or freeze-content defect; merge readiness not
+  established.** Recorded in `/root/pnp2-agent-reports/gn-e25-d01-codex.md`. It
+  re-verified the 118-object freeze match against tree `4213b315`, the
+  `11dc8e82` → `311abc6b` two-stage split, the 1497-line/8-module size
+  measurement, and the fourteen public writer theorems with their
+  full-proposition wrappers and 28 audit roots, and it reproduced the literal
+  probe independently — 700 + 84 = 784, head 80, cells 72 and 76 turning from
+  false to true. It ran direct read-only Lean elaboration of the four changed
+  implementation files and both changed surface files against existing cached
+  imports and evaluated the 28 slice audit roots, but states that whole-file
+  `AxiomsAudit.lean` elaboration could not proceed for want of a cached object
+  for the separately merged G3l surface module, so it claims **no** complete
+  audit build; it ran no full `./scripts/check.sh` and nothing remote. Its two
+  nonblocking notes are N1 above and N3 below.
+- **Claude (`claude-opus-5`): BLOCK on documentation consistency.** Recorded in
+  `/root/pnp2-agent-reports/gn-e25-d01-opus5.md`, with the full report at
+  `/root/.claude/plans/read-only-independent-documentation-theo-floofy-spring.md`.
+  It reported the Lean, theorem surface, premises, scope, freeze content,
+  manifest, checker, provenance, registrations, classification and size gates
+  clean — 118/118 manifest hashes and git object ids matched disk, a fresh
+  `--write-manifest` was byte-identical, the 5036 → 5122 root arithmetic and the
+  literal probe were re-derived by hand — and blocked entirely on prose this
+  change set had itself added. Its two blocking findings were **D-1**, the stale
+  present-tense merge base `13f36c1d` in this record's GN-E2-4a merge paragraph,
+  and **D-2**, a `STATUS.md` sentence pointing at an `E2-4b` that stood nowhere
+  in the prose it named. **D-3** to **D-7** were non-blocking accuracy findings:
+  the "rebase, don't merge" remedy attributed to §6.1 rather than §5 of the
+  retarget plan; the merge-base provenance of `13f36c1d` and `71179c6d` phrased
+  as commit authorship; a "read every *earlier* `E2-4b`" directive that missed
+  the live later one; the shared-tree list that omitted `23335cc3`, the one
+  co-tree commit carrying a **REQUEST_CHANGES**; and two "E2-4b" deferrals
+  attributed to this record where it makes one. It ran **no** build, kernel
+  check or `#print axioms`, so every `rfl` and `decide` is accepted as written;
+  it also ran no `check.sh` and verified nothing remote.
+
+The docs-only commit carrying this paragraph is the fix for D-1 through D-7 and
+for N4 below. It changes no frozen byte, no Lean source, no pinned constant and
+no manifest entry, so it disturbs neither review's content findings — and, by
+the same token, neither outcome transfers to the head it creates, and neither
+discharges any gate owed below. A fresh exact-head review is owed again.
+
+**Two further nonblocking notes, and their disposition.** **N3** — raised by
+Codex at `d01e2c3e` — is that `gnCS_encodeGN_firstRequestReady_exact` states
+arrival at `gnFirstRequestReadySteps r g` and not exclusion of `requestReady` at
+every earlier time, so general first-arrival minimality is not part of the
+public contract; direct execution confirms first arrival at 784 for the literal
+probe, which is a witness and not a general theorem. It is **not** addressed
+here, because closing it means adding a Lean theorem and this is a
+documentation-only commit; it is carried forward to GN-E2-5b, alongside N1.
+**N4** — raised by Claude at `d01e2c3e` — is fixed: `TMVerifier_Session_Plan.md`
+reported the 1497 measurement at the two superseded bases without the
+base-relativity caveat that this record and `STATUS.md` both carry, and now
+carries it in both places it states that measurement.
+
 **No full check has been run for GN-E2-5a at any head.** Stage (a) ran only the
 targeted implementation, surface, rewind-surface and axiom-audit builds named
-above; stage (b) ran the freeze checker; the docs-only commit carrying this
-paragraph ran `git diff --check`, the freeze checker, the freeze shell tests, the
-freeze-policy script test and the doc-honesty linter, re-measured the §6.1 size
-gate, and ran no Lean build at all. The passing local full `./scripts/check.sh`
+above; stage (b) ran the freeze checker; the docs-only commit `3195ffc1` and the
+docs-only commit carrying this paragraph each ran `git diff --check`, the freeze
+checker, the freeze shell tests, the freeze-policy script test and the
+doc-honesty linter, re-measured the §6.1 size gate, and ran no Lean build at
+all. The passing local full `./scripts/check.sh`
 named in the GN-E2-4a record belongs to that slice at `6718b422` and says
 nothing about this slice's head.
 
-Still owed before merge: a fresh exact-head review of the corrected head (the
-`311abc6b` pair above does not carry over), the exclusive full
+Still owed before merge: a fresh exact-head review of the corrected head
+(neither the `311abc6b` pair nor the `d01e2c3e` pair above carries over), the
+exclusive full
 `./scripts/check.sh`, all final-head remote checks, the repository owner's
 exact `/tmverifier-unfreeze <full-sha>` attestation, the `tmverifier-unfreeze`
 label, agentic review, and a history-preserving merge. The §6.1 size gate is no

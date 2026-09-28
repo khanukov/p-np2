@@ -2741,8 +2741,14 @@ but dormant** — with `r.inputs = []` the classification meets the first
 reserved output slot immediately, so no theorem in this slice executes them,
 and the zero-input literal probe is a nonvacuity witness for execution, **not**
 a witness of a values copy. The per-value copy round, its list induction and
-the nonempty-input capstone are GN-E2-5b's, and the label `E2-4b` used in the
-GN-E2-4a prose above is retired in favour of that name. There is no rewind to
+the nonempty-input capstone are GN-E2-5b's. The older label `E2-4b` is retired
+in favour of that name: this file's two uses of it — the pause sentence in
+**Current engineering priority** below and the freeze note under **What Is
+Still Open** — now say GN-E2-5b, and outside this file the label survives in
+`pnp3/Docs/TMVERIFIER_FREEZE.md`, `pnp3/Docs/TMVerifier_Session_Plan.md` and
+the frozen `GateNValuesRewind.lean` docstring, the first two of which record
+the redirection explicitly, while the in-tree docstring is left as written
+because correcting it would change frozen bytes. There is no rewind to
 the scratch `bof`, launch, delegation, commit, next-gate loop, total installer
 clock, verdict, acceptance, language-level statement, or any claim that
 `evalGNProgram` is executed by this machine.
@@ -2789,11 +2795,18 @@ Codex and Claude reruns returned **BLOCK** on contradictory review claims. At
 GN-E2-5a's stage-(b) head `311abc6b` the two exact-head reviews split: Codex
 **APPROVE** with one P3 documentation note, Claude **BLOCK** on four
 documentation findings, neither reporting a Lean, execution, surface or
-freeze-content defect. The freeze record names the reviewed heads, verdicts,
-evidence and finding dispositions. The docs-only correction `3195ffc1` resolves
-those four findings, and every commit after `311abc6b` — that correction and
-both integration merges of `main` — changes the head again; no independent
-review of any of those later heads is claimed. GN-E2-5a still owes that review,
+freeze-content defect; the docs-only correction `3195ffc1` resolves those four.
+Two further exact-head reviews ran at the second integration-merge head
+`d01e2c3e` and split the same way: Codex found no blocking theorem or
+freeze-content defect and states that merge readiness is not established, while
+Claude returned **BLOCK** on two documentation-consistency findings with five
+further accuracy findings, again reporting no Lean, execution, surface or
+freeze-content defect; the docs-only correction carrying this sentence resolves
+all seven. The freeze record names the reviewed heads, verdicts, evidence and
+finding dispositions. Every commit after `311abc6b` — those two corrections and
+both integration merges of `main` — changes the head again, so no independent
+review of the current head is claimed and no earlier verdict carries to it.
+GN-E2-5a still owes that review,
 the complete `./scripts/check.sh`, final-head remote CI and freeze-policy
 success, the owner's exact full-SHA attestation and label, the required PR
 review, and a non-squash merge preserving both stage commits, with the owner's

@@ -40,8 +40,14 @@
 > **BLOCK** on four documentation findings, neither reporting a Lean,
 > execution, surface or freeze-content defect. The docs-only correction
 > `3195ffc1` resolves those four findings and changed the head again, as each
-> integration merge of `main` has since, so no independent review of any of
-> those later heads is claimed.
+> integration merge of `main` has since. Two further exact-head reviews ran at
+> the second of those merges, `d01e2c3e`: Codex found no blocking theorem or
+> freeze-content defect and states that merge readiness is not established, and
+> Claude returned **BLOCK** on two documentation-consistency findings with five
+> further accuracy findings, once more reporting no Lean, execution, surface or
+> freeze-content defect. The docs-only correction carrying this sentence
+> resolves all seven and changes the head again, so no independent review of the
+> current head is claimed and no earlier verdict carries to it.
 > GN-E2-5a still owes the complete `./scripts/check.sh`, a review of the
 > corrected head, final-head remote CI and freeze-policy success, the owner's
 > exact full-SHA attestation and label — reissued against whatever head is
@@ -54,7 +60,11 @@
 > branch's two integration merges of `main`, and there the branch measures
 > **1497 lines across 8 modules**, inside both bounds, so the gate is **green**;
 > the same 1497 stood at both superseded bases, `13f36c1d` — this slice's own
-> base, which PR #1801 made the merge base — and `71179c6d`.
+> base, which PR #1801 made the merge base — and `71179c6d`, while each of them
+> was the current one. A diff taken against either of them today would also
+> count `main`'s own G3j, G3k and G3l modules, so neither is the prescribed
+> measurement any longer; `TMVERIFIER_FREEZE.md` states those larger present-day
+> numbers and `STATUS.md` records that neither base is the prescribed one.
 > It stood recorded red, not waived, at 2496 lines against the older merge base
 > `20850b93` while GN-E2-4a's 1041 lines were unmerged underneath, and the merge
 > cleared it. Two merge commits bring `main` into this branch: `4abaac92` brought
@@ -80,10 +90,11 @@
 > GN-E2-5a and this prose recovery are **Infrastructure only**; neither
 > `VerifiedNPDAGLowerBoundSource` nor `SearchMCSPWeakLowerBound` is reduced.
 >
-> **The label `E2-4b` is retired; read it as `GN-E2-5b`.** The GN-E2-4a
-> section below, and `TMVERIFIER_FREEZE.md`'s GN-E2-4a record, defer two things
-> to a stage they call "E2-4b": extending `gnInstallExitDispatch` so the
-> shuttle can carry a `data` frame, and the values copy itself. GN-E2-5a landed
+> **The label `E2-4b` is retired; read it as `GN-E2-5b`.** Between them, the
+> GN-E2-4a section below and `TMVERIFIER_FREEZE.md`'s GN-E2-4a record defer two
+> things to a stage they call "E2-4b": extending `gnInstallExitDispatch` so the
+> shuttle can carry a `data` frame, which both of them defer, and the values
+> copy itself, which only the section below assigns to that label. GN-E2-5a landed
 > the first of those — the carried-`data` exit route exists and is pinned,
 > though no theorem in that slice executes it — and the second is now owned by
 > **GN-E2-5b**, which owes the per-value copy round, its list induction over
@@ -4704,8 +4715,12 @@ inside both the `<=1500`-line and `<=10`-module bounds, and the Codex review at
 `311abc6b` reproduced that count independently.  Since PR #1801 merged GN-E2-4a
 into `main`, `13f36c1d` became `git merge-base main HEAD`, and this branch's two
 integration merges of `main` have moved that base on to `71179c6d` and then to
-`9445a93e`; the same 1497 lines across the same 8 modules is what §6.1
-prescribes at each of the three, and the gate is green.  It was red at **2496 lines
+`9445a93e`; the same 1497 lines across the same 8 modules was the §6.1
+measurement at each of the three while that base was the current one, and at
+`9445a93e` the gate is green.  Only `9445a93e` is prescribed now: a diff taken
+today against `71179c6d` or `13f36c1d` would also count `main`'s own G3j, G3k
+and G3l modules, and `TMVERIFIER_FREEZE.md` records those larger numbers as
+what they are.  It was red at **2496 lines
 across the same 8 modules** against the older merge base `20850b93` while
 GN-E2-4a's 1041 lines were unmerged underneath; `TMVERIFIER_FREEZE.md` records
 both measurements, red then green, and neither was waived.

@@ -5,12 +5,13 @@ shift followed by the whole landed G3l composite, as **one** closed 184-state, 5
 newly executed handoff H5 has exactly **one** live routed row — the bootstrap fetch state `4` on
 `none`, proved by `accept_rows_unique` the only row targeting the phase's accept once the accept's own
 three are excluded — into G3l's start `tailStart` at index `7`, keeping its written `none` and its
-`.stay`.  Exactly **six** rows target the bootstrap reject — either Boolean on each of the states `1`,
-`2`, `3` — `reject_rows_unique` proving that an **equivalence**, and `seq` routes each to the composed
-reject `183`.  None is taken out of this `startConfig`: the left block never rejects at any time.  Both
-dead left verdict copies are no composed row's target, and the composed start is neither.  H6 (three
-rows, `17`, `18` and `19`, all into `33`) to H17 (`170 → 173`) are inherited from G3l, its indices
-shifted by seven.  Every public declaration is restated in full.
+`.stay`.  Once **both** verdicts' own absorbing rows are excluded, exactly **six** rows target the
+bootstrap reject — either Boolean on each of the states `1`, `2`, `3` — `reject_rows_unique` proving
+that an **equivalence**, and `seq` routes each to the composed reject `183`.  None is taken out of this
+`startConfig`: the left block never rejects at any time.  Both dead left verdict copies are no
+composed row's target, and the composed start is neither.  H6 (three rows, `17`, `18` and `19`, all
+into `33`) to H17 (`170 → 173`) are inherited from G3l, its indices shifted by seven.  Every public
+declaration is restated in full.
 
 The switch time.  `switchTime a m = 4 * a + 3 * m + 5` is linear, and far below G3l's quadratic `1590`
 at `a = 8`, `m = 9`, though *not* the smallest switch time in the chain — the length-only `N + 3` and
@@ -140,7 +141,7 @@ theorem check_accept_rows_unique (q : Fin FixedPairOriginShiftBootstrap.shiftSta
     q.val = 4 ∧ s = none :=
   accept_rows_unique q s hq h
 
-/-- The six rows into the bootstrap reject, restated in full: both directions. -/
+/-- The six live rows into the bootstrap reject, restated in full: both directions. -/
 theorem check_reject_rows_unique (q : Fin FixedPairOriginShiftBootstrap.shiftStateCount)
     (s : Option Bool) (ha : q ≠ FixedPairOriginShiftBootstrap.machine.accept)
     (hq : q ≠ FixedPairOriginShiftBootstrap.machine.reject) :
@@ -581,8 +582,8 @@ eight-bit tag: at step `78` the control is a working right-block state `44` in n
 at `79` it is the composed reject `183`, and it is still there at `85`.  The left block's six reject
 rows are *not* what was taken: `check_h5_literal_probe` shows this fixture in the left block at the
 sampled steps `0`, `3`, `6` and `11` and at `tailStart` at `12`, and `handoff_exact` proves that
-confinement at every earlier time, so this reject is entered through the inherited block.  The empty fixture rejects the same way, at `17`.  The conjuncts
-below use no slice theorem. -/
+confinement at every earlier time, so this reject is entered through the inherited block.  The empty
+fixture rejects the same way, at `17`.  The conjuncts below use no slice theorem. -/
 theorem check_composed_reject_probe :
     snap 78 = (44, 2, [some true, some false, none, none, none]) ∧
     (machine.run 78 (startConfig 0 probeX probeW)).state ≠ machine.accept ∧

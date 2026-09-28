@@ -17,19 +17,20 @@ Classification (AGENTS.md): **Infrastructure**.
 **Thirteen executed handoffs.**  H5 — the origin-shift bootstrap into the origin-alignment phase — is
 the newly executed one, and its live accept list is as narrow as a live handoff's can be: **one** row,
 the bootstrap state `4` on `none`, which `accept_rows_unique` proves is the only row targeting the
-phase's accept once the accept's own absorbing three are excluded (landed H7 routes one row too, while
-G3l's H6 routes three and H11 six).  `seq` retargets it to the right block's
-start `tailStart` at index `7`, keeping its written `none` and its `.stay`, in that same transition and
-at no cost.  The endpoint head is `pairLength a m + min B 1`, which is what `seq_handoff` transports:
-it uses the post-move head, and the row itself does not move.  The **boundary distinction** matters
-here: the bootstrap's own last right move, at source time `switchTime a m - 2`, clamps exactly when
-`B = 0` — the landed `clamps` proves that equivalence — whereas H5 itself is a `.stay` and so clamps
-on neither budget.  On the reject side every row of the bootstrap table targeting its reject is one of
-**six** — the two Boolean rows of each of the states `1`, `2`, `3`, the carry and hole probes that find
-a cell occupied where the shift invariant requires it blank — `reject_rows_unique` proves that list
-exhaustive, **in both directions**, over all `7` states and all three symbols once both verdicts' own
-absorbing rows are excluded, and `reject_rows_routed` sends each to the composed reject `183` with the
-symbol written and the move unchanged.  None is *taken* out of this `startConfig`:
+phase's accept once the accept's own absorbing three are excluded (nine of the twelve landed handoffs
+route one row too; only H6, with three, H15, with four, and H11, with six, are plural).  `seq`
+retargets it to the right block's start `tailStart` at index `7`, keeping its written `none` and its
+`.stay`, in that same transition and at no cost.  The endpoint head is `pairLength a m + min B 1`,
+which is what `seq_handoff` transports: it uses the post-move head, and the row itself does not move.
+The **boundary distinction** matters here: the bootstrap's own last right move, at source time
+`switchTime a m - 2`, clamps exactly when `B = 0` — the landed `clamps` proves that equivalence —
+whereas H5 itself is a `.stay` and so clamps on neither budget.  On the reject side, once **both**
+verdicts' own absorbing rows are excluded, every row of the bootstrap table targeting its reject is
+one of **six** — the two Boolean rows of each of the states `1`, `2`, `3`, the carry and hole probes
+that find a cell occupied where the shift invariant requires it blank — `reject_rows_unique` proves
+that list exhaustive **in both directions**, over all `7` states and all three symbols, and
+`reject_rows_routed` sends each to the composed reject `183` with the symbol written and the move
+unchanged.  None is *taken* out of this `startConfig`:
 `bootstrap_first_arrival` proves the left block never enters its reject there at any time, so the
 composed reject is reachable only through the right block.  The left copies of the two bootstrap
 verdicts are dead: no composed row targets either, and the start is neither
@@ -278,11 +279,12 @@ theorem table_and_resource_pins :
 three symbols, with the accept's own absorbing three excluded, a target of
 `FixedPairOriginShiftBootstrap.machine.accept` forces the fetch state `4` on `none` — the probe that
 finds the block exhausted.  So H5 has exactly **one** live routed row, the fewest a live handoff can
-have (landed H7 routes one too; G3l's H6 routes three, H11 six), and `table_and_resource_pins` exhibits
-it with its written `none` and its `.stay`.  This quantifies over the bootstrap rows alone and says nothing about
-the composed table as a whole: the inherited right block keeps its own rows, and the only rows this
-excludes are the dead left accept copy's own three — the reject copy's are *not* excluded here — which
-`seq` routes to `tailStart` and no composed row ever enters. -/
+have (nine of the twelve landed handoffs route one row too; only H6, with three, H15, with four, and
+H11, with six, are plural), and `table_and_resource_pins` exhibits it with its written `none` and its
+`.stay`.  This quantifies over the bootstrap rows alone and says nothing about the composed table as
+a whole: the inherited right block keeps its own rows, and the only rows this excludes are the dead
+left accept copy's own three — the reject copy's are *not* excluded here — which `seq` routes to
+`tailStart` and no composed row ever enters. -/
 theorem accept_rows_unique (q : Fin FixedPairOriginShiftBootstrap.shiftStateCount)
     (s : Option Bool) (hq : q ≠ FixedPairOriginShiftBootstrap.machine.accept)
     (h : (FixedPairOriginShiftBootstrap.machine.rawStep q s).1 =
@@ -294,7 +296,7 @@ theorem accept_rows_unique (q : Fin FixedPairOriginShiftBootstrap.shiftStateCoun
   revert q
   decide
 
-/-- **Exactly six rows of the bootstrap table target its reject, and this classification is an
+/-- **Exactly six live rows of the bootstrap table target its reject, and this classification is an
 equivalence.**  Over all seven states and all three symbols, with both verdicts' own absorbing rows
 excluded, a target of `FixedPairOriginShiftBootstrap.machine.reject` holds **iff** the symbol is a
 Boolean and the state is one of `1`, `2`, `3` — the two carry states and the hole state, whose probes
@@ -314,8 +316,8 @@ theorem reject_rows_unique (q : Fin FixedPairOriginShiftBootstrap.shiftStateCoun
   revert q
   decide
 
-/-- **Every row targeting the bootstrap reject is routed to the composed reject `183`.**  `seq` sends
-each of the six to the composed reject, with the symbol written and the move unchanged.  The two
+/-- **Every live row targeting the bootstrap reject is routed to the composed reject `183`.**  `seq`
+sends each of the six to the composed reject, with the symbol written and the move unchanged.  The two
 verdicts' own rows are excluded: both of their left copies are dead. -/
 theorem reject_rows_routed (q : Fin FixedPairOriginShiftBootstrap.shiftStateCount)
     (s : Option Bool) (ha : q ≠ FixedPairOriginShiftBootstrap.machine.accept)
@@ -473,13 +475,15 @@ theorem alignment_start_at_first_arrival {a m B : Nat} (x : Bitstring a) (w : Bi
 
 /-! ### The executed handoff -/
 
-/-- **H5 fires when the bootstrap phase probes the cell past the last block cell, finds it blank, and
-stays, and it costs nothing.**  With **no hypothesis** — no tag, no width, no room, no positive budget
-— the run out of `startConfig` stays strictly inside the left block `[0, 7)` at every time strictly
-before `switchTime a m`, is in neither composed verdict at any time up to and including it (at the
-switch time itself the control is `tailStart`, so that bound is `≤`), is the bootstrap phase's own run
-routed at every such time — same head and whole tape — at exactly `switchTime a m` **is** G3l's landed
-`startConfig B x w` re-embedded, and runs G3l on from there. -/
+/-- **H5 fires when the bootstrap phase probes past the last block cell, finds it blank, and stays,
+and it costs nothing.**  The probe cell is the endpoint head `pairLength a m + min B 1`: one past the
+last block cell `2 * a + m` at `B = 0`, two at every positive `B`.  With **no hypothesis** — no tag,
+no width, no room, no positive budget — the run out of `startConfig` stays strictly inside the left
+block `[0, 7)` at every time strictly before `switchTime a m`, is in neither composed verdict at any
+time up to and including it (at the switch time itself the control is `tailStart`, so that bound is
+`≤`), is the bootstrap phase's own run routed at every such time — same head and whole tape — at
+exactly `switchTime a m` **is** G3l's landed `startConfig B x w` re-embedded, and runs G3l on from
+there. -/
 theorem handoff_exact {a m B : Nat} (x : Bitstring a) (w : Bitstring m) :
     let cS := FixedPairOriginShiftBootstrap.startConfig B x w
     let c := startConfig B x w

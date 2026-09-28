@@ -19,25 +19,26 @@ seventeen handoffs are now performed by a finite table and **four** remain proof
   forces the fetch state `4` on `none` — the probe that finds the block exhausted
   (`accept_rows_unique`) — and `seq` retargets that one row to the right block's start `tailStart` at
   index `7`, keeping its written `none` and its `.stay`, in that same transition and at no cost. One
-  row is as narrow as a live accept list can be; landed H7 routes one too, while G3l's H6 routes three
-  and H11 six. The endpoint head is `pairLength a m + min B 1`, which is what `seq_handoff` transports:
-  it uses the post-move head, and the routed row itself does not move. The **boundary distinction**
-  matters here: the bootstrap's own last right move, at source time `switchTime a m - 2`, clamps
-  exactly when `B = 0` — the landed `clamps` proves that equivalence — whereas H5 is a `.stay` and so
-  clamps on neither budget, which `check_h5_boundary_probes` exhibits at both `B = 0` and `B = 1`. On
-  the reject side every row of the bootstrap table targeting its reject is one of **six** — the two
-  Boolean rows of each of the states `1`, `2`, `3`, the carry and hole probes that find a cell occupied
-  where the shift invariant requires it blank — and `reject_rows_unique` proves that list exhaustive
-  **in both directions**, over all `7` states and all three symbols once both verdicts' own absorbing
-  rows are excluded, while `reject_rows_routed` sends each to the composed reject `183` with the symbol
-  written and the move unchanged. None is *taken* out of this slice's `startConfig`:
+  row is as narrow as a live accept list can be; nine of the twelve landed handoffs route one row too,
+  and only H6, with three, H15, with four, and H11, with six, are plural. The endpoint head is
+  `pairLength a m + min B 1`, which is what `seq_handoff` transports: it uses the post-move head, and
+  the routed row itself does not move. The **boundary distinction** matters here: the bootstrap's own
+  last right move, at source time `switchTime a m - 2`, clamps exactly when `B = 0` — the landed
+  `clamps` proves that equivalence — whereas H5 is a `.stay` and so clamps on neither budget, which
+  `check_h5_boundary_probes` exhibits at both `B = 0` and `B = 1`. On the reject side, once **both**
+  verdicts' own absorbing rows are excluded, every row of the bootstrap table targeting its reject is
+  one of **six** — the two Boolean rows of each of the states `1`, `2`, `3`, the carry and hole probes
+  that find a cell occupied where the shift invariant requires it blank — and `reject_rows_unique`
+  proves that list exhaustive **in both directions**, over all `7` states and all three symbols, while
+  `reject_rows_routed` sends each to the composed reject `183` with the symbol written and the move
+  unchanged. None is *taken* out of this slice's `startConfig`:
   `bootstrap_first_arrival` proves the left block is never in its reject at any time whatever, so the
   composed reject is reachable only through the right block. The six rows of the two left verdict
-  copies are dead, no left-block row targeting either verdict, and the composed start is neither. The
-  injective, disjoint block maps cover all `184` states because their domain sizes are `7` and `177`;
-  together with the two block row equations in `table_and_resource_pins`, this accounts for every
-  composed row and excludes right-block targets from the dead left copies. H6 (three rows, `17`, `18`
-  and `19`, all into `33`), H7 (`34 → 37`), H8 (`49 → 52`), H9 (`52 → 55`), H10 (`58 → 61`) and H11
+  copies are dead, no left-block row targeting either verdict copy, and the composed start is neither.
+  The injective, disjoint block maps cover all `184` states because their domain sizes are `7` and
+  `177`; together with the two block row equations in `table_and_resource_pins`, this accounts for
+  every composed row and excludes right-block targets from the dead left copies. H6 (three rows, `17`,
+  `18` and `19`, all into `33`), H7 (`34 → 37`), H8 (`49 → 52`), H9 (`52 → 55`), H10 (`58 → 61`) and H11
   (six rows inside `[61, 89)`, all into `89`) to H17 (`170 → 173`) are inherited from G3l, its indices
   shifted by seven, located by `(inTail q).val = 7 + q.val` and the universal right-block row equation.
 * **The strict arrival H5 needs was already exported, and takes no hypothesis.** The bootstrap phase

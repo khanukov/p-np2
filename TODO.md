@@ -294,9 +294,10 @@ exhausted, proved by `accept_rows_unique` the only row targeting the phase's acc
 own absorbing three are excluded, routed to index `7` keeping its written `none` and its `.stay`, so
 H5 clamps on neither budget, while the phase's own last right move, at source time `clock - 2`, clamps
 exactly when `B = 0`, an equivalence the landed `clamps` proves. Its reject side is proved an
-**equivalence**, not just exhaustive: a row of the table targets its reject **iff** the symbol is a
-Boolean and the state is one of `1`, `2`, `3`, six rows in all, each routed to the composed reject, and
-none is ever taken out of this slice's start. Because the phase's strict first arrival was already
+**equivalence**, not just exhaustive: over all seven states and all three symbols, once **both**
+verdicts' own absorbing rows are excluded, a row of the table targets its reject **iff** the symbol is
+a Boolean and the state is one of `1`, `2`, `3`, six rows in all, each routed to the composed reject,
+and none is ever taken out of this slice's start. Because the phase's strict first arrival was already
 landed hypothesis-free in the shape `seq` consumes, `handoff_exact` here again takes **no hypothesis at
 all** and additionally pins strict left-block confinement. This switch time, `4 * a + 3 * m + 5`, is
 linear and far below G3l's quadratic one, but it still reads the two split lengths apart — `clock_pins`

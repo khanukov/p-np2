@@ -2917,18 +2917,19 @@ block further left again, **H5** -- the structural one-cell origin shift into th
 
 H5's live accept list is as narrow as a live handoff's can be: **one** row, the bootstrap state `4` on
 `none` -- the fetch probe that finds the block exhausted -- which `accept_rows_unique` proves is the
-only row targeting the phase's accept once the accept's own absorbing three are excluded.  (Landed H7
-routes one row too; G3l's H6 routes three and H11 six.)  `seq` retargets it to G3l's start `tailStart`
-at index `7`, keeping its written `none` and its `.stay`, in that same transition and at no cost.  The
-endpoint head is `pairLength a m + min B 1`, which is what `seq_handoff` transports: it uses the
-post-move head, and the row itself does not move.  The boundary distinction matters here: the
-bootstrap's own last right move, at source time `switchTime a m - 2`, clamps exactly when `B = 0` --
-the landed `clamps` proves that equivalence -- whereas H5 itself is a `.stay` and so clamps on neither
-budget.  On the reject side every row of the bootstrap table targeting its reject is one of **six** --
-the two Boolean rows of each of the states `1`, `2`, `3`, the carry and hole probes that find a cell
-occupied where the shift invariant requires it blank -- and `reject_rows_unique` proves that list
-exhaustive **in both directions**, over all `7` states and all three symbols once both verdicts' own
-absorbing rows are excluded, while `reject_rows_routed` sends each to the composed reject `183` with
+only row targeting the phase's accept once the accept's own absorbing three are excluded.  (Nine of
+the twelve landed handoffs route one row too; only H6, with three, H15, with four, and H11, with
+six, are plural.)  `seq` retargets it to G3l's start `tailStart` at index `7`, keeping its written
+`none` and its `.stay`, in that same transition and at no cost.  The endpoint head is
+`pairLength a m + min B 1`, which is what `seq_handoff` transports: it uses the post-move head, and
+the row itself does not move.  The boundary distinction matters here: the bootstrap's own last right
+move, at source time `switchTime a m - 2`, clamps exactly when `B = 0` -- the landed `clamps` proves
+that equivalence -- whereas H5 itself is a `.stay` and so clamps on neither
+budget.  On the reject side, once **both** verdicts' own absorbing rows are excluded, every row of the
+bootstrap table targeting its reject is one of **six** -- the two Boolean rows of each of the states
+`1`, `2`, `3`, the carry and hole probes that find a cell occupied where the shift invariant requires
+it blank -- and `reject_rows_unique` proves that list exhaustive **in both directions**, over all `7`
+states and all three symbols, while `reject_rows_routed` sends each to the composed reject `183` with
 the symbol written and the move unchanged.  None is *taken* out of this `startConfig`:
 `bootstrap_first_arrival` proves the left block never enters its reject there at any time, so the
 composed reject is reachable only through the right block.  The left copies of the two bootstrap
@@ -3007,16 +3008,17 @@ derive from `tagMatches (Fin.append x w) = false`, the value of `FixedContentTag
 head being the only public trace of the `badIndex` that defines it.  So the composed run may already be
 in the composed reject strictly before the time stated, and nothing here says when.
 
-Deferred, and deliberately not claimed.  The composed `startConfig` is the bootstrap phase's own routed
-into the composed control, so it still retags the actual tag-removal `finalConfig` and embeds every
-earlier phase; the four handoffs before H5 stay proof-level retags -- `handoff_pins` records H4 as a
-hypothesis-free identification and pins no earlier phase's table row -- no raw-input `initialConfig` is
-executed, and no clock counts a step of any phase *before* the origin shift.  **No first arrival of the
-composed accept**: the arrivals proved are the bootstrap phase's and, as a hypothesis, the dispatcher's,
-each inside its own block.  **No exact time on the mismatched branch**, as above.  The **fence** (all
-fourteen tables are uncapped, and `hfence` is a proof premise the tables do not enforce, so an oversized
-register still times out), every **converse** -- so neither composed reject implies anything about the
-input -- a **footprint** theorem, the bootstrap phase's own bounding its head only through its own clock
+Deferred by G3m, and deliberately not claimed.  **Thirteen handoffs of seventeen**: the composed
+`startConfig` is the bootstrap phase's own routed into the composed control, so it still retags the
+actual tag-removal `finalConfig` and embeds every earlier phase; the **four** handoffs before H5 stay
+proof-level retags -- `handoff_pins` records H4 as a hypothesis-free identification and pins no earlier
+phase's table row -- no raw-input `initialConfig` is executed, and no clock counts a step of any phase
+*before* the origin shift.  **No first arrival of the composed accept**: the arrivals proved are the
+bootstrap phase's and, as a hypothesis, the dispatcher's, each inside its own block.  **No exact time
+on the mismatched branch**, as above.  The **fence** (all fourteen tables are uncapped, and `hfence`
+is a proof premise the tables do not enforce, so an oversized register still times out), every
+**converse** -- so neither composed reject implies anything about the input -- a **footprint**
+theorem, the bootstrap phase's own bounding its head only through its own clock
 and saying nothing about the right block, and the **model connection** (caveat 6 of
 `VERIFIER_RETARGET_PLAN.md`) stay open, and there is **no pnp4 bridge**: the standalone phases' pnp4
 semantics are unchanged and no `ContentVerifierBridge`, raw-input acceptance, `AcceptsAt`,

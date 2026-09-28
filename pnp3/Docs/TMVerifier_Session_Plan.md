@@ -1,21 +1,48 @@
 # Plan: closing the TM verifier for canonical asymptotic GapPartialMCSP
 
-> **Frozen historical plan (2026-09-03; amended 2026-09-20 and 2026-09-22).**
-> The freeze pin names Git tree `b49456d6`, the subtree of commit `7b53a08f`;
-> see `pnp3/Docs/TMVERIFIER_FREEZE.md`, whose migration record covers two
-> unfreezes since `42c59881`: S11 below, reviewed and completed, and GN-E2-3b
-> below, whose stage (a) committed the new frozen bytes and whose stage (b)
-> repinned the freeze onto them. The freeze checker passes on this tree again.
-> GN-E2-3b is open as PR #1777: its exact-head local `./scripts/check.sh`, its
-> two independent read-only reviews, the owner attestation and the
-> `tmverifier-unfreeze` label are complete, while the remote gate results
-> against the final head, the required PR review and a history-preserving merge
-> are still owed; `TMVERIFIER_FREEZE.md` carries the exact split.
+> **Frozen historical plan (2026-09-03; amended 2026-09-20, 2026-09-22 and
+> 2026-09-27; review record corrected 2026-09-28).**
+> The freeze pin now names Git tree `c544405f`, the subtree of commit
+> `b35bdca2`; see `pnp3/Docs/TMVERIFIER_FREEZE.md`, whose migration record
+> covers three unfreezes since `42c59881`: S11 below, reviewed and completed;
+> GN-E2-3b below, whose stage (a) committed the new frozen bytes and whose
+> stage (b) repinned the freeze onto them; and GN-E2-4a below, which has now
+> landed both of those stages in that same order, so the freeze checker and the
+> `./scripts/check.sh` preflight pass on this tree again. At the stage-(b) head
+> `e2c3ee33`, Codex and Claude reviews were reported as **APPROVE**, and an
+> earlier Codex pass returned **REQUEST_CHANGES** on documentation. At the docs
+> head `4e182c03`, both the Codex and Claude reruns returned **BLOCK** on
+> contradictory review claims. Those findings were answered, and at the
+> reviewed head `6718b422a0f8555feed46930a7eada69be007f6a` PR #1801 records an
+> exact-head Codex **APPROVE**, an exact-head Fable 5.1 **APPROVE**, a complete
+> `./scripts/check.sh` in which all checks passed, the owner's attestation
+> comment against that same full SHA, and the `tmverifier-unfreeze` label.
+> `TMVERIFIER_FREEZE.md` names each reviewed head, verdict, evidence and finding
+> disposition. This record-correction commit changes the head again, so no
+> review, `./scripts/check.sh` run, attestation or label is claimed for the
+> resulting head, and the attestation and label must be reissued against
+> whatever head is merged. GN-E2-4a still owes latest-head remote CI and
+> freeze-policy success, resolution of the required PR review — that PR carries
+> no approving review, its only GitHub review being an automated
+> `qodo-code-review` pass submitted as **COMMENTED**, while the separate Qodo
+> summary comment is a generated description and not a review — and a
+> non-squash merge preserving both stage commits. No green gate beyond the ones
+> `TMVERIFIER_FREEZE.md` names is claimed here.
+> GN-E2-3b was merged by PR #1777 on 2026-09-23 as the merge commit `48151689`,
+> which preserved history, so its provenance commit `7b53a08f` is an ancestor of
+> this branch: its exact-head local `./scripts/check.sh`, its two independent
+> read-only reviews, the owner attestation and the `tmverifier-unfreeze` label
+> were recorded before that merge, while local Git records neither the remote
+> gate results against its final head nor the required PR review, so neither is
+> claimed; `TMVERIFIER_FREEZE.md` carries the exact split.
 >
-> This is **not** a silent resumption of the paused roadmap. GN-E2-3b was
-> unfrozen once, deliberately, as a single user-authorized dedicated slice.
-> Every later stage — E2-4 and beyond — stays paused, and active work otherwise
-> remains the versioned uniform complexity foundation outside the frozen tree.
+> This is **not** a silent resumption of the paused roadmap. GN-E2-3b and
+> GN-E2-4a were each unfrozen once, deliberately, as single user-authorized
+> dedicated slices. Every later stage — E2-4b and beyond — stays paused, and
+> active work otherwise remains the versioned uniform complexity foundation
+> outside the frozen tree. GN-E2-4a and this prose recovery are
+> **Infrastructure only**; neither `VerifiedNPDAGLowerBoundSource` nor
+> `SearchMCSPWeakLowerBound` is reduced.
 
 **Repository:** `/home/user/p-np2/pnp3`
 **Baseline branch:** `claude/audit-hnpbridge-interface-FnO1v` (already
@@ -4443,3 +4470,151 @@ request record, no values or fixed-tail writer, no launch, delegation, commit,
 next-gate loop, total installer clock, verdict, acceptance, total evaluator
 claim, or language-level statement.  E2-4 owns continuation from `recordDone`
 and remains paused.
+
+## GN-E2-4a read-only rewind from recordDone to the values boundary (2026-09-27)
+
+Progress classification: infrastructure, not P-vs-NP mainline progress.  No
+source obligation is reduced: neither `VerifiedNPDAGLowerBoundSource` nor
+`SearchMCSPWeakLowerBound` is touched, and no
+`CanonicalAsymptoticVerifierComponents` obligation is discharged.
+
+This is the **user-authorized dedicated GN-E2-4a unfreeze slice**, and both of
+its stages have now landed — stage (a) the new frozen bytes and their
+registration with the pin left alone, stage (b) the repin onto that commit and
+its subtree — so the freeze gate passes on this tree again.  See the migration
+record in `TMVERIFIER_FREEZE.md`, which states what each stage carried, exactly
+which gates were run at each, and what the slice still owes.  It is a single
+approved exception, not a reopening of the paused gate-by-gate roadmap.
+
+**Where GN-E2-3b stopped, and why the head is in the wrong place.**  At
+`recordDone` the scratch region holds exactly
+`(gnRecordFrames .cursor g).map gnInstallImage = bof :: gnGateBodyFrames g ++
+[separator]`, and `gnFirstRecord_image_request_prefix` says that this list
+followed by the current-value `data` frames is exactly
+`g1PrefixFrames (gnFirstRequest r g)`.  So what the installer still owes the
+delegated request word is the current-value run — and that run lives at the
+*left* end of the GN word, in the maximal `data` run after the leading `bof`,
+while the head at `recordDone` stands far to the right, on p0 of the source
+frame just past the consumed record.  E2-4a carries the head there and does
+nothing else.
+
+**What it adds to the fixed control, and only that.**  Two `GNState`
+constructors: `rewind (buffer : GNInstallBuffer)`, which reuses the installer's
+existing four-position buffer, and `valuesEntry`, a dormant absorbing arrival
+exactly as `recordDone` was.  One changed row: `recordDone` was
+`(0, .recordDone, scan, .stay)` and is now `(0, .rewind .r3, scan, .left)`.
+One finite three-constructor mode type `GNRewindMode` with its frame-level
+`gnRewindAdvance` and bit-level `gnRewindComplete` tables, and the one-buffer
+row set `gnRewindControl`.  No machine, clock, encoder, phase count, start or
+accept state, existing row, existing definition or existing theorem changes.
+No mode, buffer or payload contains a natural number, index, width, base,
+request, list or any other runtime geometry, and nothing is request-dependent:
+`gnRewindControl` has the same eight buffer-constructor arms for every program
+(seven fixed rows and the `r0` decision arm).  `gnInstallExitDispatch`,
+`GNInstallExitContinue` and `GNInstallExitInvalid` are byte-identical, so the
+installer shuttle still rejects a carried `data` frame — extending it is
+E2-4b's obligation, not this slice's.
+
+**Row-set shape.**  Three leftward buffering rows (`r3`, `r2`, `r1`) and a
+frame-position-0 decision read the word right to left, four rows per frame,
+writing back every cell they scan.  The decision anchors on the leading `bof`
+and turns the head around into `rewind .p0`; it rejects every undecodable
+window into the existing stationary sink; otherwise it steps left again.  Four
+rightward rows (`p0`, `p1`, `p2`, `p3`) then stand on p0 of the frame
+immediately after the anchor and enter `valuesEntry`.
+`gnTransition_rewind_rows` pins nine fixed rows: the seven fixed control rows,
+the `recordDone` entry and the `valuesEntry` self-loop.
+`gnTransition_rewind_decision` pins all three tape-reading outcomes at `r0`;
+`gnTransition_rewind_reserved` covers the three reserved public codes at the
+one new place where tape data enters the finite control.
+
+**Kernel reuse.**  `gnRewindScanner` instantiates the shared
+`ReverseFrameScanner` at this control, so the right-to-left induction is the
+generic `revScanToAnchor` rather than a fourth hand-rolled reverse stack; all
+six obligations are discharged from the fixed table.  `gnRewind_validPath`
+supplies the only fact about the scanned block the pass needs, via the generic
+homogeneous-run lemma: a block with no `bof` is a valid reverse path that
+leaves the mode at `scan`.
+
+**Exact schedule.**  `gnValuesRewindSteps scanned := 4 * scanned + 9`, and
+`gnValuesRewindSteps_provenance` exposes the split the proof composes:
+`1 + (4 * scanned + 4) + 4` — one activated `recordDone` row, four rows per
+scanned frame plus four for the anchor frame, and four rows to stand on the
+frame after it.
+
+**Generic capstone.**  `gnCS_valuesRewind_exact` has every hypothesis explicit:
+the scanned block carries no `bof`, and there is physical room.  Its conclusion
+is genuine `TM.runConfig (M := GNM)` execution for exactly
+`gnValuesRewindSteps pre.length` rows from the literal `recordDone` state at
+head `4 * (pre.length + 1)` to the literal `valuesEntry` state at head `4`.
+The endpoint tape is the same `gnRewindTape n pre post` term as the start's, so
+read-onlyness is not a separate claim but the shape of the statement.
+
+**Real-input capstone.**  `gnCS_encodeGN_valuesEntry_exact` starts at the
+genuine `GNM.initialConfig (gnPoint (encodeGN r))`, takes only
+`hg : r.program.gates[0]? = some g`, runs exactly
+`gnValuesEntrySteps r g = gnFirstRecordDoneSteps r g + gnValuesRewindSteps
+(r.inputs.length + r.program.gates.length + 1 + gnRecordSize (gnGateFields g))`
+rows, and lands in `gnValuesEntryConfig r g hg`.  The split of the word it uses
+is `gnValuesRewind_frames`: the `recordDone` endpoint frame list is
+`bof :: gnValuesRewindPre r g ++ gnValuesRewindPost r g`, where the scanned
+block is the current-value run, the reserved output slots, the record-region
+separator and the whole selected record, and `gnValuesRewindPre_ne_bof` shows
+none of those frames is a `bof`.  `gnValuesEntryConfig_structure` pins that
+configuration without hiding a component: state `⟨0, valuesEntry⟩`; head `4`;
+the full tape; the fact that this tape is the *same term* as
+`(gnFirstRecordDoneConfig r g hg).tape`; the `gnLocatePrefix r` list identity
+that locates head `4` as p0 of the first frame after the leading `bof`, where
+the current-value run `gnCurrentValues r [] = r.inputs` begins — a pure list
+fact, whose head reading leans on the GN-E2-3b word split, while head `4`
+itself is pinned outright by the second conjunct; and what still has to be
+written, namely that the installed scratch image followed by exactly that
+current-value run is `g1PrefixFrames (gnFirstRequest r g)`.  The in-tree
+docstring of that theorem instead says the fifth conjunct "identifies head `4`",
+and the docstring of `gnValuesEntryConfig` says only the head differs from
+`gnFirstRecordDoneConfig` when the state differs too; both are frozen-tree
+wording deferred to the next authorized unfreeze, and `TMVERIFIER_FREEZE.md`
+records that deferral.
+`gnValuesEntrySteps_le_gnClock` records that this whole proved prefix —
+validation, locator, the `firstRecord` door, the cursor seed shuttle, the
+first-record body driver and this rewind — fits inside the unchanged public
+`gnClock`; it bounds exactly that prefix and is not a total installer,
+multigate or runtime clock.
+
+**Semantics versus execution.**  The last conjunct of the structure theorem is
+a statement about the *pure* request determined by `g`.  At this endpoint the
+machine has relocated the selected record's frames and moved its head, and has
+written nothing since `recordDone`.  Nothing here says `GNM` executes
+`evalGNProgram` or `SLProgram.eval`.
+
+**Nonvacuity and rejection coverage.**  One literal probe,
+`GNValuesRewindProbes.literal_oneConstFalse_valuesEntry`, runs the real initial
+configuration of `oneConstFalseProgram` for a numeral 700 rows — E2-3b's 659
+plus this pass's 41 — and reaches `valuesEntry` at physical head 4 with the
+nineteen-frame E2-3b tape unchanged, stated as equality with
+`GNBodyDriverProbes.oneConstFalseRecordDoneConfig.tape`.  That program has no
+inputs, so its current-value run is empty and the frame at head 4 is the single
+reserved output slot; the probe is a schedule and head witness, not a witness
+that a value exists to copy.  Unlike E2-3b, this slice *does* open a new
+ingress boundary — the frame-position-0 rewind decision — so it carries its own
+reserved-code rejection theorems — `gnCS_rewind_reserved1101_reject_four` and
+its absorbing-padding companion `gnCS_rewind_reserved1101_reject_stable` —
+rather than relying on E2-3a's.
+
+**Surface and audit.**  `Tests/TMGateNValuesRewindSurfaceTests.lean` pins with
+`#check` every new public declaration on both sides of the slice — the two new
+`GNState` constructors, `GNRewindMode` and its three constructors,
+`gnRewindAdvance`, `gnRewindComplete`, `gnRewindControl`, the new module's
+thirteen definitions and its seventeen theorems — and restates every one of the
+seventeen theorems as a full-proposition `check_*` wrapper; `AxiomsAudit.lean`
+roots the same seventeen theorems and the seventeen wrappers directly, because
+a bare `#check @name` pins only the name.  Unlike S11's direct definition roots,
+the thirteen definitions here are covered transitively through the rooted
+theorems and their types, including the proof-carrying `gnRewindScanner` and
+`gnValuesEntryConfig`; no additional direct definition roots are claimed.
+
+**Explicitly not here.**  No value copied, no frame written, no
+`[output false, finish]` tail, no completed request word, no extended exit
+dispatcher, no launch, delegation, commit, next-gate loop, total installer
+clock, verdict, acceptance, total evaluator claim, or language-level statement.
+E2-4b owns the values copy itself and remains paused.

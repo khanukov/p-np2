@@ -2560,18 +2560,60 @@ multi-gate chain: it is unrelated to the Part A uniform gamma track above, it
 adds no `GateN`, `ContentVerifierBridge` or content-verifier claim, it reduces
 no pnp4 source obligation, and it is not P-vs-NP mainline progress.
 
+**GN-E2-4a values rewind (infrastructure only).** The second authorized
+unfreeze slice continues the frozen GN chain one phase past the landed
+`recordDone` endpoint. It activates that row — previously a stationary
+self-loop — into a read-only right-to-left pass that anchors on the word's
+leading `bof` and stands on p0 of the frame after it, in a new dormant
+`valuesEntry` state, with the physical tape left as the *same term* it was at
+`recordDone`. `gnCS_encodeGN_valuesEntry_exact` is genuine
+`TM.runConfig (M := GNM)` execution from the real
+`GNM.initialConfig (gnPoint (encodeGN r))` for exactly `gnValuesEntrySteps r g`
+rows, for the actually selected first gate supplied by `hg`. The point of the
+phase is only that the current values the installer still owes the delegated
+request word sit at the left end of the word while the head was at the right
+end. **No value is copied and no frame is written**, and nothing here adds a
+values or tail writer, a completed request word, an extended exit dispatcher, a
+launch, delegation, commit, next-gate loop, total installer clock, verdict,
+acceptance, or any claim that the pure evaluator `evalGNProgram` is executed by
+the machine.
+
 **Current engineering priority.** The one-tape `pnp3/Complexity/TMVerifier/`
-tree is frozen at Git tree `b49456d6`, the subtree of commit `7b53a08f`; see
-`pnp3/Docs/TMVERIFIER_FREEZE.md`, whose migration record covers the two
-unfreezes since `42c59881` (the reviewed S11 one-gate acceptance closure, and
-the single authorized GN-E2-3b body-driver slice, open as PR #1777: its
-exact-head local `./scripts/check.sh`, its two independent read-only reviews,
-the owner attestation and the `tmverifier-unfreeze` label are done, while the
-remote gate results against the final head, the required PR review and a
-history-preserving merge are still owed). Do not resume E2-4 or later
-gate-by-gate construction. Active
-model-repair work must use the versioned uniform complexity foundation outside
-that tree.
+tree is frozen at Git tree `c544405f`, the subtree of commit `b35bdca2`; see
+`pnp3/Docs/TMVERIFIER_FREEZE.md`, whose migration record covers the three
+unfreezes since `42c59881` (the reviewed S11 one-gate acceptance closure; the
+authorized GN-E2-3b body-driver slice, landed by PR #1777 as merge
+commit `48151689` on 2026-09-23, an ancestor of this branch, so its history was
+preserved: its exact-head local `./scripts/check.sh`, its two independent
+read-only reviews, the owner attestation and the `tmverifier-unfreeze` label
+were recorded before that merge, while local Git records neither the remote gate
+results against its final head nor the required PR review, so neither is
+claimed here; and the authorized GN-E2-4a values-rewind slice, whose
+stage (a) landed the new frozen bytes and whose stage (b) repinned the freeze
+onto them, so the freeze checker and the `./scripts/check.sh` preflight pass on
+this tree again. At the stage-(b) head `e2c3ee33`, Codex and Claude reviews were
+reported as **APPROVE**, and an earlier Codex pass returned
+**REQUEST_CHANGES** on documentation. At the later docs head `4e182c03`, both
+the Codex and Claude reruns returned **BLOCK** on contradictory review claims.
+Those findings were answered, and at the reviewed head
+`6718b422a0f8555feed46930a7eada69be007f6a` PR #1801 records an exact-head Codex
+**APPROVE**, an exact-head Fable 5.1 **APPROVE**, a complete
+`./scripts/check.sh` in which all checks passed, the owner's attestation
+comment against that same full SHA, and the `tmverifier-unfreeze` label. The
+freeze record names the reviewed heads, verdicts, evidence and finding
+dispositions. This record-correction commit changes the head again; no review,
+`./scripts/check.sh` run, attestation or label is claimed for the resulting
+head, and the attestation and label must be reissued against whatever head is
+merged. The slice still owes latest-head remote CI and freeze-policy success,
+resolution of the required PR review — that PR carries no approving review, its
+only GitHub review being an automated `qodo-code-review` pass submitted as
+**COMMENTED**, and the separate Qodo summary comment is a generated
+description, not a review — and a non-squash merge preserving both stage
+commits; none of those is claimed).
+This migration and its prose recovery are **Infrastructure only**: neither
+`VerifiedNPDAGLowerBoundSource` nor `SearchMCSPWeakLowerBound` is reduced.
+Do not resume E2-4b or later gate-by-gate construction. Active model-repair work
+must use the versioned uniform complexity foundation outside that tree.
 
 **P1a/P1c uniform foundation (infrastructure only).** The independent namespace
 `Pnp3.Complexity.Uniform.V1` provides finite `UniformTM` data with the distinct
@@ -3537,11 +3579,14 @@ fixed-slice `PpolyDAG` membership:
 ### Canonical-track TM-verifier deliverable (frozen historical roadmap)
 
 > **Freeze note.** This roadmap is paused; the tree snapshot is pinned at Git
-> tree `b49456d6`, the subtree of commit `7b53a08f` (two migrations since
-> `42c59881`: the reviewed S11 acceptance closure and the single authorized
-> GN-E2-3b body-driver slice, neither of which resumed the roadmap). The
-> active engineering queue is the versioned uniform complexity foundation
-> outside TMVerifier.
+> tree `c544405f`, the subtree of commit `b35bdca2` (three migrations since
+> `42c59881`: the reviewed S11 acceptance closure, the authorized
+> GN-E2-3b body-driver slice, and the authorized GN-E2-4a values-rewind slice,
+> whose stage (a) landed the new frozen bytes and whose stage (b) repinned the
+> freeze onto them, so the freeze checker passes on this tree again; none of
+> them resumed the roadmap, and E2-4b and later gate-by-gate construction stay
+> open and unstarted). The active engineering queue is the versioned uniform
+> complexity foundation outside TMVerifier.
 
 > **Scope note.**  After the canonical iso-strong / promise-YES
 > conclusion-side refutations recorded above, the canonical asymptotic

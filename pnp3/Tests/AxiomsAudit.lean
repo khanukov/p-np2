@@ -78,6 +78,8 @@ import Complexity.TMVerifier.TuringToolkit.GateNBoundaryShuttle
 import Complexity.TMVerifier.TuringToolkit.GateNBodyRound
 import Complexity.TMVerifier.TuringToolkit.GateNBodyDriver
 import Tests.TMGateNBodyDriverSurfaceTests
+import Complexity.TMVerifier.TuringToolkit.GateNValuesRewind
+import Tests.TMGateNValuesRewindSurfaceTests
 import Complexity.TMVerifier.TuringToolkit.GateNRelocationExamples
 import Complexity.Uniform.V1.Examples
 import Complexity.DagGadgets
@@ -3354,6 +3356,57 @@ end UniformV1AxiomAudit
 #print axioms Pnp3.Tests.TMGateNBodyDriverSurface.check_gnFirstRecordDoneConfig_structure
 #print axioms Pnp3.Tests.TMGateNBodyDriverSurface.check_gnFirstRecordDoneSteps_le_gnClock
 #print axioms Pnp3.Tests.TMGateNBodyDriverSurface.check_literal_oneConstFalse_recordDone
+
+-- GN-E2-4a (2026-09-27): the same finite GNM gains exactly two constructors
+-- (`rewind`, carrying only the existing four-position buffer, and the dormant
+-- `valuesEntry`), the one-buffer `gnRewindControl` row set, and one changed
+-- row: `recordDone` was a stationary self-loop and now steps left into a
+-- read-only right-to-left pass.  No clock, encoder, machine, request-dependent
+-- state or runtime geometry is added.  The pass writes back every cell it
+-- scans, anchors on the leading `bof`, fails closed on every undecodable
+-- window, and stands on p0 of the frame after the anchor; the real-input
+-- capstone composes it with the GN-E2-3b first-record execution and its
+-- endpoint tape is the same term as that endpoint's.  There is no values
+-- writer, no tail writer, no completed request word, no launch, delegation,
+-- commit, next-gate loop, total installer clock, verdict, acceptance, or claim
+-- that the pure evaluator is executed by the machine.
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_rewind_rows
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_rewind_decision
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_rewind_reserved
+#print axioms Internal.PsubsetPpoly.TM.gnRewindAdvance_laws
+#print axioms Internal.PsubsetPpoly.TM.GNRewindMode.Reverse.eq
+#print axioms Internal.PsubsetPpoly.TM.gnRewind_validPath
+#print axioms Internal.PsubsetPpoly.TM.gnCS_rewind_reserved1101_reject_four
+#print axioms Internal.PsubsetPpoly.TM.gnCS_rewind_reserved1101_reject_stable
+#print axioms Internal.PsubsetPpoly.TM.gnValuesRewindSteps_provenance
+#print axioms Internal.PsubsetPpoly.TM.gnCS_valuesRewind_exact
+#print axioms Internal.PsubsetPpoly.TM.gnValuesRewindPre_length
+#print axioms Internal.PsubsetPpoly.TM.gnValuesRewindPre_ne_bof
+#print axioms Internal.PsubsetPpoly.TM.gnValuesRewind_frames
+#print axioms Internal.PsubsetPpoly.TM.gnCS_encodeGN_valuesEntry_exact
+#print axioms Internal.PsubsetPpoly.TM.gnValuesEntryConfig_structure
+#print axioms Internal.PsubsetPpoly.TM.gnValuesEntrySteps_le_gnClock
+#print axioms Internal.PsubsetPpoly.TM.GNValuesRewindProbes.literal_oneConstFalse_valuesEntry
+
+-- GN-E2-4a named signature pins.  A bare `#check @name` pins only the name, so
+-- the restated full-proposition wrappers are audited here too.
+#print axioms Pnp3.Tests.TMGateNValuesRewindSurface.check_gnTransition_rewind_rows
+#print axioms Pnp3.Tests.TMGateNValuesRewindSurface.check_gnTransition_rewind_decision
+#print axioms Pnp3.Tests.TMGateNValuesRewindSurface.check_gnTransition_rewind_reserved
+#print axioms Pnp3.Tests.TMGateNValuesRewindSurface.check_gnRewindAdvance_laws
+#print axioms Pnp3.Tests.TMGateNValuesRewindSurface.check_GNRewindMode_Reverse_eq
+#print axioms Pnp3.Tests.TMGateNValuesRewindSurface.check_gnRewind_validPath
+#print axioms Pnp3.Tests.TMGateNValuesRewindSurface.check_gnCS_rewind_reserved1101_reject_four
+#print axioms Pnp3.Tests.TMGateNValuesRewindSurface.check_gnCS_rewind_reserved1101_reject_stable
+#print axioms Pnp3.Tests.TMGateNValuesRewindSurface.check_gnValuesRewindSteps_provenance
+#print axioms Pnp3.Tests.TMGateNValuesRewindSurface.check_gnCS_valuesRewind_exact
+#print axioms Pnp3.Tests.TMGateNValuesRewindSurface.check_gnValuesRewindPre_length
+#print axioms Pnp3.Tests.TMGateNValuesRewindSurface.check_gnValuesRewindPre_ne_bof
+#print axioms Pnp3.Tests.TMGateNValuesRewindSurface.check_gnValuesRewind_frames
+#print axioms Pnp3.Tests.TMGateNValuesRewindSurface.check_gnCS_encodeGN_valuesEntry_exact
+#print axioms Pnp3.Tests.TMGateNValuesRewindSurface.check_gnValuesEntryConfig_structure
+#print axioms Pnp3.Tests.TMGateNValuesRewindSurface.check_gnValuesEntrySteps_le_gnClock
+#print axioms Pnp3.Tests.TMGateNValuesRewindSurface.check_literal_oneConstFalse_valuesEntry
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

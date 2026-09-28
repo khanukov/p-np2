@@ -16,6 +16,19 @@ below. The docs-only commit carrying this sentence is the fix for those
 findings, and it changes the head again. The complete final-head gate, a fresh
 exact-head review of the corrected head, remote CI, owner attestation, PR
 review and merge are still owed and are not claimed here.
+The GN-E2-4a migration, whose pins GN-E2-5a's stage (b) replaced, has since been
+merged into `main` by PR #1801 as the merge commit `71179c6d`; what it
+discharged and what it still owes are listed in its own record, not here, in
+`main`'s copy of that record, which the merge commit that carries this sentence
+brings into this file. The reviews recorded there are named with their reviewed
+head and verdict: at the stage-(b) head `e2c3ee33`, two were reported as
+**APPROVE** and one as **REQUEST_CHANGES** on documentation; at the docs head
+`4e182c03`, both the Codex and Claude reruns returned **BLOCK** on contradictory
+review claims; and at the reviewed head `6718b422`, PR #1801 records an
+exact-head Codex **APPROVE**, an exact-head Fable 5.1 **APPROVE**, a complete
+`./scripts/check.sh` in which all checks passed, the owner's full-SHA
+attestation comment and the `tmverifier-unfreeze` label. None of that is a gate
+result for GN-E2-5a, and none of it transfers to the current pin.
 The earlier GN-E2-3b migration, whose pins were replaced by `e2c3ee33`, landed
 both of its stages on its own branch and was then merged by PR #1777 on
 2026-09-23 as the merge commit `48151689`, which preserved history, so its
@@ -50,14 +63,15 @@ Review outcomes belong only to the heads reviewers actually read: for GN-E2-4a
 those are the superseded stage-(b) head `23335cc3` (**REQUEST_CHANGES**), the
 retained stage-(b) head `e2c3ee33` (two **APPROVE**, plus an earlier
 **REQUEST_CHANGES** pass) and the docs head `4e182c03` (two **BLOCK**), each
-recorded below with its verdict and its evidence limits — and, after this
-branch's copy of that record was written, the pre-merge head `6718b422` (two
-**APPROVE**), which is recorded only in `main`'s copy of the GN-E2-4a record,
-not below; that slice's final head `a312622f` carries no gate result of its own
-there either. No outcome is carried
+recorded below with its verdict and its evidence limits — and, written after this
+branch's copy of that record and merged in here from `main`, the pre-merge head
+`6718b422` (an exact-head Codex **APPROVE** and an exact-head Fable 5.1
+**APPROVE**); that slice's final head `a312622f`, and `main`'s merge commit
+`71179c6d` itself, carry no gate result of their own. No outcome is carried
 from one of those heads to another commit on the strength of a shared frozen
-subtree: `b35bdca2`, `e2c3ee33`, `4e182c03` and `13f36c1d` all resolve to tree
-`c544405f`, and of those four only `e2c3ee33` and `4e182c03` have review
+subtree: `b35bdca2`, `e2c3ee33`, `4e182c03`, `13f36c1d`, `6718b422`, `a312622f`
+and `71179c6d` all resolve to tree `c544405f`, and of those seven only
+`e2c3ee33`, `4e182c03` and `6718b422` have review
 outcomes recorded below. The same rule governs the current pin — `11dc8e82` is
 the GN-E2-5a
 stage-(a) provenance commit and carries no review of its own, and the `4213b315`
@@ -933,8 +947,9 @@ i.e. Lake considered stage (a)'s artifacts current for that tree and would
 recompile nothing. That is a staleness check against a warm build directory,
 not an independent rebuild from source, and it is the sole basis for the
 corrected audit-root count above. The complete `./scripts/check.sh` was
-**not** run at stage (b) either and is **not** claimed: the whole-gate run is
-reserved for the final head after the exact-head reviews.
+**not** run at stage (b) either and is **not** claimed for it: the whole-gate
+run was reserved for the final head after the exact-head reviews, and the
+record at the end of this file reports it run there.
 
 **Reviews — which head, which verdict.** The known independent read-only review
 outcomes are recorded below. The local evidence paths name external reports,
@@ -1089,14 +1104,38 @@ pin, manifest or Lean source changed. This validation is not an independent
 review, a theorem rebuild, fresh kernel-axiom output, or the complete
 `./scripts/check.sh`; none of those is claimed for the correction.
 
-**Still owed before merge.** A fresh independent review of the current head; the
-complete `./scripts/check.sh`, which has not been run for this GN-E2-4a slice;
-and the entire remote half — `ci.yml` and `lean.yml`
-observed green on the final head, the `TMVerifier Freeze Policy` rollup
-observed passing there, the repository owner's exact full-SHA attestation
-comment `/tmverifier-unfreeze <current-head-sha>`, the `tmverifier-unfreeze`
-label, the required PR review, and a history-preserving merge. No PR or remote
-CI result is claimed for this slice in this record.
+**Exact-head reviews, full gate and attestation (2026-09-28).** The docs-only
+correction above was merged with `origin/main` (`789350ee`) into
+`6718b422a0f8555feed46930a7eada69be007f6a`, and that merge commit is the head
+at which this slice was reviewed. PR #1801 records, against that exact full
+SHA, an independent Codex read-only review returning **APPROVE**, an
+independent Fable 5.1 read-only review returning **APPROVE**, and a complete
+`./scripts/check.sh` run in which all checks passed. The repository owner's
+attestation comment `/tmverifier-unfreeze
+6718b422a0f8555feed46930a7eada69be007f6a` was posted on that PR against the
+same full SHA, and the `tmverifier-unfreeze` label is applied to it. Those
+discharge the fresh review of the final head, the whole-gate run and the
+attestation-and-label pair that the paragraphs above listed as owed. The
+`e2c3ee33` and `4e182c03` verdicts recorded earlier remain the history of how
+that head was reached, not a competing final verdict. This record-correction
+commit advances the head past
+`6718b422a0f8555feed46930a7eada69be007f6a`: it changes only `STATUS.md`, this
+record and `TMVerifier_Session_Plan.md`, and no review, `./scripts/check.sh`
+run, attestation or label is claimed for the resulting head.
+
+**Still owed before merge.** The remote half: `ci.yml` and `lean.yml` observed
+green on the latest head, and the `TMVerifier Freeze Policy` rollup observed
+passing there. No remote CI result is claimed for this slice in this record.
+The required PR review is unresolved — PR #1801 carries no approving review,
+and its only GitHub review is an automated `qodo-code-review` pass submitted as
+**COMMENTED**, whose single governance finding is the staleness this
+correction repairs. That comment-review is not an approval, and the separate
+"PR Summary by Qodo" comment is a generated description, not a review at all;
+neither is counted among the independent reviews recorded above. Finally, the
+history-preserving merge below is still owed. If the merge candidate head moves
+past `6718b422a0f8555feed46930a7eada69be007f6a` — as this correction moves it —
+the owner's attestation and the label must be reissued against the final head
+before merge.
 
 **Merge with a merge commit — required, for provenance.** As for the two
 migrations above, this branch must be merged with a merge commit or an exact
@@ -1124,21 +1163,30 @@ is not an emergency but a deliberate repin onto a commit in `main`'s ancestry,
 landed under this same unfreeze gate, plus a note in this record saying which
 merge dropped the link.
 
-**GN-E2-4a has since merged; this copy of its record predates that.** On
-2026-09-28 PR #1801 merged the slice into `main` as the merge commit
-`71179c6d42a895504e16391a93421c980b3fd98f`, whose two parents are the previous
-`main` `789350ee` and the slice's final head
+**GN-E2-4a has since merged, and the paragraphs above are now `main`'s copy of
+its record.** On 2026-09-28 PR #1801 merged the slice into `main` as the merge
+commit `71179c6d42a895504e16391a93421c980b3fd98f`, whose two parents are the
+previous `main` `789350ee` and the slice's final head
 `a312622f81bff9316b78875653b48177f56cf06e` — a merge commit, not a squash or a
 rebase, so history was preserved and the provenance audit required above passes:
 `git merge-base --is-ancestor b35bdca2cb24af709144998af5c4402d42a18aa5
-origin/main` exits `0`. The paragraphs above are this branch's copy of the
-record as it stood at `13f36c1d`; `main`'s copy, updated after this branch
-forked, is authoritative for what that slice discharged before the merge — two
-exact-head **APPROVE** reviews, a complete local `./scripts/check.sh`, the
-owner's full-SHA attestation and the `tmverifier-unfreeze` label, all recorded
-against the pre-merge head `6718b422`, with no gate result claimed there for the
-docs-only final head `a312622f` — and for what it still lists as owed. This
-branch claims none of it, and none of it transfers to GN-E2-5a. What the merge
+origin/main` exits `0`. This branch's own copy of that record stood as it was at
+`13f36c1d`; the merge commit carrying this paragraph brings `main`'s later copy
+in, so the "Exact-head reviews, full gate and attestation" and "Still owed"
+paragraphs above are that copy verbatim, and they — not this branch — are the
+authority for what the slice discharged before the merge: an exact-head Codex
+**APPROVE**, an exact-head Fable 5.1 **APPROVE**, a complete local
+`./scripts/check.sh`, the owner's full-SHA attestation and the
+`tmverifier-unfreeze` label, all recorded against the pre-merge head
+`6718b422`, with no gate result claimed there for the docs-only final head
+`a312622f`. Read the "Still owed before merge" paragraph above as written before
+this merge: the history-preserving merge it lists as owed is the `71179c6d`
+merge reported here, while the remote half and the resolution of the required PR
+review — which that paragraph records as unresolved, PR #1801's only GitHub
+review having been an automated `qodo-code-review` pass submitted as
+**COMMENTED**, not an approval — are not recorded in local Git and are not
+claimed here either way. This branch claims none of it, and none of it transfers
+to GN-E2-5a. What the merge
 does change for GN-E2-5a is the merge base: it is now `13f36c1d`, so the §6.1
 size gate measures this slice alone, as the GN-E2-5a record below records.
 
@@ -1177,13 +1225,24 @@ Lean source changes in stage (b).
 
 **Size gate — one measurement, green, never waived.** §6.1 of
 `pnp4/Pnp4/Frontier/ContractExpansion/VERIFIER_RETARGET_PLAN.md` takes the gate
-against `git merge-base main HEAD`. That merge base is now
+against `git merge-base main HEAD`. That merge base was
 `13f36c1dbde4ade4ce6cb5e7798a64e1085c8a83` — this slice's own base, which became
-the merge base when PR #1801 merged GN-E2-4a into `main` — so the prescribed
-measurement and the slice-local one coincide: **1497 changed Lean lines (1467
-added, 30 deleted) across 8 `.lean` modules**, inside both the `≤ 1500`-line and
-`≤ 10`-module bounds. The gate is **green**. That is the number the rescope was
-designed to hit, and the Codex review at `311abc6b` independently reproduced it.
+the merge base when PR #1801 merged GN-E2-4a into `main` — and is now
+`71179c6d42a895504e16391a93421c980b3fd98f`, because the merge commit carrying
+this sentence brings that `main` into the branch and makes it an ancestor. The
+measurement is the same at both, and coincides with the slice-local one:
+**1497 changed Lean lines (1467 added, 30 deleted) across 8 `.lean` modules**,
+inside both the `≤ 1500`-line and `≤ 10`-module bounds. The gate is **green**.
+Merging `main` in did not enlarge it: `main`'s own G3j and G3k modules became
+shared history and dropped out of the diff, leaving exactly the eight modules
+this slice touches. Against the superseded base `13f36c1d` the same working tree
+now measures 4425 changed lines across 12 `.lean` files, because that diff also
+carries `main`'s two G3j/G3k modules, their two surface tests and their
+`lakefile.lean` and `AxiomsAudit.lean` registrations, none of which is this
+slice's content; that is no longer the prescribed measurement and is not
+reported as one. That is the number the rescope was
+designed to hit, and the Codex review at `311abc6b` independently reproduced it
+against `13f36c1d` before this merge.
 
 Before that merge the same gate was **red at 2496 Lean lines (2485 added, 11
 deleted) across the same 8 modules**, measured against the then-current merge
@@ -1197,9 +1256,12 @@ unavailable to this branch: rebasing would rewrite `11dc8e82`, which is the
 provenance commit the pin names, so the conflict between that instruction and
 the no-rebase requirement below is real and is left for the merge decision, not
 resolved here. It no longer bears on the size gate, which is green at the
-current merge base. `main` has itself advanced past that merge base to
-`71179c6d`; a diff against current `main` is not the gate's measurement and is
-not reported as one, because it renders main-only work as deletions.
+current merge base. `main` advanced to `71179c6d` while this slice was open, and
+this branch took the only route left open to it: a merge commit, which is what
+the "Merge with a merge commit" requirement above already demands for bringing
+`main` into this branch. That merge is documentation and integration only — no
+frozen byte, pinned constant, manifest entry or Lean source of this slice
+changes in it — and it carries no gate result of its own.
 
 **Reviews at the stage-(b) head `311abc6b` — which reviewer, which verdict.**
 Two independent read-only exact-head reviews ran against this head, both with

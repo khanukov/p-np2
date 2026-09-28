@@ -12,13 +12,21 @@
 > landed in that same order, so the freeze checker passes on this tree again.
 > GN-E2-4a has since merged: **PR #1801** merged it into `main` on 2026-09-28 as
 > the merge commit `71179c6d`, which preserved history, so its provenance commit
-> `b35bdca2` and its final head `a312622f` are both ancestors of `main`. Two
-> exact-head **APPROVE** reviews, the complete local `./scripts/check.sh`, the
-> owner attestation and the `tmverifier-unfreeze` label were recorded against its
-> pre-merge head `6718b422`; local Git records neither the remote gate results
-> for that merge nor the required PR review, so neither is claimed, and `main`'s
-> copy of that slice's record — which this branch's copy predates — is
-> authoritative for it. **GN-E2-5a has had no full `./scripts/check.sh`
+> `b35bdca2` and its final head `a312622f` are both ancestors of `main`. An
+> exact-head Codex **APPROVE**, an exact-head Fable 5.1 **APPROVE**, the
+> complete local `./scripts/check.sh` in which all checks passed, the owner's
+> attestation comment against that same full SHA and the `tmverifier-unfreeze`
+> label were recorded against its pre-merge head `6718b422`, and no gate result
+> was claimed for the docs-only final head `a312622f` that followed. Local Git
+> records neither the remote gate results for that merge nor the required PR
+> review, so neither is claimed; the last state that record reports for that PR's
+> reviews is that it carried no approving review, its only GitHub review being an
+> automated `qodo-code-review` pass submitted as **COMMENTED**, while the
+> separate Qodo summary comment is a generated description and not a review.
+> `main`'s copy of that slice's record, which this branch's copy predated, is
+> what the merge commit carrying this sentence brings into this tree, and
+> `TMVERIFIER_FREEZE.md` now carries it in full; none of it transfers to
+> GN-E2-5a. **GN-E2-5a has had no full `./scripts/check.sh`
 > at any head**, only targeted builds at stage (a) and the freeze checker at
 > stage (b); GN-E2-4a's passing run belongs to `6718b422` and transfers
 > nothing to this slice.
@@ -34,7 +42,9 @@
 > again, so no independent review of the resulting head is claimed for it.
 > GN-E2-5a still owes the complete `./scripts/check.sh`, a review of the
 > corrected head, final-head remote CI and freeze-policy success, the owner's
-> exact full-SHA attestation and label, the required PR review, and a non-squash
+> exact full-SHA attestation and label — reissued against whatever head is
+> finally merged, since every later commit, this merge included, moves it — the
+> required PR review, and a non-squash
 > merge preserving both of its stage commits. The `≤ 1500` changed-Lean-LOC gate
 > of §6.1 of
 > `pnp4/Pnp4/Frontier/ContractExpansion/VERIFIER_RETARGET_PLAN.md` is measured
@@ -43,7 +53,11 @@
 > **1497 lines across 8 modules**, inside both bounds, so the gate is **green**.
 > It stood recorded red, not waived, at 2496 lines against the older merge base
 > `20850b93` while GN-E2-4a's 1041 lines were unmerged underneath, and the merge
-> cleared it. No green gate beyond the ones
+> cleared it. The merge commit carrying this sentence brings `main` — now
+> `71179c6d`, with the G3j and G3k uniform-V1 slices and `main`'s copy of the
+> GN-E2-4a record — into this branch; it changes no frozen byte, no pinned
+> constant and no Lean source of this slice, and it carries no gate result of its
+> own. No green gate beyond the ones
 > `TMVERIFIER_FREEZE.md` names is claimed here.
 > GN-E2-3b was merged by PR #1777 on 2026-09-23 as the merge commit `48151689`,
 > which preserved history, so its provenance commit `7b53a08f` is an ancestor of

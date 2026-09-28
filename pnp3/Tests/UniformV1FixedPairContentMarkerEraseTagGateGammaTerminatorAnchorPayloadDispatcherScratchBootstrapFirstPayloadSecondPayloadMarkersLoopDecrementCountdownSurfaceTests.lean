@@ -18,7 +18,8 @@ The probes.  The nine words are G3j's (tag `10110010`) — seven well-formed and
 whose physical suffix holds no gamma terminator, plus `badTag`, that tag with its first bit flipped.
 The marker-erase switch is length-only — `N + 3` — so the seven well-formed words switch at `20`,
 `16`, `15`, `15`, `14`, `14` and `13`, always on the boundary cell `N`, whatever their widths and
-whatever their tags: `badTag` and `malformedWord` switch on time too, the left phase reading neither.
+whatever their tags: `badTag` and `malformedWord` switch on time too; the left phase scans those
+cells but does not test their tag, gamma, or bit meaning.
 Each inherited switch then fires at G3j's own time plus that `N + 3`.  The `check_*_literal*`
 theorems are **derived** from the slice's theorems; `check_reject_row_literals` instantiates
 `reject_rows_routed` at both live reject rows and `reject_rows_unique` at `qScan`.  The drain runs at

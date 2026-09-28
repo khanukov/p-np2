@@ -428,7 +428,7 @@ only. G3g removes it without touching `seq` or G2k's table, and executes H11, so
 seventeen handoffs were then performed by a finite table and **ten** remained proof-level retags.
 (G3h, G3i, G3j and G3k above have since executed H10, H9, H8 and H7 as well, taking the count to
 eleven and
-the remainder to seven; the seven-and-ten counts in this entry are the ones this slice left.)
+the remainder to six; the seven-and-ten counts in this entry are the ones this slice left.)
 
 * **The generic half is a table transformation, not a machine.** `M.mergeAccept e` keeps `M`'s
   states, `accept` and `reject`; its start and every raw row have a target `e` retargeted to

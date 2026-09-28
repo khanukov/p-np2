@@ -775,10 +775,40 @@ eight earlier handoffs still proof-level; the eight-and-nine counts just given a
 G3i is Infrastructure only and likewise builds **no pnp4 bridge**: no `ContentVerifierBridge`, no
 raw-input acceptance, no advice-freedom claim and no P-vs-NP mainline progress; the standalone
 phases' pnp4 semantics are unchanged, this chained run still starts at G3e's composite, and G3i's own
-routed reject is forward-direction only and tag-gated. No first arrival of the G3e
-composed accept is proved (the first arrival proved is G2p-a's, inside the left block), the lane is still
-unfenced, the composed accept is still the countdown's phase-local `qDone` rather than language
-acceptance, the machine is a V1 `UniformTM` on `Option Bool` cells against `pairLength a m` and not
+routed reject is forward-direction only and tag-gated. Part A G3j (pnp3 only) has since executed
+**H8** as well — G1's fixed 15-state content tag gate prefixed to that G3i composite as one closed
+147-state, 441-row table, again with no new row and no `mergeAccept`, switching at the gate's
+length-only strict first arrival `3N + 7` (which is also the gate's own deadline, assembled here from
+its landed `exact_terminal_contract` and `run_deadline`) through its single live row targeting its
+accept — taking the count to **ten of seventeen** with **seven** earlier handoffs still proof-level;
+the nine-and-eight counts just given are the ones G3i left. The terminator's reject took one live row
+proved unique and the anchor's six pinned individually; the gate's is the target of many, so G3j
+claims neither reject-row uniqueness nor a count and instead routes them all to the composed reject
+by one quantified theorem. G3j is Infrastructure only and likewise builds **no pnp4
+bridge**: no `ContentVerifierBridge`, no raw-input acceptance, no advice-freedom claim and no P-vs-NP
+mainline progress; the standalone phases' pnp4 semantics are unchanged, this chained run still starts
+at G3e's composite, and both of G3j's routed rejects are forward-direction only, the new
+mismatched-tag one timed only from the gate's length-only deadline `3N + 7` on, with no claim about
+any earlier time: on a nonempty content the gate's own rejection lands at `3N + j` for a mismatch
+cell `j ≤ 7`, at or before that deadline, and on empty content (`N = 0`) at `2`; G3j derives no such
+`j` from the mismatch hypothesis. Part A G3k (pnp3 only) has since executed **H7** as well — the fixed
+4-state trailing-content-marker erasure prefixed to that G3j composite as one closed 151-state,
+453-row table, again with no new row and no `mergeAccept`, switching at the phase's length-only
+strict first arrival `N + 3` (which is also the phase's own clock, and which was already landed in
+the shape `seq` consumes and hypothesis-free, so G3k's `handoff_exact` takes no hypothesis at all)
+through its single live row targeting its accept, a row that writes `none` and so performs the marker
+erasure itself — taking the count to **eleven of seventeen** with **six** earlier handoffs still
+proof-level; the ten-and-seven counts just given are the ones G3j left. The marker-erase reject is the
+first of the chain whose live list is both complete and plural: exactly two rows, proved the only ones
+once both verdicts' own absorbing rows are excluded, each routed to the composed reject, and neither
+ever taken out of G3k's start. G3k is Infrastructure only and likewise builds **no pnp4 bridge**: no
+`ContentVerifierBridge`, no raw-input acceptance, no advice-freedom claim and no P-vs-NP mainline
+progress; the standalone phases' pnp4 semantics are unchanged, this chained run still starts at G3e's
+composite, and both of G3k's inherited routed rejects are forward-direction only, the mismatched-tag
+one still timed only from the gate's length-only deadline on. No first arrival of the G3e composed accept is
+proved (the first arrival proved is G2p-a's, inside the left block), the lane is still unfenced, the
+composed accept is still the countdown's phase-local `qDone` rather than language acceptance, the
+machine is a V1 `UniformTM` on `Option Bool` cells against `pairLength a m` and not
 the legacy `TM` with a `runTime` field that `ContentVerifierBridge` names, and, like G2x, G2y, G2z,
 G3a and G3c, this is infrastructure, not P-vs-NP mainline progress; it makes no `P ≠ NP` claim.
 

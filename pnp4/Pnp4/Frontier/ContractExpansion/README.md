@@ -1697,7 +1697,38 @@ eight earlier handoffs still proof-level; the eight-and-nine counts just given a
 G3i is Infrastructure only and builds **no pnp4 bridge** either: no G3i bridge module exists, this
 bridge still starts at G3e's composite, its newly routed reject is tag-gated and forward-direction
 only, and no `ContentVerifierBridge`, raw-input acceptance, advice-freedom claim or P-vs-NP mainline
-progress follows from it. `S` is the first
+progress follows from it. Part A G3j (pnp3 only) has since executed **H8** as well — G1's fixed
+15-state, 45-row content tag gate prefixed to that G3i composite as one closed 147-state, 441-row
+table, again with no new row and no `mergeAccept`, switching through the gate's single live row
+targeting its accept at the length-only strict first arrival `3N+7`, which is also the gate's own
+deadline and is assembled here from its landed `exact_terminal_contract` and `run_deadline` — taking
+the count to **ten of seventeen** with **seven** earlier handoffs still proof-level; the
+nine-and-eight counts just given are the ones G3i left. The terminator's reject took one live row
+proved unique and the anchor's six pinned individually; the gate's is the target of many live rows, so
+G3j claims neither reject-row uniqueness nor a count and instead routes every one of them to the
+composed reject by one quantified theorem. G3j is Infrastructure only and builds **no pnp4
+bridge** either: no G3j bridge module exists, this bridge still starts at G3e's composite, both of its
+routed rejects are forward-direction only — the new mismatched-tag one timed only from the gate's
+length-only deadline `3N + 7` on, no earlier time being claimed, the gate's own rejection landing, on
+a nonempty content, at `3N + j` for a mismatch cell `j ≤ 7` that G3j does not derive from the
+mismatch hypothesis, and on empty content (`N = 0`) at `2` — and no
+`ContentVerifierBridge`, raw-input acceptance, advice-freedom claim or P-vs-NP mainline progress
+follows from it. Part A G3k (pnp3 only) has since executed **H7** as well — the fixed
+4-state, 12-row trailing-content-marker erasure prefixed to that G3j composite as one closed
+151-state, 453-row table, again with no new row and no `mergeAccept`, switching through its single
+live row targeting its accept at the length-only strict first arrival `N + 3`, which is also the
+phase's own clock; that arrival was already landed in the shape `seq` consumes and takes no
+hypothesis, so G3k's `handoff_exact` takes none either, and the routed row writes `none`, so the
+composed table performs the marker erasure itself — taking the count to **eleven of seventeen** with
+**six** earlier handoffs still proof-level; the ten-and-seven counts just given are the ones G3j left.
+The marker-erase reject is the first of the chain whose live list is both complete and plural: exactly
+two rows, `qErase` on `some false` and on `none`, proved the only ones once both verdicts' own
+absorbing rows are excluded, each routed to the composed reject, and neither ever taken out of G3k's
+start. G3k is Infrastructure only and builds **no pnp4 bridge** either: no G3k bridge module exists,
+this bridge still starts at G3e's composite, both of its inherited routed rejects are
+forward-direction only with the mismatched-tag one still timed only from the gate's length-only
+deadline on, and no `ContentVerifierBridge`, raw-input acceptance, advice-freedom claim or P-vs-NP
+mainline progress follows from it. `S` is the first
 time H12 fires, but no theorem says `C` is the first time the composed accept is entered; the first
 arrival proved is G2p-a's, inside the left block. All seven tables are unfenced, hence so is the
 composition: accepted words never overflow the lane, since `pr.2.n ≤ N` is derived, but an

@@ -14,10 +14,23 @@ a Lean, execution, surface, size-gate-arithmetic or freeze-content defect; both
 are recorded with their verdicts, evidence and limits in the GN-E2-5a record
 below. The docs-only commit `3195ffc1` is the fix for those findings, and it
 changed the head again; this branch's two integration merges of `main` —
-`4abaac92`, which brought in `main` at `71179c6d`, and the merge commit carrying
-this sentence, which brings in `main` at `9445a93e` — have each moved the head
-once more, and no review, gate run, attestation or label is claimed for any of
-those three later heads. The complete final-head gate, a fresh
+`4abaac92`, which brought in `main` at `71179c6d`, and `d01e2c3e`, which brought
+in `main` at `9445a93e` — each moved the head once more, as did the docs-only
+commit `40ea2346`, and as does the docs-only commit carrying this sentence. Two
+of those five later heads carry reviews of their own, and neither is a claim
+about the current head: two independent exact-head reviews split at `d01e2c3e`,
+and at `40ea2346` an exact-head Codex review reported two **P2** documentation
+findings — the two this commit fixes — with no blocking theorem or
+freeze-content defect and no APPROVE/BLOCK label, while a second run there ended
+at its turn limit with no verdict. All are recorded with their evidence and
+limits in the GN-E2-5a record below. **No review is claimed for the corrected
+head this commit creates**, nor for `3195ffc1` or `4abaac92`, and no attestation
+or label is claimed for any head on this branch. One complete
+`./scripts/check.sh` is on record for this branch's content — logged between
+`4abaac92` and `d01e2c3e`, carrying this slice's own freeze pin and ending "All
+checks passed" — but its checkout and exclusivity are not established and it is
+no head's gate result; the record below states exactly what it does and does not
+establish. The complete final-head gate, a fresh
 exact-head review of the corrected head, remote CI, owner attestation, PR
 review and merge are still owed and are not claimed here.
 The GN-E2-4a migration, whose pins GN-E2-5a's stage (b) replaced, has since been
@@ -1246,9 +1259,9 @@ against `git merge-base main HEAD`. That merge base was
 the merge base when PR #1801 merged GN-E2-4a into `main` — then
 `71179c6d42a895504e16391a93421c980b3fd98f`, once this branch's first integration
 merge `4abaac92` brought that `main` in and made it an ancestor, and is now
-`9445a93e763b4ab6377426bca9078ea73a726fbb`, because the merge commit carrying
-this sentence brings in the `main` that PR #1802 created with the Part A G3l
-origin-alignment handoff. The
+`9445a93e763b4ab6377426bca9078ea73a726fbb`, because this branch's second
+integration merge `d01e2c3e` brought in the `main` that PR #1802 created with
+the Part A G3l origin-alignment handoff. The
 measurement is the same at all three, and coincides with the slice-local one:
 **1497 changed Lean lines (1467 added, 30 deleted) across 8 `.lean` modules**,
 inside both the `≤ 1500`-line and `≤ 10`-module bounds. The gate is **green**.
@@ -1286,7 +1299,7 @@ the "Merge with a merge commit" requirement above already demands for bringing
 frozen byte, pinned constant, manifest entry or Lean source of this slice
 changes in either — and neither carries a gate result of its own.
 
-**The second integration merge, the commit carrying this paragraph.** Its two
+**The second integration merge, `d01e2c3e`.** Its two
 parents are this branch's docs head `4abaac92` and `main` at
 `9445a93e763b4ab6377426bca9078ea73a726fbb`, in that order, so the stage-(a) →
 stage-(b) ancestry is untouched: `11dc8e82` and `311abc6b` remain distinct
@@ -1423,11 +1436,13 @@ and they split on documentation.
   check or `#print axioms`, so every `rfl` and `decide` is accepted as written;
   it also ran no `check.sh` and verified nothing remote.
 
-The docs-only commit carrying this paragraph is the fix for D-1 through D-7 and
+The docs-only commit `40ea2346` is the fix for D-1 through D-7 and
 for N4 below. It changes no frozen byte, no Lean source, no pinned constant and
 no manifest entry, so it disturbs neither review's content findings — and, by
-the same token, neither outcome transfers to the head it creates, and neither
-discharges any gate owed below. A fresh exact-head review is owed again.
+the same token, neither outcome transfers to the head it created, and neither
+discharges any gate owed below. The fresh exact-head review that head then owed
+is the `40ea2346` review recorded below; the head this commit creates owes one
+again.
 
 **Two further nonblocking notes, and their disposition.** **N3** — raised by
 Codex at `d01e2c3e` — is that `gnCS_encodeGN_firstRequestReady_exact` states
@@ -1442,18 +1457,98 @@ reported the 1497 measurement at the two superseded bases without the
 base-relativity caveat that this record and `STATUS.md` both carry, and now
 carries it in both places it states that measurement.
 
-**No full check has been run for GN-E2-5a at any head.** Stage (a) ran only the
+**Review at the docs head `40ea2346` — which reviewer, which finding.** One
+exact-head Codex review ran against
+`40ea2346311c7fc13cd051333aad7895856f443a`, comparing it with `main` at
+`9445a93e`, and is recorded in `/root/reports/gn-e25-40ea-codex.txt`. It
+returned no APPROVE/BLOCK label and reported **no blocking theorem or
+freeze-content defect** in the stated zero-input contract. It re-verified the
+118-object freeze match, the `11dc8e82` → `311abc6b` two-stage split with both
+commits still ancestors, subtree `4213b315` and schema 3; re-derived the size
+measurement as 1497 changed Lean lines, 1467 additions plus 30 deletions across
+8 files; re-confirmed the genuine `TM.runConfig` execution under exactly `hg`
+and `r.inputs = []`, the exact endpoint and clock, and the fourteen public
+writer theorems with their full-proposition wrappers and 28 audit roots, all
+evaluating to `propext`, `Classical.choice` and `Quot.sound` only; and
+independently reproduced the literal probe at 700 + 84 = 784 with head 80 and
+cells 72 and 76 turning true. It confirmed D-1 through D-7 present and the
+superseded-base caveat repaired, and it raised no new nonblocking note: N1, N3
+and the frozen in-tree `E2-4b` label stay deferred as recorded. It ran
+read-only elaboration of the four changed implementation files and both changed
+surface files **against existing cached imports only** — **not** a clean
+dependency build, whole-file `AxiomsAudit`, a full repository build,
+`./scripts/check.sh`, negative controls, remote CI, approval or attestation —
+and it edited, committed and pushed nothing. Its two findings were both **P2**
+documentation defects, and the commit carrying this paragraph is their fix:
+that this file's header denied any review at the later heads while the
+`d01e2c3e` pair above was recorded, so the header had to separate those
+historical reviews from the absence of a review of the corrected head; and that
+the "no full check at any head" claim here, in `STATUS.md` and in
+`TMVerifier_Session_Plan.md` denied evidence that exists — the log covered in
+the next paragraph — instead of recording it with its limits. A second review
+run at this head, `claude-opus-5`, ended at its 30-turn limit and produced **no
+verdict and no report**; its result record is
+`/root/reports/gn-e25-40ea-opus.json`. Neither outcome transfers to the head
+this commit creates, and neither discharges any gate owed below.
+
+**One full `./scripts/check.sh` is on record for GN-E2-5a, and it is no head's
+gate result.** Stage (a) ran only the
 targeted implementation, surface, rewind-surface and axiom-audit builds named
-above; stage (b) ran the freeze checker; the docs-only commit `3195ffc1` and the
-docs-only commit carrying this paragraph each ran `git diff --check`, the freeze
-checker, the freeze shell tests, the freeze-policy script test and the
+above; stage (b) ran the freeze checker; the docs-only commits `3195ffc1`,
+`40ea2346` and the one carrying this paragraph each ran `git diff --check`, the
+freeze checker, the freeze shell tests, the freeze-policy script test and the
 doc-honesty linter, re-measured the §6.1 size gate, and ran no Lean build at
-all. The passing local full `./scripts/check.sh`
+all. **What the commit carrying this paragraph ran.** `git diff --check` clean;
+`scripts/check_tmverifier_freeze.py` **OK** at 118 Git objects matching tree
+`4213b315075f` with reviewed provenance `11dc8e820036` verified;
+`scripts/test_tmverifier_freeze.sh` and
+`node scripts/test_tmverifier_freeze_policy.js` both **OK**;
+`scripts/check_doc_honesty.sh` **OK** across its four scans; the §6.1
+re-measurement, still 1497 changed Lean lines across 8 modules against
+`9445a93e`; a Git-native provenance check — `HEAD:pnp3/Complexity/TMVerifier`,
+`11dc8e82`'s subtree and `311abc6b`'s all equal the pinned tree
+`4213b315075f67468451a6736afc04486df0350c`, `311abc6b^` is `11dc8e82`,
+`git merge-base --is-ancestor` exits `0` for both stage commits against `HEAD`,
+and `spec/tmverifier_freeze.json`, both checker scripts and their pinned
+`FROZEN_COMMIT`, `FROZEN_TREE` and schema-3 constants are undirtied; and a
+forbidden-token scan over the slice's six changed Lean files with no hit for
+`axiom`, `sorry`, `admit`, `native_decide`, `Classical.choose`,
+`Classical.arbitrary`, `Nat.find` or a placeholder marker. It ran **no** Lean
+build, no `AxiomsAudit` elaboration, no `./scripts/check.sh` and nothing remote,
+and it changes no Lean byte, so no targeted build was owed for it. Between
+`4abaac92` and `d01e2c3e` one complete `./scripts/check.sh` was
+nevertheless run and logged, at
+`/root/pnp2-agent-reports/gn-e25-4aba-full-check.log`. **What the log shows.**
+Its preflight is this slice's own pin — 118 Git objects matching tree
+`4213b315075f`, reviewed provenance `11dc8e820036` verified — followed by the
+freeze shell tests and the freeze-policy script test and then all seventeen
+numbered steps in order; no `error:` line occurs in its 16,539 lines, and line
+16,539 is `[check] All checks passed.` **What it does not show.** It records no
+commit, branch or working directory, so the log does not by itself pin its
+checkout. Its only timestamps are four candidate-verifier progress stamps
+inside step 13, `2026-09-28T17:51:20Z` through `2026-09-28T17:52:07Z`; they
+fall between `4abaac92` (committed 17:47:48Z) and
+`d01e2c3e` (18:35:56Z), and its `pnp3/Tests/AxiomsAudit.lean` diagnostics occupy
+exactly 5066 distinct command positions with maximum line 6234 — which is that
+file at `4abaac92`, where 5064 `#print axioms` plus two `#check` commands fill
+6234 lines, and not that file at `d01e2c3e`, where it is 6318 lines with 5122
+`#print axioms`. Consistently, GN-E2-5a's writer and its surface module appear
+throughout the log, while the G3l origin-alignment countdown module that
+`d01e2c3e` merged in from `main` at `9445a93e` never appears in it. That is a
+content fingerprint, not a checkout: it pins one file's bytes and one module's
+absence, not the whole working tree, and **exclusivity is not established** —
+nothing in the log shows what else was running or that the tree was otherwise
+clean. The run is therefore evidence about this branch's content at `4abaac92`
+and about nothing later: `d01e2c3e` brought in `main`'s G3l Lean modules, which
+that run never compiled, and `40ea2346` and this commit moved the head again.
+**The exclusive full check at the final head is still owed**, and nothing above
+is claimed as it. The passing local full `./scripts/check.sh`
 named in the GN-E2-4a record belongs to that slice at `6718b422` and says
 nothing about this slice's head.
 
 Still owed before merge: a fresh exact-head review of the corrected head
-(neither the `311abc6b` pair nor the `d01e2c3e` pair above carries over), the
+(neither the `311abc6b` pair, the `d01e2c3e` pair nor the `40ea2346` review
+above carries over), the
 exclusive full
 `./scripts/check.sh`, all final-head remote checks, the repository owner's
 exact `/tmverifier-unfreeze <full-sha>` attestation, the `tmverifier-unfreeze`

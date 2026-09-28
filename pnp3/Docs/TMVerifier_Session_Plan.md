@@ -27,10 +27,18 @@
 > what the first of this branch's two integration merges of `main`, `4abaac92`,
 > brought into this tree, and
 > `TMVERIFIER_FREEZE.md` now carries it in full; none of it transfers to
-> GN-E2-5a. **GN-E2-5a has had no full `./scripts/check.sh`
-> at any head**, only targeted builds at stage (a) and the freeze checker at
-> stage (b); GN-E2-4a's passing run belongs to `6718b422` and transfers
-> nothing to this slice.
+> GN-E2-5a. **No head of GN-E2-5a has a full `./scripts/check.sh` of its own**:
+> stage (a) ran targeted builds, stage (b) the freeze checker, and the three
+> docs-only corrections no Lean build at all. One complete run is nevertheless on
+> record for this branch's content — logged between `4abaac92` and `d01e2c3e` at
+> `/root/pnp2-agent-reports/gn-e25-4aba-full-check.log`, carrying this slice's
+> own 118-object freeze pin and ending "All checks passed" — but it names no
+> checkout, its content fingerprint places it at `4abaac92` rather than any later
+> head, and its exclusivity is unestablished, so it is no head's gate result and
+> never compiled the G3l modules `d01e2c3e` merged in; `TMVERIFIER_FREEZE.md`
+> states exactly what it does and does not establish, and the exclusive
+> final-head run is still owed. GN-E2-4a's passing run belongs to `6718b422` and
+> transfers nothing to this slice.
 > `TMVERIFIER_FREEZE.md` names each reviewed head, verdict, evidence and
 > finding disposition; the summary is that GN-E2-4a's stage-(b) head
 > `e2c3ee33` drew two **APPROVE** reports plus an earlier **REQUEST_CHANGES**
@@ -45,9 +53,16 @@
 > freeze-content defect and states that merge readiness is not established, and
 > Claude returned **BLOCK** on two documentation-consistency findings with five
 > further accuracy findings, once more reporting no Lean, execution, surface or
-> freeze-content defect. The docs-only correction carrying this sentence
-> resolves all seven and changes the head again, so no independent review of the
-> current head is claimed and no earlier verdict carries to it.
+> freeze-content defect. The docs-only correction `40ea2346` resolves all seven,
+> and one further exact-head review ran at it: Codex reported two **P2**
+> documentation findings — the freeze header's blanket denial of any review at the
+> later heads, and the blanket denial of any full check carried here, in
+> `STATUS.md` and in the freeze record — with no APPROVE/BLOCK label and again no
+> blocking theorem or freeze-content defect, while a second run there ended at its
+> turn limit with no verdict. The docs-only correction carrying this sentence is
+> the fix for those two and changes the head again, so **no review is claimed for
+> the corrected head it creates**, none is claimed for `3195ffc1` or `4abaac92`,
+> and no earlier verdict carries to any of them.
 > GN-E2-5a still owes the complete `./scripts/check.sh`, a review of the
 > corrected head, final-head remote CI and freeze-policy success, the owner's
 > exact full-SHA attestation and label — reissued against whatever head is
@@ -69,7 +84,7 @@
 > `20850b93` while GN-E2-4a's 1041 lines were unmerged underneath, and the merge
 > cleared it. Two merge commits bring `main` into this branch: `4abaac92` brought
 > `71179c6d`, with the G3j and G3k uniform-V1 slices and `main`'s copy of the
-> GN-E2-4a record, and the merge commit carrying this sentence brings `9445a93e`,
+> GN-E2-4a record, and `d01e2c3e` brought `9445a93e`,
 > with PR #1802's Part A G3l origin-alignment handoff. Neither changes a frozen
 > byte, a pinned constant or a Lean source of this slice, and neither carries a
 > gate result of its own. No green gate beyond the ones

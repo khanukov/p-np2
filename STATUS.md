@@ -2785,10 +2785,21 @@ described below brought into this tree and is authoritative for it; and the
 authorized
 GN-E2-5a values/tail writer slice described above, whose stage (a) `11dc8e82`
 landed the new frozen bytes and whose stage (b) `311abc6b` repinned the freeze
-onto them, so the freeze checker passes on this tree again. **GN-E2-5a has had
-no full `./scripts/check.sh` at any head** — only targeted builds at stage (a)
-and the freeze checker at stage (b) — and GN-E2-4a's passing run at `6718b422`
-transfers nothing to it. At GN-E2-4a's stage-(b) head `e2c3ee33`, Codex and
+onto them, so the freeze checker passes on this tree again. **No head of
+GN-E2-5a has a full `./scripts/check.sh` of its own**: stage (a) ran only
+targeted builds, stage (b) only the freeze checker, and the three docs-only
+corrections no Lean build at all. One complete run is nevertheless on record for
+this branch's content, logged between `4abaac92` and `d01e2c3e` at
+`/root/pnp2-agent-reports/gn-e25-4aba-full-check.log` — this slice's own
+118-object freeze pin in its preflight, all seventeen numbered steps, no
+`error:` line and a closing "All checks passed" — but the log names no commit,
+branch or working directory, its content fingerprint places it at `4abaac92`
+rather than any later head, and its exclusivity is unestablished, so it is no
+head's gate result and does not cover the G3l Lean modules `d01e2c3e` merged in;
+`TMVERIFIER_FREEZE.md` states exactly what it does and does not establish. The
+exclusive full run at the final head is still owed, and GN-E2-4a's passing run
+at `6718b422` transfers nothing to it. At GN-E2-4a's stage-(b) head
+`e2c3ee33`, Codex and
 Claude reviews were reported as **APPROVE**, and an earlier Codex pass returned
 **REQUEST_CHANGES** on documentation; at its docs head `4e182c03`, both the
 Codex and Claude reruns returned **BLOCK** on contradictory review claims. At
@@ -2801,11 +2812,19 @@ Two further exact-head reviews ran at the second integration-merge head
 freeze-content defect and states that merge readiness is not established, while
 Claude returned **BLOCK** on two documentation-consistency findings with five
 further accuracy findings, again reporting no Lean, execution, surface or
-freeze-content defect; the docs-only correction carrying this sentence resolves
-all seven. The freeze record names the reviewed heads, verdicts, evidence and
-finding dispositions. Every commit after `311abc6b` — those two corrections and
-both integration merges of `main` — changes the head again, so no independent
-review of the current head is claimed and no earlier verdict carries to it.
+freeze-content defect; the docs-only correction `40ea2346` resolves all seven.
+One further exact-head review ran at that correction, `40ea2346`: Codex reported
+two **P2** documentation findings — the freeze header's blanket denial of any
+review at the later heads, and this file's, the freeze record's and the session
+plan's blanket denial of any full check — with no APPROVE/BLOCK label and again
+no blocking theorem or freeze-content defect, while a second run there ended at
+its turn limit with no verdict; the docs-only correction carrying this sentence
+is the fix for both findings. The freeze record names the reviewed heads,
+verdicts, evidence and
+finding dispositions. Every commit after `311abc6b` — those three corrections
+and both integration merges of `main` — changes the head again, so **no review
+is claimed for the corrected head this correction creates**, none is claimed for
+`3195ffc1` or `4abaac92`, and no earlier verdict carries to any of them.
 GN-E2-5a still owes that review,
 the complete `./scripts/check.sh`, final-head remote CI and freeze-policy
 success, the owner's exact full-SHA attestation and label, the required PR
@@ -3807,7 +3826,9 @@ fixed-slice `PpolyDAG` membership:
 > and GN-E2-5b — the per-value copy round, formerly called `E2-4b` — and later
 > gate-by-gate construction stay open and unstarted). GN-E2-4a has since been
 > merged into `main` by PR #1801 as the merge commit `71179c6d`, which preserved
-> history; GN-E2-5a is unmerged and has had no full check at any head.
+> history; GN-E2-5a is unmerged, and no head of it has a full check of its own —
+> the one complete run on record covers its content at `4abaac92` only, under the
+> limits `TMVERIFIER_FREEZE.md` states, and the final-head run is still owed.
 > The active engineering queue is the versioned uniform complexity foundation
 > outside TMVerifier.
 

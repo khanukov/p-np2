@@ -241,9 +241,9 @@
       "type": "blob"
     },
     "pnp3/Complexity/TMVerifier/TuringToolkit/GateNFixedDelegateRelocation.lean": {
-      "git_oid": "2c63db4184ff383d9c41a662637edb341aa3ecaf",
+      "git_oid": "93ba7edb906676951162c05598a8d3e6a20c20d6",
       "mode": "100644",
-      "sha256": "f5b0a9ed433b6e69c426e33f68e9054399c4cf6bbf03d91135bb368c9b103e11",
+      "sha256": "3400cb279574c944c72ad931f30a80ee4d8013ba7cb28a6d8bde98f65e0f91d7",
       "type": "blob"
     },
     "pnp3/Complexity/TMVerifier/TuringToolkit/GateNFrameShuttle.lean": {
@@ -292,6 +292,12 @@
       "git_oid": "a28a427e9b163cb94aad1ecad301fe79327602db",
       "mode": "100644",
       "sha256": "794b3d7164e9786fd88ee6609dd94a0bec9d748adcb5f69fb87139755208a532",
+      "type": "blob"
+    },
+    "pnp3/Complexity/TMVerifier/TuringToolkit/GateNValuesRewind.lean": {
+      "git_oid": "0e895d76bcd0df4ba2e29f0ae966c6f88b20a8c8",
+      "mode": "100644",
+      "sha256": "4c5b0a1878d109885ea475d7d851e368be079f472135371cc1ae31bea3181c74",
       "type": "blob"
     },
     "pnp3/Complexity/TMVerifier/TuringToolkit/GateOneARepair.lean": {
@@ -697,8 +703,8 @@
       "type": "blob"
     }
   },
-  "frozen_commit": "7b53a08fc13517fcf8b2c73b45f6515102a13863",
-  "frozen_tree": "b49456d6e08bbce69fd94af2d2a97beef438d210",
+  "frozen_commit": "b35bdca2cb24af709144998af5c4402d42a18aa5",
+  "frozen_tree": "c544405f94cb68755cad3dc5c6a0639517a2967b",
   "schema_version": 3,
   "tree": "pnp3/Complexity/TMVerifier"
 }

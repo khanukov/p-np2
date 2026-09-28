@@ -44,7 +44,13 @@ row into the strict read-only reverse locator in this same control owner;
 `noGate` remains a dormant arrival.  GN-E2-2 uses that door only for the first
 cursor shuttle.  GN-E2-3a activates the payload-preserving installer exit as a
 finite one-round dispatcher and adds only the fixed `recordDone` terminal
-switch; repeated body driving remains a later obligation.
+switch; repeated body driving remains a later obligation.  GN-E2-4a activates
+`recordDone` into a read-only right-to-left `rewind` pass that stops at the
+leading `bof` and stands on the first current-value frame in the new fixed
+`valuesEntry` state.  `rewind` carries only the existing finite four-position
+buffer, writes back every cell it scans, and rejects every undecodable window;
+`valuesEntry` is a dormant arrival exactly as `recordDone` was.  No value is
+copied and no tail is written here.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -180,6 +186,8 @@ inductive GNState where
   | firstRecord
   | noGate
   | recordDone
+  | rewind (buffer : GNInstallBuffer)
+  | valuesEntry
   | idle
   | accept
   | reject
@@ -219,6 +227,46 @@ def gnInstallControl (mode : GNInstallMode) (buffer : GNInstallBuffer)
   match mode with
   | .reject => .reject
   | _ => .install mode buffer aux
+
+/-- Finite modes of the read-only rewind from a finished record back to the
+leading `bof`.  The pass stores no count, index, or geometry. -/
+inductive GNRewindMode where
+  | scan | anchor | reject
+  deriving Fintype, DecidableEq, Repr
+
+/-- Frame-level rewind decision: only the leading `bof` anchors the pass, and
+every other decodable frame continues it. -/
+def gnRewindAdvance : GNRewindMode → G1Frame → GNRewindMode
+  | _, .bof => .anchor
+  | _, _ => .scan
+
+/-- Bit-level rewind decision used verbatim by the machine table; every
+undecodable window rejects. -/
+def gnRewindComplete (mode : GNRewindMode) (b0 b1 b2 b3 : Bool) : GNRewindMode :=
+  match decodeG1Frame? [b0, b1, b2, b3] with
+  | some frame => gnRewindAdvance mode frame
+  | none => .reject
+
+/-- The complete finite rewind row set, as one buffer-only decision: three
+leftward buffering rows, the frame-position-0 decision that anchors on `bof`,
+rejects an undecodable window and otherwise steps left again, and the four
+rightward rows that stand on the first frame after the anchor.  Every row
+writes back the cell it scans, so the whole pass is read-only. -/
+def gnRewindControl (buffer : GNInstallBuffer) (scan : Bool) :
+    GNState × Bool × Move :=
+  match buffer with
+  | .r3 => (.rewind (.r2 scan), scan, .left)
+  | .r2 b3 => (.rewind (.r1 scan b3), scan, .left)
+  | .r1 b2 b3 => (.rewind (.r0 scan b2 b3), scan, .left)
+  | .r0 b1 b2 b3 =>
+      let next := gnRewindComplete .scan scan b1 b2 b3
+      if next = .anchor then (.rewind .p0, scan, .stay)
+      else if next = .reject then (.reject, scan, .stay)
+      else (.rewind .r3, scan, .left)
+  | .p0 => (.rewind (.p1 false), scan, .right)
+  | .p1 _ => (.rewind (.p2 false false), scan, .right)
+  | .p2 _ _ => (.rewind (.p3 false false false), scan, .right)
+  | .p3 _ _ _ => (.valuesEntry, scan, .right)
 
 /-- Collapse the two terminal discovery modes to fixed outer states. -/
 def gnScanControl (mode : GNDiscoveryMode) (buffer : GNScanBuffer) : GNState :=
@@ -369,7 +417,9 @@ def gnTransition (_phase : Fin 1) (s : GNState) (scan : Bool) :
       else (0, .locating ⟨next, .r3⟩, scan, .left)
   | .firstRecord => (0, .install .probe .p0 .empty, scan, .stay)
   | .noGate => (0, .noGate, scan, .stay)
-  | .recordDone => (0, .recordDone, scan, .stay)
+  | .recordDone => (0, .rewind .r3, scan, .left)
+  | .rewind buffer => (0, gnRewindControl buffer scan)
+  | .valuesEntry => (0, .valuesEntry, scan, .stay)
   | .idle => (0, .idle, scan, .stay)
   | .accept => (0, .accept, scan, .stay)
   | .reject => (0, .reject, scan, .stay)

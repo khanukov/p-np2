@@ -1728,7 +1728,31 @@ start. G3k is Infrastructure only and builds **no pnp4 bridge** either: no G3k b
 this bridge still starts at G3e's composite, both of its inherited routed rejects are
 forward-direction only with the mismatched-tag one still timed only from the gate's length-only
 deadline on, and no `ContentVerifierBridge`, raw-input acceptance, advice-freedom claim or P-vs-NP
-mainline progress follows from it. `S` is the first
+mainline progress follows from it. Part A G3l (pnp3 only) has since executed **H6** as well — the
+fixed 26-state, 78-row pair origin alignment prefixed to that G3k composite as one closed
+177-state, 531-row table, again with no new row and no `mergeAccept`, switching at the alignment
+phase's own strict first arrival `(10a + 7)(a + m + 1) + 3a`, which was already landed in the shape
+`seq` consumes and hypothesis-free, so G3l's `handoff_exact` takes no hypothesis either and
+additionally pins strict left-block confinement before the switch — taking the count to **twelve of
+seventeen** with **five** earlier handoffs still proof-level; the eleven-and-six counts just given
+are the ones G3k left. In **forward execution order** H6 is the first handoff of the chain whose live
+accept list is plural — the already-executed H11, further right, routes six: three
+rows, the alignment states `10`, `11` and `12` on `none`, proved the only ones targeting the phase's
+accept once the accept's own absorbing three are excluded, each routed to index `26` keeping its own
+restoration write and its left move, a genuine step onto the origin and **not** a clamp (the phase's
+sole left clamp is two steps earlier, at source time `clock - 3`); which of the three
+fires on a given input is not claimed, those states being `private` in the landed phase. Its reject
+is the longest such list so far: every row targeting it is one of 21, proved exhaustive in that one
+direction over all 26 states and
+all three symbols and each routed to the composed reject, none ever taken out of G3l's start. That
+switch time is the **first in the chain to depend on the split lengths `a` and `m` separately** — the
+landed ones are length-only in `N = a + m`, width-only in the decoded `zeros`, or input-dependent —
+so G3l's chain
+clock takes two length arguments, the composed clock is quadratic in `a`, and it is **not** proved
+that the cubic budget still dominates it. G3l is Infrastructure only and builds **no pnp4 bridge**
+either: no G3l bridge module exists, this bridge still starts at G3e's composite, and no
+`ContentVerifierBridge`, raw-input acceptance, advice-freedom claim or P-vs-NP mainline progress
+follows from it. `S` is the first
 time H12 fires, but no theorem says `C` is the first time the composed accept is entered; the first
 arrival proved is G2p-a's, inside the left block. All seven tables are unfenced, hence so is the
 composition: accepted words never overflow the lane, since `pr.2.n ≤ N` is derived, but an

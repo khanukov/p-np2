@@ -4610,3 +4610,116 @@ theorems and their types, including the proof-carrying `gnRewindScanner` and
 dispatcher, no launch, delegation, commit, next-gate loop, total installer
 clock, verdict, acceptance, total evaluator claim, or language-level statement.
 E2-4b owns the values copy itself and remains paused.
+
+Two forward-looking sentences of this section are superseded by GN-E2-5a below:
+`valuesEntry` is no longer a self-loop, and `gnInstallExitDispatch` /
+`GNInstallExitInvalid` are no longer byte-identical.  Both statements remain
+true *as of the moment E2-4a landed*, which is the scope they were written in.
+
+## GN-E2-5a values/tail control and the input-free first request (2026-09-28)
+
+Progress classification: infrastructure, not P-vs-NP mainline progress.  No
+source obligation is reduced: neither `VerifiedNPDAGLowerBoundSource` nor
+`SearchMCSPWeakLowerBound` is touched, and no
+`CanonicalAsymptoticVerifierComponents` obligation is discharged.  This is a
+**frozen-tree migration slice**; see the migration record in
+`TMVERIFIER_FREEZE.md` for what each stage carried and which gates were run.
+
+**Rescope, stated plainly.**  The frozen architecture for GN-E2-5 asked for the
+whole first request — every current value copied *and* the fixed tail written,
+for arbitrary `r.inputs`.  That endpoint does not fit the standing
+`<=1500` changed-Lean-LOC gate: a complete implementation of it measured 1581
+changed Lean LOC *before* any surface or audit content, and projected to roughly
+1770 with them.  Rather than waive the gate or weaken the endpoint silently,
+the slice was split.  GN-E2-5a — this one — installs the *complete* finite
+values/tail control and proves the tail phase, with the real-input capstone
+scoped by `r.inputs = []`.  GN-E2-5b owes the per-value copy round, its list
+induction over the current values, and the resulting nonempty-input capstone;
+it needs no further change to the frozen control.
+
+**What it adds to the fixed control.**  In `GateNFixedDelegateRelocation`: one
+finite seven-constructor mode type `GNValuesMode`; two `GNState` constructors,
+`values (mode : GNValuesMode) (buffer : GNInstallBuffer)` — reusing the
+installer's existing four-position buffer — and `requestReady`; the one
+mode/buffer row set `gnValuesStep` with its helper tables `gnValuesControl`,
+`gnValuesEnter`, `gnValuesAdvance`, `gnValuesComplete`, `gnValuesClassify` and
+`gnValuesClassifyBits`; one changed row, `valuesEntry` from
+`(0, .valuesEntry, scan, .stay)` to `(0, .values .probe (.p1 scan), scan,
+.right)`; one new `gnInstallExitDispatch` route sending a carried `data` frame
+to `valuesEntry`; and the matching narrowing of `GNInstallExitInvalid` by
+exactly that case.  No machine, clock, encoder, phase count, start or accept
+state changes.  No mode, buffer or payload contains a natural number, index,
+width, base, request, list, gate, clock counter or proof, and nothing is
+request-dependent: the same rows run for every program.
+
+**Row-set shape.**  Three probe rows buffer the frame under the head and a
+fourth classifies it: a decoded `data` frame turns the head around into the
+four `back` rows, which return to that frame's first cell and hand it to the
+existing installer probe; the first reserved `output false` slot ends the
+current-value run and starts the tail seek; every other decodable frame and
+every undecodable window enters the existing stationary reject sink.  Four
+`seekTail` rows per frame walk right, passing separators, `bof` and `finish`
+deliberately — the remaining original word and the scratch header contain them,
+and stopping there would select the wrong boundary — until the first blank,
+which turns the head around; the installer's temporary `output true` marker
+rejects.  Four `tailBack` rows return to that blank, and eight write/right rows
+install `(G1Frame.output false).bits` then `G1Frame.finish.bits` before the
+dormant `requestReady` arrival.
+
+**What is dormant, and said so.**  With `r.inputs = []` the classification meets
+the first reserved output slot immediately, so the data classification, the four
+`back` rows and the carried-`data` exit dispatch are *installed and pinned* — by
+`gnTransition_values_rows`, which pins every `values` row as the finite
+`gnValuesStep` decision, and by `gnTransition_dataExit` — but no theorem in this
+slice executes them.  That is deliberate and is stated in the module docstring,
+the audit comment and the capstone docstrings.
+
+**Endpoint.**  `gnCS_encodeGN_firstRequestReady_exact` is genuine
+`TM.runConfig (M := GNM)` execution from
+`GNM.initialConfig (gnPoint (encodeGN r))` for exactly
+`gnFirstRequestReadySteps r g = gnValuesEntrySteps r g + gnValuesTailSteps r g`
+rows, landing in `gnFirstRequestReadyConfig r g hg`: complete state
+`⟨0, requestReady⟩`, head `4 * (F + R + m + 2)`, and the full physical tape
+`frameListTape ((encodeGNFrames r ++ encodeG1Frames (gnFirstRequest r g) ++
+[blank]).flatMap G1Frame.bits)` — every cell, including the all-false suffix.
+Its premises are exactly two: `hg : r.program.gates[0]? = some g` and
+`hinputs : r.inputs = []`.  No well-formedness, canonicality, evaluation
+success, room premise, precomputed answer or runtime witness is assumed; the
+room fact `gnFirstRequestReady_room` is proved internally, never taken as a
+caller premise.  `gnFirstRequestReadySteps_le_gnClock` bounds the whole proved
+prefix inside the unchanged `gnClock`; it is not a total installer, multigate or
+runtime clock theorem.  `gnFirstRequestReadyConfig_structure` projects the
+endpoint and is explicit that its last two conjuncts are statements about the
+**pure** request `g` determines, not about anything the machine computed.
+
+**Executable probes.**  `literal_oneConstFalse_requestReady` runs the genuine
+real initial configuration for 784 rows to `requestReady` at physical head 80,
+pins the 21 literal endpoint frames, shows the original twelve-frame GN word
+restored verbatim (`take 12`), the written tail and retained blank (`drop 18`),
+the absence of the temporary marker, and — rather than merely a different state
+— four changed destination *bits*: physical cells 72 and 76 are `true` at the
+endpoint and `false` at the GN-E2-4a values boundary, where both destination
+frames were still blank.  The slice opens two new ingress boundaries where tape
+data enters the finite control, so it carries its own reserved-code rejection
+theorems, `gnCS_valuesEntry_reserved1101_reject_four` and its absorbing-padding
+companion `gnCS_valuesEntry_reserved1101_reject_stable`, alongside the finite
+row table `gnTransition_values_reserved`, which covers the three reserved public
+codes at both boundaries, the temporary marker at both, and a decoded blank and
+record `tag` at the values boundary.
+
+**Surface and audit.**  `Tests/TMGateNValuesWriterSurfaceTests.lean` pins with
+`#check` the new public control pieces and the new module's public definitions,
+and restates all fourteen public theorems as full-proposition `check_*`
+wrappers; `AxiomsAudit.lean` roots the same fourteen theorems and the fourteen
+wrappers directly, because a bare `#check @name` pins only the name.  The
+proof-level scanner and writer instances, the aligned-configuration glue, the
+terminal-phase lemmas and the block geometry are private, so the surface stays
+the size of the slice's actual contract.
+
+**Explicitly not here.**  No per-value copy execution, no nonempty-input
+capstone, no rewind to the scratch `bof`, no launch, no delegation of the
+installed request to the G1 control, no commit of a returned bit, no
+cursor/spent advance, no next-gate loop, no total installer clock, no verdict,
+no acceptance, no total evaluator claim and no language-level statement.  In
+particular `evalGNProgram` is not executed by this machine and nothing here
+says it is.

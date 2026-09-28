@@ -702,6 +702,11 @@ lean_lib PnP3 where
     -- the values boundary; no value copied, no tail written, no launch,
     -- delegation, commit, loop, verdict or acceptance.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNValuesRewind,
+    -- GN-E2-5a (2026-09-28): the values/tail control and the input-free first
+    -- request's `output false`/`finish` tail write, ending in the dormant
+    -- `requestReady` arrival; the per-value copy round is GN-E2-5b's, and
+    -- there is no launch, delegation, commit, loop, verdict or acceptance.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateNValuesWriter,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -1024,6 +1029,11 @@ lean_lib PnP3 where
     -- rewind schedule, generic and real-input capstones, endpoint structure,
     -- scoped clock and the 700/4 literal proposition wrappers.
     Glob.one `Tests.TMGateNValuesRewindSurfaceTests,
+    -- GN-E2-5a (2026-09-28): new values/tail control rows, the tail schedule,
+    -- room, the generic and input-free real-input capstones, endpoint
+    -- structure, scoped clock, the two values-ingress rejection wrappers and
+    -- the 784/80 literal proposition wrapper.
+    Glob.one `Tests.TMGateNValuesWriterSurfaceTests,
     -- GN-E2-0 (2026-09-01): definition/configuration pins and direct explicit
     -- wrappers for pure physical stages, first-request geometry, and the
     -- complete installed physical endpoint equality.

@@ -3,16 +3,20 @@
 **Status:** frozen infrastructure snapshot. Both stages of the GN-E2-4a
 migration recorded at the end of this file have now landed on this branch:
 stage (a) committed the new frozen bytes together with their registration, and
-stage (b) — commit `e2c3ee33` — re-pins the freeze onto that
-commit and its subtree. The two pinned constants below therefore name the
-GN-E2-4a stage-(a) commit `b35bdca2` and its subtree `c544405f`, and
+stage (b) — commit `e2c3ee33` — re-pins the freeze onto that commit and its
+subtree. The two pinned constants below therefore name the GN-E2-4a stage-(a)
+commit `b35bdca2` and its subtree `c544405f`, and
 `scripts/check_tmverifier_freeze.py` and the freeze preflight of
 `scripts/check.sh` pass on this tree again. What that migration still owes —
-the complete `./scripts/check.sh` on the final head, any review of the final
+the complete `./scripts/check.sh` on the final head, a review of the final
 head, and the whole remote half — is listed in its record, not here, together
-with the two independent read-only reviews it did receive at the stage-(b) head
-`e2c3ee33`; none of the owed items is claimed anywhere.
-The earlier GN-E2-3b migration, whose pins these were until this commit, landed
+with the recorded reviews, each named there with its reviewed head and verdict:
+at the stage-(b) head `e2c3ee33`, two were reported as **APPROVE** and one as
+**REQUEST_CHANGES** on documentation; at the docs head `4e182c03`, both the
+Codex and Claude reruns returned **BLOCK** on contradictory review claims.
+This prose correction addresses those findings; it does not constitute an
+independent review of the resulting head. None of the owed items is claimed.
+The earlier GN-E2-3b migration, whose pins were replaced by `e2c3ee33`, landed
 both of its stages on its own branch and was then merged by PR #1777 on
 2026-09-23 as the merge commit `48151689`, which preserved history, so its
 provenance commit `7b53a08f` is an ancestor of this branch. Local Git records
@@ -26,9 +30,10 @@ verifies against.
 `b35bdca2cb24af709144998af5c4402d42a18aa5` (2026-09-27) — the stage-(a)
 commit whose subtree the pin names. The checker calls this value "reviewed
 provenance" because that is the role the constant plays; for this migration the
-two independent reviews were performed at the stage-(b) head `e2c3ee33`, whose
+two **APPROVE** outcomes were reported at the stage-(b) head `e2c3ee33`, whose
 frozen subtree is exactly the pinned tree, and not at this commit's own head, so
-this line records provenance and the record below carries the reviews.
+this line records provenance while the record below carries the known review
+outcomes, their reviewed heads and the available evidence.
 **Previously frozen at:** tree `b49456d6e08bbce69fd94af2d2a97beef438d210`,
 reviewed at `7b53a08fc13517fcf8b2c73b45f6515102a13863` (2026-09-20), before
 that at tree `7ef6ac6e119f0f078f9c896f17415fa560a6edf3`, reviewed at
@@ -682,6 +687,12 @@ provenance link are.
 
 ### 2026-09-27 — GN-E2-4a values rewind (stage (a) and stage (b) repin, both 2026-09-27)
 
+**Progress classification: Infrastructure only.** This migration and its prose
+recovery reduce neither `VerifiedNPDAGLowerBoundSource` nor
+`SearchMCSPWeakLowerBound`, produce neither
+`ComplexityInterfaces.NP_not_subset_PpolyDAG` nor `ResearchGapWitness`, and
+discharge no `CanonicalAsymptoticVerifierComponents` obligation.
+
 Re-pinned from tree `b49456d6` (reviewed at `7b53a08f`) to tree `c544405f`,
 the `pnp3/Complexity/TMVerifier` subtree of the stage-(a) commit
 `b35bdca2cb24af709144998af5c4402d42a18aa5`. This is the third unfreeze since
@@ -876,28 +887,180 @@ control) and `node scripts/test_tmverifier_freeze_policy.js` — plus
 script, `git diff --check`, and the hygiene scans for `axiom`,
 `sorry`/`admit`, `native_decide`, `Lean.ofReduceBool`, `Lean.trustCompiler`
 and `unsafe` over active pnp3/pnp4 Lean — all passing. No Lean source and no
-frozen byte differs from the stage-(a) tree, so no module is rebuilt by this
-commit and **no fresh compilation is claimed for it**. What was checked instead
-is weaker and stated as such: `lake build --no-build` over
+frozen byte differs from the stage-(a) tree. These author checks reused the
+stage-(a) build artifacts; **no fresh compilation is claimed for those checks**.
+The later independent Claude review's recompilation at `e2c3ee33` (**APPROVE**)
+is recorded separately below. The author ran `lake build --no-build` over
 `…GateNFixedDelegateRelocation`, `…GateNValuesRewind`,
-`Tests.TMGateNValuesRewindSurfaceTests` and `Tests.AxiomsAudit` exited `0`,
-i.e. Lake considers stage (a)'s artifacts current for this tree and would
+`Tests.TMGateNValuesRewindSurfaceTests` and `Tests.AxiomsAudit`; it exited `0`,
+i.e. Lake considered stage (a)'s artifacts current for that tree and would
 recompile nothing. That is a staleness check against a warm build directory,
 not an independent rebuild from source, and it is the sole basis for the
 corrected audit-root count above. The complete `./scripts/check.sh` was
 **not** run at stage (b) either and is **not** claimed: the whole-gate run is
 reserved for the final head after the exact-head reviews.
 
-**Still owed before merge.** Everything outside the two local commits. No
-independent adversarial review of this slice exists at any head; the complete
-`./scripts/check.sh` has not been run on any tree of this branch; and the
-entire remote half is outstanding — `ci.yml` and `lean.yml` observed green on
-the final head, the `TMVerifier Freeze Policy` rollup observed passing there,
-the repository owner's exact full-SHA attestation comment
-`/tmverifier-unfreeze <current-head-sha>`, the `tmverifier-unfreeze` label, the
-required PR review, and a history-preserving merge. There is no PR and no CI
-result of any kind for this slice, and nothing in this record should be read as
-asserting one.
+**Reviews — which head, which verdict.** The known independent read-only review
+outcomes are recorded below. The local evidence paths name external reports,
+not committed artifacts or portable attestations; local Git establishes content
+identity and ancestry, not that an external review ran. Earlier reported
+outcomes are preserved with their limits, separately from the reports inspected
+during this recovery.
+
+*At the superseded stage-(b) head
+`23335cc37831acea23688642b4621b9ac0892cd6`* — a first stage-(b) commit,
+replaced by `e2c3ee33`, which is its sibling under the same stage-(a) parent, so
+`23335cc3` is **not** an ancestor of this branch. One Codex review (model
+`gpt-6-astra`) returned **REQUEST_CHANGES** on a single P2 documentation
+blocker: the freeze note under "What Is Still Open" in `STATUS.md` still pinned
+the snapshot to the GN-E2-3b tree `b49456d6`/`7b53a08f` and still said this
+slice's repin deliberately had not landed, so the freeze gate was red "on this
+tree" — both false at that head. It found no blocking Lean, execution, clock,
+state-arithmetic, surface/audit-root or freeze-content defect. That finding was
+fixed by replacing the stage-(b) commit: `e2c3ee33` rewrites that freeze note.
+The retained draft at
+`/tmp/gn-e24-codex-review-xxmnimdd/report-draft.md` names that head and the
+**REQUEST_CHANGES** verdict; it still has an audit-result placeholder and is
+not a finalized kernel-audit report. The earlier recovery account also records
+a Claude attempt at `23335cc3` that reached its turn limit with **no verdict**.
+
+*At the retained stage-(b) head
+`e2c3ee3330ac536131714df1d707044b0927e2fb`*, whose
+`pnp3/Complexity/TMVerifier` subtree is exactly the pinned tree `c544405f`.
+**Two reviews were reported as APPROVE with no blocking finding:** a Codex
+review (model `gpt-6-astra`) in a separate
+read-only-sandbox worktree, and a Claude Fable 5.1 review, which additionally
+recompiled the changed control module and the new module from the committed
+source and compared the results against a sibling worktree at the same commit.
+The Claude report is available locally at
+`/root/.claude/plans/read-only-adversarial-exact-head-lean-fr-zesty-newt.md`;
+its compilation log is `/tmp/gn-e24-audit-compile.log`. The Codex approval is
+preserved as previously reported; its report is not among the
+`/tmp/gn-e24-4e182c03-*` evidence inspected for this recovery.
+**A third, an earlier Codex pass in the lane worktree, returned
+REQUEST_CHANGES** on two P2 documentation findings and nothing else: that this
+record's "no independent review at any head" sentence was falsified by the
+`23335cc3` review above, which had to be recorded with its reviewed SHA and its
+REQUEST_CHANGES disposition and distinguished from approval of the current head;
+and that `TMVerifier_Session_Plan.md` still called PR #1777 open with its
+history-preserving merge owed. It too found no blocking Lean or freeze-content
+defect, and it confirmed the `23335cc3` blocker fixed. The PR #1777 finding was
+fixed by `4e182c03`; the provenance finding is what the commit carrying this
+paragraph finishes. That earlier Codex **REQUEST_CHANGES** outcome and a
+Claude attempt at `e2c3ee33` with **no verdict** are likewise preserved from the
+earlier recovery account; their reports are not in the `4e182c03` evidence set.
+
+*At the docs head `4e182c03187c3a1071485821505c3f6cf4a29c19`*, whose commit
+changed only this file and `TMVerifier_Session_Plan.md`, **two completed reruns
+returned BLOCK**:
+
+- **Codex (`gpt-6-astra`): BLOCK**, recorded in
+  `/tmp/gn-e24-4e182c03-codex-rerun.txt`. Its blocking finding was inconsistent
+  review provenance: this file's header and the Session Plan claimed approvals
+  at `e2c3ee33`, while this record and `STATUS.md` still denied any review at
+  any head. It requested reviewer, head, verdict and available evidence for the
+  claimed reviews. It found no blocking Lean execution defect. It inspected
+  cached axiom output, explicitly without a fresh kernel check, and ran the
+  freeze checker and `git diff --check`; it ran no build or full gate.
+- **Claude: BLOCK**, recorded in
+  `/tmp/gn-e24-4e182c03-claude-rerun.txt`. B1 identified this file's contradiction
+  and missing review paragraph; B2 identified the stale `STATUS.md` review
+  claim. It found the Lean surface, pins and numeric claims correct and ran the
+  freeze checker. It did not reproduce compilation or axiom output or verify
+  that the two earlier approvals occurred. Its five nonblocking notes are
+  disposed of below or in the Session Plan.
+
+Both reports independently counted thirteen public definitions, seventeen
+public theorems, thirty-four new audit roots, 4876 roots at base and 4910 at
+`4e182c03`; both measured 1041 changed Lean lines across five `.lean` files
+(four modules plus `lakefile.lean`), within the ≤ 1500-line / ≤ 10-module gate.
+The initial Codex attempt in `/tmp/gn-e24-4e182c03-codex.txt` failed because
+`gpt-5.4` was unsupported and returned **no verdict**. The separate attempt
+logged in `/tmp/gn-e24-4e182c03-opus5-fallback.txt` reached its turn limit and
+returned **no verdict**. Neither failed attempt cancels either completed
+rerun. This correction addresses both **BLOCK** reports at `4e182c03`.
+
+**No review of the current head is claimed.** That fix commit changes the head
+SHA again, as the GN-E2-3b docs-only commits `50f3eadd` and `635ac15e` did after
+its stage (b), so a fresh exact-head review of the new head is owed and is
+listed below with the rest. The fix changes no frozen byte, no Lean source, no
+pinned constant and no manifest entry. Content identity does not extend an
+earlier approval to the corrected head. The fix does edit
+`pnp3/Docs/TMVERIFIER_FREEZE.md`, which
+`.github/scripts/tmverifier-freeze-policy.js` protects by name, so the freeze
+policy gate applies at the new head and the owner's attestation must name that
+head's 40-character SHA, followed by applying or retriggering the
+`tmverifier-unfreeze` label. No attestation for an earlier head discharges that
+requirement.
+
+**Nonblocking notes from those reviews, and their disposition.** Three concern
+docstring wording inside the frozen tree, so fixing any of them would change
+frozen bytes and would need its own stage (a) plus stage (b) unfreeze pair and a
+new pin. Any in-tree wording changes are therefore **deferred** to a future
+authorized unfreeze; this recovery records the accurate reading outside the
+frozen tree and does not authorize that later work.
+
+1. `gnValuesEntryConfig`'s docstring says "Only the head differs from
+   `gnFirstRecordDoneConfig`". The *state* differs too — `recordDone` becomes
+   `valuesEntry` — and only the tape is the same term. The Codex reports at
+   `23335cc3` (**REQUEST_CHANGES**) and `4e182c03` (**BLOCK**) note this; the
+   definition and `gnValuesEntryConfig_structure` correctly expose both changes.
+2. `gnValuesEntryConfig_structure`'s docstring says its fifth conjunct
+   "identifies head `4` as p0 of the first frame after the leading `bof`".
+   That conjunct is a pure `gnLocatePrefix r` list identity and does not by
+   itself pin the head; head `4` is pinned outright by the second conjunct.
+   Raised by Claude at `e2c3ee33` (**APPROVE**) and `4e182c03` (**BLOCK**);
+   the theorem is exactly as stated and as proved.
+   `TMVerifier_Session_Plan.md` carries the accurate reading of this note and of
+   the previous one.
+3. `gnRewindAdvance_laws`'s docstring says "every representative frame a
+   stage-zero GN word can carry to the left of a finished record continues the
+   pass". Claude at `e2c3ee33` (**APPROVE**) noted that the enumeration omits
+   `output true`, `blank` and `spent`, which cannot occur in that position.
+   The stage-zero qualification is accurate; the theorem proves its stated
+   enumeration, while `gnRewind_validPath` covers every constructor under its
+   no-`bof` hypothesis. No theorem correction is required.
+
+The remaining notes from Claude at `4e182c03` (**BLOCK**) are resolved in
+prose: ragged wraps are repaired, `STATUS.md` no longer calls GN-E2-3b the
+"single authorized" slice in a list that also includes GN-E2-4a, and the Session
+Plan distinguishes the eight `gnRewindControl` arms from the nine fixed rows
+pinned by `gnTransition_rewind_rows`. That plan also records why the thirteen
+definitions are covered transitively by the thirty-four audit roots, rather
+than directly as in S11. The zero-input literal remains a nonvacuity witness
+for execution, not a witness of a nonempty values run, as Codex at `4e182c03`
+(**BLOCK**) noted and the Session Plan already explains.
+
+Two further notes are historical facts about the two landed commits and cannot
+be repaired without destroying the heads the reviews above name. Claude at
+`e2c3ee33` (**APPROVE**) observed that the stage-(b) commit message carries
+only its subject line, where the GN-E2-3b stage (b) carried classification,
+gates run and owed items in its body; this record carries that content instead.
+The stage-(a) message's wrong 4881-root count is recorded and corrected further
+up for the same reason.
+
+**Recovery validation (2026-09-28).** On the docs-only working tree based on
+`4e182c03`, the three commands comprising the freeze preflight passed:
+`./scripts/check_tmverifier_freeze.sh`, `./scripts/test_tmverifier_freeze.sh`
+and `node scripts/test_tmverifier_freeze_policy.js`. The checker matched all
+117 objects to `c544405f94cb68755cad3dc5c6a0639517a2967b` and verified
+`b35bdca2` provenance. Targeted `./scripts/check_doc_honesty.sh`,
+`python3 -B scripts/validate_version_manifest.py` and `git diff --check` also
+passed. The diff against base `20850b93` still has 1041 changed Lean lines in
+five `.lean` files (four modules plus `lakefile.lean`); this recovery changes
+only `STATUS.md`, this record and `TMVerifier_Session_Plan.md`. No frozen byte,
+pin, manifest or Lean source changed. This validation is not an independent
+review, a theorem rebuild, fresh kernel-axiom output, or the complete
+`./scripts/check.sh`; none of those is claimed for the correction.
+
+**Still owed before merge.** A fresh independent review of the current head; the
+complete `./scripts/check.sh`, which has not been run for this GN-E2-4a slice;
+and the entire remote half — `ci.yml` and `lean.yml`
+observed green on the final head, the `TMVerifier Freeze Policy` rollup
+observed passing there, the repository owner's exact full-SHA attestation
+comment `/tmverifier-unfreeze <current-head-sha>`, the `tmverifier-unfreeze`
+label, the required PR review, and a history-preserving merge. No PR or remote
+CI result is claimed for this slice in this record.
 
 **Merge with a merge commit — required, for provenance.** As for the two
 migrations above, this branch must be merged with a merge commit or an exact

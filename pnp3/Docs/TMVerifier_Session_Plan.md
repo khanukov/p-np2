@@ -1,21 +1,25 @@
 # Plan: closing the TM verifier for canonical asymptotic GapPartialMCSP
 
 > **Frozen historical plan (2026-09-03; amended 2026-09-20, 2026-09-22 and
-> 2026-09-27).**
+> 2026-09-27; review record corrected 2026-09-28).**
 > The freeze pin now names Git tree `c544405f`, the subtree of commit
 > `b35bdca2`; see `pnp3/Docs/TMVERIFIER_FREEZE.md`, whose migration record
 > covers three unfreezes since `42c59881`: S11 below, reviewed and completed;
 > GN-E2-3b below, whose stage (a) committed the new frozen bytes and whose
 > stage (b) repinned the freeze onto them; and GN-E2-4a below, which has now
 > landed both of those stages in that same order, so the freeze checker and the
-> `./scripts/check.sh` preflight pass on this tree again. Two independent
-> read-only adversarial reviews of those two commits were completed at the
-> stage-(b) head `e2c3ee33` and both approved with no blocking finding; the
-> docs-only commit that fixes this paragraph changes the head, so no review of
-> the current head is claimed. What GN-E2-4a still owes is everything else
-> beyond those two commits: the complete `./scripts/check.sh` has not been run
-> on this branch, and the entire remote half is outstanding. No green gate
-> beyond the ones `TMVERIFIER_FREEZE.md` names is claimed here.
+> `./scripts/check.sh` preflight pass on this tree again. At the stage-(b) head
+> `e2c3ee33`, Codex and Claude reviews were reported as **APPROVE**, and an
+> earlier Codex pass returned **REQUEST_CHANGES** on documentation. At the docs
+> head `4e182c03`, both the Codex and Claude reruns returned **BLOCK** on
+> contradictory review claims. `TMVERIFIER_FREEZE.md` names each reviewed head,
+> verdict, evidence and finding disposition. This docs-only correction changes
+> the head again, so no independent review of the resulting head is claimed.
+> GN-E2-4a still owes a review of that head, the complete `./scripts/check.sh`
+> (not run for this slice), final-head remote CI and freeze-policy success, the
+> owner's exact full-SHA attestation and label, the required PR review, and a
+> non-squash merge preserving both stage commits. No green gate beyond the ones
+> `TMVERIFIER_FREEZE.md` names is claimed here.
 > GN-E2-3b was merged by PR #1777 on 2026-09-23 as the merge commit `48151689`,
 > which preserved history, so its provenance commit `7b53a08f` is an ancestor of
 > this branch: its exact-head local `./scripts/check.sh`, its two independent
@@ -28,7 +32,9 @@
 > GN-E2-4a were each unfrozen once, deliberately, as single user-authorized
 > dedicated slices. Every later stage — E2-4b and beyond — stays paused, and
 > active work otherwise remains the versioned uniform complexity foundation
-> outside the frozen tree.
+> outside the frozen tree. GN-E2-4a and this prose recovery are
+> **Infrastructure only**; neither `VerifiedNPDAGLowerBoundSource` nor
+> `SearchMCSPWeakLowerBound` is reduced.
 
 **Repository:** `/home/user/p-np2/pnp3`
 **Baseline branch:** `claude/audit-hnpbridge-interface-FnO1v` (already
@@ -4495,7 +4501,8 @@ row set `gnRewindControl`.  No machine, clock, encoder, phase count, start or
 accept state, existing row, existing definition or existing theorem changes.
 No mode, buffer or payload contains a natural number, index, width, base,
 request, list or any other runtime geometry, and nothing is request-dependent:
-the pass is the same eight rows for every program.  `gnInstallExitDispatch`,
+`gnRewindControl` has the same eight buffer-constructor arms for every program
+(seven fixed rows and the `r0` decision arm).  `gnInstallExitDispatch`,
 `GNInstallExitContinue` and `GNInstallExitInvalid` are byte-identical, so the
 installer shuttle still rejects a carried `data` frame — extending it is
 E2-4b's obligation, not this slice's.
@@ -4507,8 +4514,9 @@ and turns the head around into `rewind .p0`; it rejects every undecodable
 window into the existing stationary sink; otherwise it steps left again.  Four
 rightward rows (`p0`, `p1`, `p2`, `p3`) then stand on p0 of the frame
 immediately after the anchor and enter `valuesEntry`.
-`gnTransition_rewind_rows` pins all nine fixed rows and
-`gnTransition_rewind_decision` all three tape-reading outcomes;
+`gnTransition_rewind_rows` pins nine fixed rows: the seven fixed control rows,
+the `recordDone` entry and the `valuesEntry` self-loop.
+`gnTransition_rewind_decision` pins all three tape-reading outcomes at `r0`;
 `gnTransition_rewind_reserved` covers the three reserved public codes at the
 one new place where tape data enters the finite control.
 
@@ -4552,9 +4560,13 @@ that locates head `4` as p0 of the first frame after the leading `bof`, where
 the current-value run `gnCurrentValues r [] = r.inputs` begins — a pure list
 fact, whose head reading leans on the GN-E2-3b word split, while head `4`
 itself is pinned outright by the second conjunct; and what still has to be
-written,
-namely that the installed scratch image followed by exactly that current-value
-run is `g1PrefixFrames (gnFirstRequest r g)`.
+written, namely that the installed scratch image followed by exactly that
+current-value run is `g1PrefixFrames (gnFirstRequest r g)`.  The in-tree
+docstring of that theorem instead says the fifth conjunct "identifies head `4`",
+and the docstring of `gnValuesEntryConfig` says only the head differs from
+`gnFirstRecordDoneConfig` when the state differs too; both are frozen-tree
+wording deferred to the next authorized unfreeze, and `TMVERIFIER_FREEZE.md`
+records that deferral.
 `gnValuesEntrySteps_le_gnClock` records that this whole proved prefix —
 validation, locator, the `firstRecord` door, the cursor seed shuttle, the
 first-record body driver and this rewind — fits inside the unchanged public
@@ -4588,7 +4600,10 @@ rather than relying on E2-3a's.
 thirteen definitions and its seventeen theorems — and restates every one of the
 seventeen theorems as a full-proposition `check_*` wrapper; `AxiomsAudit.lean`
 roots the same seventeen theorems and the seventeen wrappers directly, because
-a bare `#check @name` pins only the name.
+a bare `#check @name` pins only the name.  Unlike S11's direct definition roots,
+the thirteen definitions here are covered transitively through the rooted
+theorems and their types, including the proof-carrying `gnRewindScanner` and
+`gnValuesEntryConfig`; no additional direct definition roots are claimed.
 
 **Explicitly not here.**  No value copied, no frame written, no
 `[output false, finish]` tail, no completed request word, no extended exit

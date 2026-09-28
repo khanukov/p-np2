@@ -2347,7 +2347,7 @@ the machine.
 tree is frozen at Git tree `c544405f`, the subtree of commit `b35bdca2`; see
 `pnp3/Docs/TMVERIFIER_FREEZE.md`, whose migration record covers the three
 unfreezes since `42c59881` (the reviewed S11 one-gate acceptance closure; the
-single authorized GN-E2-3b body-driver slice, landed by PR #1777 as merge
+authorized GN-E2-3b body-driver slice, landed by PR #1777 as merge
 commit `48151689` on 2026-09-23, an ancestor of this branch, so its history was
 preserved: its exact-head local `./scripts/check.sh`, its two independent
 read-only reviews, the owner attestation and the `tmverifier-unfreeze` label
@@ -2356,11 +2356,20 @@ results against its final head nor the required PR review, so neither is
 claimed here; and the authorized GN-E2-4a values-rewind slice, whose
 stage (a) landed the new frozen bytes and whose stage (b) repinned the freeze
 onto them, so the freeze checker and the `./scripts/check.sh` preflight pass on
-this tree again, while that slice still owes an independent review at any head,
-the complete `./scripts/check.sh` and the entire remote half — none of which is
-claimed). Do not resume E2-4b or later gate-by-gate construction. Active
-model-repair work must use the versioned uniform complexity foundation outside
-that tree.
+this tree again. At the stage-(b) head `e2c3ee33`, Codex and Claude reviews were
+reported as **APPROVE**, and an earlier Codex pass returned
+**REQUEST_CHANGES** on documentation. At the later docs head `4e182c03`, both
+the Codex and Claude reruns returned **BLOCK** on contradictory review claims.
+The freeze record names the reviewed heads, verdicts, evidence and finding
+dispositions. This docs-only correction changes the head again; no independent
+review of the resulting head is claimed. The slice still owes that review,
+the complete `./scripts/check.sh`, final-head remote CI and freeze-policy
+success, the owner's exact full-SHA attestation and label, the required PR
+review, and a non-squash merge preserving both stage commits — none is claimed).
+This migration and its prose recovery are **Infrastructure only**: neither
+`VerifiedNPDAGLowerBoundSource` nor `SearchMCSPWeakLowerBound` is reduced.
+Do not resume E2-4b or later gate-by-gate construction. Active model-repair work
+must use the versioned uniform complexity foundation outside that tree.
 
 **P1a/P1c uniform foundation (infrastructure only).** The independent namespace
 `Pnp3.Complexity.Uniform.V1` provides finite `UniformTM` data with the distinct
@@ -3327,7 +3336,7 @@ fixed-slice `PpolyDAG` membership:
 
 > **Freeze note.** This roadmap is paused; the tree snapshot is pinned at Git
 > tree `c544405f`, the subtree of commit `b35bdca2` (three migrations since
-> `42c59881`: the reviewed S11 acceptance closure, the single authorized
+> `42c59881`: the reviewed S11 acceptance closure, the authorized
 > GN-E2-3b body-driver slice, and the authorized GN-E2-4a values-rewind slice,
 > whose stage (a) landed the new frozen bytes and whose stage (b) repinned the
 > freeze onto them, so the freeze checker passes on this tree again; none of

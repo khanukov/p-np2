@@ -321,6 +321,22 @@ lean_lib PnP3 where
     -- first arrival of the composed accept, pnp4 bridge, or language acceptance is claimed.
     Glob.one
       `Complexity.Uniform.V1.FixedPairContentMarkerEraseTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown,
+    -- Part A G3l: the fixed 26-state, 78-row pair origin alignment, then that whole G3k composite, as
+    -- one closed 177-state, 531-row table.  H6 is newly executed by the alignment phase's three live
+    -- routed rows -- states 10, 11, 12 on `none`, proved its only rows targeting its accept once the
+    -- accept's own absorbing three are excluded -- into index 26 at the phase's own clock
+    -- (10*a+7)*(a+m+1)+3*a, each routed row keeping its own restoration write and its left move; H7 to
+    -- H17 are inherited.  The alignment reject has exactly 21 live rows, proved the only ones and each
+    -- routed to 176, and `alignment_first_arrival` shows none is taken out of this startConfig.
+    -- `handoff_exact` takes no hypothesis at all and pins the strict left-block confinement.  Twelve
+    -- handoffs of seventeen; the switch time is the first in this chain that is not a function of a+m,
+    -- so the composed clock is quadratic in a and budget domination is not claimed; the start still
+    -- retags the actual origin-shift-bootstrap endpoint, the lane stays unfenced, both inherited
+    -- rejecting branches are forward-direction only and the mismatched one is timed only at the gate's
+    -- length-only deadline, and no raw-input execution, first arrival of the composed accept, pnp4
+    -- bridge, or language acceptance is claimed.
+    Glob.one
+      `Complexity.Uniform.V1.FixedPairOriginAlignmentContentMarkerEraseTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
@@ -935,6 +951,8 @@ lean_lib PnP3 where
       `Tests.UniformV1FixedContentTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests,
     Glob.one
       `Tests.UniformV1FixedPairContentMarkerEraseTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests,
+    Glob.one
+      `Tests.UniformV1FixedPairOriginAlignmentContentMarkerEraseTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,

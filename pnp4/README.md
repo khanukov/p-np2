@@ -805,7 +805,21 @@ ever taken out of G3k's start. G3k is Infrastructure only and likewise builds **
 `ContentVerifierBridge`, no raw-input acceptance, no advice-freedom claim and no P-vs-NP mainline
 progress; the standalone phases' pnp4 semantics are unchanged, this chained run still starts at G3e's
 composite, and both of G3k's inherited routed rejects are forward-direction only, the mismatched-tag
-one still timed only from the gate's length-only deadline on. No first arrival of the G3e composed accept is
+one still timed only from the gate's length-only deadline on. Part A G3l (pnp3 only) has since
+executed **H6** as well — the fixed 26-state, 78-row pair origin alignment prefixed to that G3k
+composite as one closed 177-state, 531-row table, again with no new row and no `mergeAccept` —
+taking the count to **twelve of seventeen** with **five** earlier handoffs still proof-level; the
+eleven-and-six counts just given are the ones G3k left. H6 is the first handoff of the chain whose
+live accept list is plural: **three** rows, the alignment states `10`, `11` and `12` on `none`,
+proved the only ones targeting the phase's accept once the accept's own absorbing three are
+excluded, each routed to index `26` keeping its own restoration write and its left move, which at
+the endpoint head `0` is the clamp; which of the three fires on a given input is not claimed. Its
+reject is the largest complete live list so far, exactly **21** rows, proved exhaustive and each
+routed to the composed reject, none ever taken out of G3l's start. G3l's switch time
+`(10a + 7)(a + m + 1) + 3a` is the **first in the chain that is not a function of `N = a + m`**, so
+the composed clock is quadratic in `a` and it is **not** proved that the cubic budget still
+dominates it. G3l is Infrastructure only and builds **no pnp4 bridge** either, on the same terms as
+G3k. No first arrival of the G3e composed accept is
 proved (the first arrival proved is G2p-a's, inside the left block), the lane is still unfenced, the
 composed accept is still the countdown's phase-local `qDone` rather than language acceptance, the
 machine is a V1 `UniformTM` on `Option Bool` cells against `pairLength a m` and not

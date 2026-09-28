@@ -20,24 +20,28 @@ seventeen handoffs are now performed by a finite table and **five** remain proof
   forces one of the classification states `10`, `11`, `12` on `none` (`accept_rows_unique`), and
   `seq` retargets all three to the right block's start `tailStart` at index `26`, each keeping its
   own written symbol — `none`, `some false`, `some true`, the three restoration writes — and its
-  **left** move, in that same transition and at no cost. This is the first handoff of the chain
-  whose live accept list is plural, and the three rows write three different symbols. **Which** of
-  them fires on a given input is *not* claimed: those states are `private` in the landed phase and no
-  landed theorem identifies the control one step before the clock; the surface test exhibits each of
-  the three by kernel reduction at a fixture. The endpoint head is `0`, so the routed `.left` move is
-  the clamp, which is what `seq_handoff` transports: it uses the post-move head and `run_exact` pins
-  that to `0`. On the reject side the alignment table has exactly **21** live rows — the five `none`
-  rows of states `4, 5, 6, 16, 18` and the sixteen Boolean rows of states `0, 13, 14, 15, 19, 20,
-  21, 23` — and `reject_rows_unique` proves that classification exhaustive over all `26` states and
-  all three symbols once both verdicts' own absorbing rows are excluded, while `reject_rows_routed`
-  sends each to the composed reject `176` with the symbol written and the move unchanged. None is
+  **left** move, in that same transition and at no cost. In **forward execution order** this is the
+  first handoff of the chain whose live accept list is plural — the already-executed H11, further
+  right, routes six — and the three rows write three different symbols. **Which** of them fires on a
+  given input is *not* claimed: those states are `private` in the landed phase and no landed theorem
+  identifies the control one step before the clock; the surface test exhibits each of the three by
+  kernel reduction at a fixture. The endpoint head is `0`, which is what `seq_handoff` transports: it
+  uses the post-move head and `run_exact` pins that to `0`. That routed `.left` move is a genuine
+  step onto the origin, **not** a clamp: the landed `boundary_clamps` puts the phase's sole left
+  clamp two steps earlier, at source time `clock - 3`, and `check_h6_literal_probe` exhibits the
+  switch carrying the head from cell `1` to `0`. On the reject side every row of the alignment table
+  targeting its reject is one of **21** — the five `none` rows of states `4, 5, 6, 16, 18` and the
+  sixteen Boolean rows of states `0, 13, 14, 15, 19, 20, 21, 23` — and `reject_rows_unique` proves
+  that list exhaustive over all `26` states and all three symbols once both verdicts' own absorbing
+  rows are excluded, in that one direction only, while `reject_rows_routed` sends each to the
+  composed reject `176` with the symbol written and the move unchanged. None is
   *taken* out of this slice's `startConfig`: `alignment_first_arrival` proves the left block is never
   in its reject at any time whatever, so the composed reject is reachable only through the right
   block. The six rows of the two left verdict copies are dead, no left-block row targeting either
   verdict, and the composed start is neither. The injective, disjoint block maps cover all `177`
   states because their domain sizes are `26` and `151`; together with the two block row equations in
   `table_and_resource_pins`, this accounts for every composed row and excludes right-block targets
-  from the dead left copies. H7 (`26 → 30`), H8 (`30 → 45`), H9 (`45 → 48`), H10 (`48 → 54`) and H11
+  from the dead left copies. H7 (`27 → 30`), H8 (`42 → 45`), H9 (`45 → 48`), H10 (`51 → 54`) and H11
   (six rows inside `[54, 82)`, all into `82`) to H17 (`163 → 166`) are inherited from G3k, its
   indices shifted by twenty-six, located by `(inTail q).val = 26 + q.val` and the universal
   right-block row equation.
@@ -52,11 +56,14 @@ seventeen handoffs are now performed by a finite table and **five** remain proof
   **not** suffice: it is one endpoint identity, and an absorbing phase satisfies it at every later
   time too, while `seq_handoff` starts the right machine inside the accepting transition and so needs
   the absence of any earlier acceptance.
-* **The switch time is the first in this chain that is not a function of `N`.** Every landed slice
-  took `switchTime : Nat → Nat` on `N = a + m`; the alignment clock
-  `(10 * a + 7) * (a + m + 1) + 3 * a` is quadratic in `a` and depends on the two lengths separately,
-  so `switchTime` here takes **two** arguments and so does `alignmentChainClock`. `clock_pins`
-  records that break explicitly and exhibits three different values at one `N` — `switchTime 0 2 =
+* **The switch time is the first in this chain to depend on the split lengths `a` and `m`
+  separately.** The landed switch times are of three kinds, none of them a function of the split:
+  length-only in `N = a + m` (H7's `N + 3`, H8's `3 * N + 7`), width-only in the decoded `zeros`
+  (H9's `zeros + 1`, H10's `successTime zeros = 2 * zeros + 5`) and input-dependent (H11's `C`, for
+  which no length formula exists). The alignment clock `(10 * a + 7) * (a + m + 1) + 3 * a` is
+  quadratic in `a` and reads the two lengths apart, so `switchTime` here takes **two** arguments and
+  so does `alignmentChainClock`. `clock_pins` records that break explicitly and exhibits three
+  different values at one `N` — `switchTime 0 2 =
   21`, `switchTime 1 1 = 54`, `switchTime 2 0 = 87` — so no reformulation of this chain's clock on
   `N` alone is possible. The composed clock is therefore quadratic in `a`, and whether the cubic
   budget still dominates it is **not** proved. This clock is also the first in the chain that counts
@@ -104,8 +111,9 @@ seventeen handoffs are now performed by a finite table and **five** remain proof
   fixtures all have `a = 8`, so `switchTime 8 m` is already `981` or more and reducing to the switch
   overflows the kernel stack. The independent `check_*_probe` theorems — which use **no** slice
   theorem — therefore run on new tiny tag-free fixtures, which is sound because the alignment phase
-  reads no tag, no gamma and no bit meaning, it only shifts the block to the origin: empty inputs
-  (`switchTime 0 0 = 7`) exercise the routed row of state `10`, `![true]`/`![false]`
+  scans those cells but does not test their tag, gamma, or bit meaning; it only shifts the block to
+  the origin: empty inputs (`switchTime 0 0 = 7`) exercise the routed row of state `10`,
+  `![true]`/`![false]`
   (`switchTime 1 1 = 54`) that of state `11`, and `![true]`/`![true]` that of state `12`, so all
   three live H6 rows are exhibited, together with `B = 1`, the inherited H7 firing `N + 3` later, and
   the composed reject `176` entered through the **right** block when the inherited tag gate rejects

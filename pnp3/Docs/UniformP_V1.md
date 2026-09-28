@@ -2783,7 +2783,8 @@ code edited.  `machine` is `FixedPairOriginAlignment.machine.seq` the whole G3k 
 alignment phase's fixed 26-state, 78-row block-to-origin shift on `[0, 26)` and G3k's 151 states on
 `[26, 177)`, one closed 177-state, 531-row table with accept `175` and reject `176`.
 
-H6 is the first handoff of this chain with **three** live routed rows rather than one: the alignment
+In forward execution order H6 is the first handoff of this chain with more than one live routed row --
+the already-executed H11, further right, routes six -- and it has **three**: the alignment
 states `10`, `11` and `12` on `none`, which `accept_rows_unique` proves the only rows targeting the
 phase's accept once the accept's own absorbing three are excluded.  `seq` retargets all three to
 G3k's start `tailStart` at index `26`, each keeping its own written symbol -- `none`, `some false`,
@@ -2791,17 +2792,21 @@ G3k's start `tailStart` at index `26`, each keeping its own written symbol -- `n
 cost.  The alignment phase's working state names are `private`, and no landed theorem identifies the
 control one step before the clock, so **which** of the three fires on a given input is not claimed
 here; the surface test exhibits each of the three by kernel reduction at a fixture.  The endpoint head
-is `0`, so the routed `.left` move is the clamp (`Machine.moveHead_left_zero`), which is what
-`seq_handoff` transports: it uses the post-move head, and `run_exact` pins that to `0`.  On the reject
-side the alignment table has exactly **21** rows targeting its reject -- the five `none` rows of
-states `4, 5, 6, 16, 18` and the sixteen Boolean rows of states `0, 13, 14, 15, 19, 20, 21, 23` --
-`reject_rows_unique` proves that classification exhaustive over all `26` states and all three symbols
-once both verdicts' own absorbing rows are excluded, and `reject_rows_routed` sends each to the
+is `0`, which is what `seq_handoff` transports: it uses the post-move head, and `run_exact` pins that
+to `0`.  That routed `.left` move is a genuine step onto the origin, **not** a clamp: the landed
+`boundary_clamps` puts the phase's sole left clamp two steps earlier, at source time `clock - 3`,
+where the head is already `0` and `moveHead_left_zero` (the V1-namespace lemma in `Machine.lean`)
+applies; `check_h6_literal_probe` exhibits the switch carrying the head from cell `1` to `0`.  On the
+reject side every row of the alignment table targeting its reject is one of **21** -- the five `none`
+rows of states `4, 5, 6, 16, 18` and the sixteen Boolean rows of states `0, 13, 14, 15, 19, 20, 21,
+23` -- `reject_rows_unique` proves that list exhaustive over all `26` states and all three symbols
+once both verdicts' own absorbing rows are excluded, in that one direction only, and
+`reject_rows_routed` sends each to the
 composed reject `176` with the symbol written and the move unchanged.  None is *taken* out of this
 `startConfig`: `alignment_first_arrival` proves the left block never enters its reject there at any
 time, so the composed reject is reachable only through the right block.  The left copies of the two
 alignment verdicts are dead: no composed row targets either, and the composed start is neither
-(`table_and_resource_pins`).  H7 (`26 -> 30`), H8 (`30 -> 45`), H9 (`45 -> 48`), H10 (`48 -> 54`) and
+(`table_and_resource_pins`).  H7 (`27 -> 30`), H8 (`42 -> 45`), H9 (`45 -> 48`), H10 (`51 -> 54`) and
 H11 (six rows inside `[54, 82)`, all into `82`) to H17 (`163 -> 166`) are inherited from G3k, its
 indices shifted by twenty-six and located by `(inTail q).val = 26 + q.val` with the universal
 right-block row equation.
@@ -2823,9 +2828,12 @@ hypothesis-free as whole-`Config` equality.  So the switch hands over exactly th
 right block's own `startConfig` carries -- the `alignedTape`, on the origin cell `0`, the trailing
 marker at `N` still present, erased `N + 3` steps later by the inherited H7 row.
 
-**The switch time is the first in this chain that is not a function of `N`.**  Every landed slice took
-`switchTime : Nat -> Nat` on `N = a + m`; the alignment clock `(10 * a + 7) * (a + m + 1) + 3 * a` is
-quadratic in `a` and depends on the two lengths separately, so `switchTime` here takes **two**
+**The switch time is the first in this chain to depend on the split lengths `a` and `m` separately.**
+The landed switch times are of three kinds, none of them a function of the split: length-only in
+`N = a + m` (H7's `N + 3`, H8's `3 * N + 7`), width-only in the decoded `zeros` (H9's `zeros + 1`,
+H10's `successTime zeros = 2 * zeros + 5`) and input-dependent (H11's `C`, for which no length formula
+exists).  The alignment clock `(10 * a + 7) * (a + m + 1) + 3 * a` is
+quadratic in `a` and reads the two lengths apart, so `switchTime` here takes **two**
 arguments and so does `alignmentChainClock`.  `clock_pins` records that break explicitly and exhibits
 three different values at one `N`: `switchTime 0 2 = 21`, `switchTime 1 1 = 54`, `switchTime 2 0 =
 87`.  The composed clock is therefore quadratic in `a`, and whether the cubic budget still dominates
@@ -2866,8 +2874,9 @@ record -- on a nonempty content the gate's own first rejection is at `3 * N + j`
 Kernel reduction of `machine.run` is quadratic in the step count, and the tagged fixtures all have
 `a = 8`, so `switchTime 8 m` is already `981` or more and reducing to the switch overflows the kernel
 stack.  The independent `check_*_probe` theorems -- which use **no** slice theorem -- therefore run on
-new tiny tag-free fixtures, which is sound because the alignment phase reads no tag, no gamma and no
-bit meaning, it only shifts the block to the origin: empty inputs (`switchTime 0 0 = 7`) exercise the
+new tiny tag-free fixtures, which is sound because the alignment phase scans those cells but does not
+test their tag, gamma, or bit meaning; it only shifts the block to the origin: empty inputs
+(`switchTime 0 0 = 7`) exercise the
 routed row of state `10`, `![true]`/`![false]` (`switchTime 1 1 = 54`) that of state `11`, and
 `![true]`/`![true]` that of state `12`, so all three live H6 rows are exhibited, together with
 `B = 1`, the inherited H7 firing `N + 3` later, and the composed reject `176` entered through the

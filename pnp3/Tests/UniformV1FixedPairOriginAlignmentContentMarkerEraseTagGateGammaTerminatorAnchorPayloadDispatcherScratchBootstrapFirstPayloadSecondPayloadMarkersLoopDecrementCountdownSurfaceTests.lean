@@ -6,25 +6,29 @@ followed by the whole landed G3k composite, as **one** closed 177-state, 531-row
 executed handoff H6 has **three** live routed rows — the alignment states `10`, `11` and `12` on
 `none`, proved by `accept_rows_unique` the only rows targeting the phase's accept once the accept's own
 three are excluded — into G3k's start `tailStart` at index `26`, each keeping its own restoration write
-(`none`, `some false`, `some true`) and its **left** move, which at the endpoint head `0` is the clamp.
-Which of the three fires is **not** claimed: those states are `private` in the landed phase.  The
-alignment reject is the target of exactly **21** live rows — five `none` rows and sixteen Boolean rows,
-`reject_rows_unique` proving that classification exhaustive — and `seq` routes each to the composed
-reject `176`.  None is taken out of this `startConfig`: the left block never rejects at any time.  Both
-dead left verdict copies are no composed row's target, and the composed start is neither.  H7
-(`26 → 30`) to H17 (`163 → 166`) are inherited from G3k.  Every public declaration is restated in full.
+(`none`, `some false`, `some true`) and its **left** move, a genuine step onto the origin cell `0` and
+not a clamp: the landed `boundary_clamps` puts the phase's sole left clamp two steps earlier, at source
+time `clock - 3`.  Which of the three fires is **not** claimed: those states are `private` in the
+landed phase.  Every row targeting the alignment reject is one of **21** — five `none` rows and sixteen
+Boolean rows, `reject_rows_unique` proving that list exhaustive in that one direction only — and `seq`
+routes each to the composed reject `176`.  None is taken out of this `startConfig`: the left block
+never rejects at any time.  Both dead left verdict copies are no composed row's target, and the
+composed start is neither.  H7 (`27 → 30`) to H17 (`163 → 166`) are inherited from G3k.  Every public
+declaration is restated in full.
 
 The switch time.  `switchTime a m = (10 * a + 7) * (a + m + 1) + 3 * a` is the first clock in this
-chain that is **not** a function of `N = a + m`: `check_clock_values` reduces the three pairs with
-`a + m = 2` to `21`, `54` and `87`.  The composed clock is therefore quadratic in `a`, and no claim is
-made that the cubic budget dominates it.
+chain to depend on the split lengths `a` and `m` separately — the landed ones are length-only in
+`N = a + m`, width-only in the decoded `zeros`, or input-dependent — and `check_clock_values` reduces
+the three pairs with `a + m = 2` to `21`, `54` and `87`.  The composed clock is therefore quadratic in
+`a`, and no claim is made that the cubic budget dominates it.
 
 The probes.  Kernel reduction of `machine.run` is quadratic in the step count, and the tagged fixtures
 all have `a = 8`, so `switchTime 8 m` is already `981` or more and reducing to the switch overflows the
 kernel stack.  The `check_*_probe` theorems — which use **no** slice theorem — therefore run on new
-tiny tag-free fixtures, which is sound because the alignment phase reads no tag, no gamma and no bit
-meaning, it only shifts the block to the origin: empty inputs (`switchTime 0 0 = 7`) exercise the
-routed row of state `10`, `![true]`/`![false]` (`switchTime 1 1 = 54`) that of state `11`, and
+tiny tag-free fixtures, which is sound because the alignment phase scans those cells but does not test
+their tag, gamma, or bit meaning — it only shifts the block to the origin: empty inputs
+(`switchTime 0 0 = 7`) exercise the routed row of state `10`, `![true]`/`![false]`
+(`switchTime 1 1 = 54`) that of state `11`, and
 `![true]`/`![true]` that of state `12`, so all three live H6 rows are exhibited, together with
 `B = 1`, the inherited H7 firing `N + 3` later, and the composed reject `176` entered through the
 **right** block when the tag gate rejects the short content.  The tagged fixtures are kept for the
@@ -133,7 +137,8 @@ theorem check_accept_rows_unique (q : Fin FixedPairOriginAlignment.alignmentStat
     (q.val = 10 ∨ q.val = 11 ∨ q.val = 12) ∧ s = none :=
   accept_rows_unique q s hq h
 
-/-- The twenty-one live rows into the alignment reject, restated in full. -/
+/-- Every row into the alignment reject is one of twenty-one, restated in full: this one direction,
+not its converse. -/
 theorem check_reject_rows_unique (q : Fin FixedPairOriginAlignment.alignmentStateCount)
     (s : Option Bool) (ha : q ≠ FixedPairOriginAlignment.machine.accept)
     (hq : q ≠ FixedPairOriginAlignment.machine.reject)
@@ -366,9 +371,9 @@ set_option maxRecDepth 40000 in
 /-- Three of the twenty-one routed reject rows, **derived** from `reject_rows_routed` — a Boolean row
 of state `0` and the `none` rows of states `4` and `18` — each keeping the alignment table's own
 written symbol and its `stay` and landing in the composed reject `176`; and a state with no row into
-the reject at all, `2`, whose every row goes to a working state.  This list of live reject rows is
-complete on the left block, but says nothing about the right block, which keeps its own inherited rows
-into `176`. -/
+the reject at all, `2`, every one of whose three rows targets something other than the reject.  The
+twenty-one-row list is exhaustive on the left block — no other left row reaches the reject — but says
+nothing about the right block, which keeps its own inherited rows into `176`. -/
 theorem check_reject_row_literals :
     machine.step (inAlign ⟨0, by decide⟩) (some true) = (machine.reject, some true, .stay) ∧
       machine.step (inAlign ⟨4, by decide⟩) none = (machine.reject, none, .stay) ∧
@@ -480,9 +485,10 @@ with `probeX = ![true]` and `probeW = ![false]`: at step `0` the alignment start
 `1`, which that cell has been blanked to probe; at step `54 = switchTime 1 1` the control has left the
 left block for `tailStart` (`26`) on the origin cell `0`, and cell `1` carries `some false` again — the
 restoration write is performed by the routed row of the composed table itself, in the transition that
-hands over.  The marker-erase scan then walks right to the first physical blank `3` at step `57`, steps
-left into `qErase` (`27`) at `58`, and at `59 = 54 + (N + 3)` the inherited H7 row has fired into the
-tag gate's start (`30`) with the trailing marker on cell `2` now erased.  Each triple is the whole
+hands over.  The marker-erase scan then runs: at step `55` the control is still `tailStart` (`26`), one
+cell right; at `58` it is `qErase` (`27`) on the marker cell `2`; and at `59 = 54 + (N + 3)` the
+inherited H7 row has fired into the tag gate's start (`30`) with that marker erased.  Each triple is
+the whole
 control index, the whole head index and the **whole** allocated five-cell tape.  No slice theorem is
 used. -/
 theorem check_h6_literal_probe :
@@ -503,8 +509,8 @@ set_option maxRecDepth 4000000 in
 the routed row of state `10` writes `none`, which is what cell `1` already held.  `![true]`/`![true]`
 with `B = 0`: at step `53` the control is the classification state `12` and at `54` it is `26` with
 cell `1` restored to `some true` — the third live routed row, writing a different symbol.  `B = 1`
-moves the source head from `4` to `5` and changes neither the switch time nor the handed-over
-configuration.  No slice theorem is used. -/
+moves the source head from `4` to `5` and still reaches `tailStart` (`26`) on the origin cell `0` at
+the same step `54`; its tape has one cell more and is not compared here.  No slice theorem is used. -/
 theorem check_h6_accept_row_probes :
     (machine.run 6 (startConfig 0 emptyWord emptyWord)).state.val = 10 ∧
     (machine.run 7 (startConfig 0 emptyWord emptyWord)).state.val = 26 ∧

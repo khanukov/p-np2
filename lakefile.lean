@@ -325,11 +325,14 @@ lean_lib PnP3 where
     -- one closed 177-state, 531-row table.  H6 is newly executed by the alignment phase's three live
     -- routed rows -- states 10, 11, 12 on `none`, proved its only rows targeting its accept once the
     -- accept's own absorbing three are excluded -- into index 26 at the phase's own clock
-    -- (10*a+7)*(a+m+1)+3*a, each routed row keeping its own restoration write and its left move; H7 to
-    -- H17 are inherited.  The alignment reject has exactly 21 live rows, proved the only ones and each
-    -- routed to 176, and `alignment_first_arrival` shows none is taken out of this startConfig.
-    -- `handoff_exact` takes no hypothesis at all and pins the strict left-block confinement.  Twelve
-    -- handoffs of seventeen; the switch time is the first in this chain that is not a function of a+m,
+    -- (10*a+7)*(a+m+1)+3*a, each routed row keeping its own restoration write and its left move -- a
+    -- genuine step onto the origin, not a clamp, the phase's sole left clamp being two steps earlier
+    -- at source time clock-3; H7 to H17 are inherited.  Every alignment row targeting its reject is
+    -- one of 21, proved exhaustive in that one direction and each routed to 176, and
+    -- `alignment_first_arrival` shows none is taken out of this startConfig.  `handoff_exact` takes no
+    -- hypothesis at all and pins the strict left-block confinement.  Twelve handoffs of seventeen; the
+    -- switch time is the first in this chain to depend on the split lengths a and m separately -- the
+    -- landed ones are length-only in a+m, width-only in the decoded zeros, or input-dependent --
     -- so the composed clock is quadratic in a and budget domination is not claimed; the start still
     -- retags the actual origin-shift-bootstrap endpoint, the lane stays unfenced, both inherited
     -- rejecting branches are forward-direction only and the mismatched one is timed only at the gate's

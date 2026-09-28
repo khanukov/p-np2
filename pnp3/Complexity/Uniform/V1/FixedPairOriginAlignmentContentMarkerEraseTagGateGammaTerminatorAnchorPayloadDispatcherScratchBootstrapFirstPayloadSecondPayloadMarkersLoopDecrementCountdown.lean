@@ -15,27 +15,30 @@ those thirteen tables with its target routed.  Write `N = a + m` and `d = borrow
 Classification (AGENTS.md): **Infrastructure**.
 
 **Twelve executed handoffs.**  H6 — the origin-alignment phase into the marker-erase scan — is the
-newly executed one, and unlike every earlier one in this chain it has **three** live routed rows, not
-one: the alignment states `10`, `11` and `12` on `none`, which `accept_rows_unique` proves are the
-only rows targeting the phase's accept once the accept's own absorbing three are excluded.  `seq`
+newly executed one, and in forward execution order it is the first of this chain with more than one
+live routed row: **three**, the alignment states `10`, `11` and `12` on `none`, which
+`accept_rows_unique` proves are the only rows targeting the phase's accept once the accept's own
+absorbing three are excluded.  (H11, further right and executed by G3g, already routes six.)  `seq`
 retargets all three to the right block's start `tailStart` at index `26`, each keeping its own written
 symbol — `none`, `some false`, `some true`, the three restoration writes — and its **left** move, in
 that same transition and at no cost.  The alignment phase's working state names are `private`, and no
 landed theorem identifies the control one step before the clock, so **which** of the three fires on a
 given input is not claimed here; the surface test exhibits each of the three by kernel reduction at a
-fixture.  The endpoint head is `0`, so the routed `.left` move is the clamp
-(`moveHead_left_zero` in `Machine.lean`), which is what `seq_handoff` transports: it uses the
-post-move head, and `run_exact` pins that to `0`.  On the reject side the alignment table has exactly
-**21** rows targeting its reject — the five `none` rows of states `4, 5, 6, 16, 18` and the sixteen
-Boolean rows of states `0, 13, 14, 15, 19, 20, 21, 23` — `reject_rows_unique` proves that
-classification exhaustive over all `26` states and all three symbols once both verdicts' own
-absorbing rows are excluded, and `reject_rows_routed` sends each to the composed reject `176` with the
-symbol written and the move unchanged.  None is *taken* out of this `startConfig`:
-`alignment_first_arrival` proves the left block
+fixture.  The endpoint head is `0`, which is what `seq_handoff` transports: it uses the post-move
+head, and `run_exact` pins that to `0`.  That routed `.left` move is a genuine step onto the origin,
+**not** a clamp: the landed `boundary_clamps` puts the phase's sole left clamp two steps earlier, at
+source time `clock - 3`, where the head is already `0` and `moveHead_left_zero` (in `Machine.lean`)
+applies; `check_h6_literal_probe` exhibits the switch carrying the head from cell `1` to `0`.  On the
+reject side every row of the alignment table targeting its reject is one of **21** — the five `none`
+rows of states `4, 5, 6, 16, 18` and the sixteen Boolean rows of states
+`0, 13, 14, 15, 19, 20, 21, 23` — `reject_rows_unique` proves that list exhaustive over all `26`
+states and all three symbols once both verdicts' own absorbing rows are excluded, and
+`reject_rows_routed` sends each to the composed reject `176` with the symbol written and the move
+unchanged.  None is *taken* out of this `startConfig`: `alignment_first_arrival` proves the left block
 never enters its reject there at any time, so the composed reject is reachable only through the right
 block.  The left copies of the two alignment verdicts are dead: no composed row targets either, and
-the start is neither (`table_and_resource_pins`).  H7 (`26 → 30`), H8 (`30 → 45`), H9 (`45 → 48`),
-H10 (`48 → 54`) and H11 (six rows inside `[54, 82)`, all into `82`) to H17 (`163 → 166`) are inherited
+the start is neither (`table_and_resource_pins`).  H7 (`27 → 30`), H8 (`42 → 45`), H9 (`45 → 48`),
+H10 (`51 → 54`) and H11 (six rows inside `[54, 82)`, all into `82`) to H17 (`163 → 166`) are inherited
 from G3k, its indices shifted by twenty-six and located by `(inTail q).val = 26 + q.val` with the
 universal right-block row equation.
 
@@ -57,12 +60,14 @@ hypothesis-free as whole-`Config` equality.  So the switch hands over exactly th
 right block's own `startConfig` carries — the `alignedTape`, on the origin cell `0`, the trailing
 marker at `N` still present, erased `N + 3` steps later by the inherited H7 row.
 
-**The switch time is the first in this chain that is not a function of `N`.**  Every landed slice took
-`switchTime : Nat → Nat` on `N = a + m`; the alignment clock is quadratic in `a` and depends on the
-two lengths separately, so `switchTime` here takes **two** arguments and so does
-`alignmentChainClock`.  `clock_pins` records that break explicitly and exhibits three different values
-at one `N`.  The composed clock is therefore quadratic in `a`, and whether the cubic budget still
-dominates it is *not* proved.
+**The switch time is the first in this chain to depend on the split lengths `a` and `m` separately.**
+The landed switch times are of three kinds, none of them a function of the split: length-only in
+`N = a + m` (H7's `N + 3`, H8's `3 * N + 7`), width-only in the decoded `zeros` (H9's `zeros + 1`,
+H10's `successTime zeros = 2 * zeros + 5`) and input-dependent (H11's `C`, with no length formula).
+The alignment clock is quadratic in `a` and reads the two lengths apart, so `switchTime` here takes
+**two** arguments and so does `alignmentChainClock`.  `clock_pins` records that break explicitly and
+exhibits three different values at one `N`.  The composed clock is therefore quadratic in `a`, and
+whether the cubic budget still dominates it is *not* proved.
 
 **The composed run.**  `handoff_exact` takes **no hypothesis** — no tag, no width, no room, no
 positive budget, no budget-dominates-clock premise: the run out of `startConfig` stays strictly inside
@@ -169,8 +174,10 @@ def startConfig {a m : Nat} (B : Nat) (x : Bitstring a) (w : Bitstring m) :
     (FixedPairOriginAlignment.startConfig B x w)
 
 /-- The alignment phase's strict first arrival, for every input: its own landed `clock a m`.  **Not**
-a function of `a + m` — the block walk costs ten steps per source cell and the phase makes `a + m + 1`
-of them, so the cost is quadratic in the first length alone. -/
+a function of `a + m`: the landed `clock_exact` reads it as
+`2 + a * (10 * (a + m + 1) + 3) + (7 * (a + m) + 5)` — `a` walks of the whole `(a + m + 1)`-cell block
+at ten steps per source cell, then one linear closing sweep — that is,
+`10 * a * a + 10 * a * m + 20 * a + 7 * m + 7`, quadratic in `a` and with a cross term in `a * m`. -/
 def switchTime (a m : Nat) : Nat := (10 * a + 7) * (a + m + 1) + 3 * a
 
 /-- Exact cost of the origin alignment followed by the whole of G3k: the alignment phase's
@@ -260,8 +267,9 @@ theorem table_and_resource_pins :
 /-- **The alignment table has exactly three rows targeting its accept.**  Over all twenty-six states
 and all three symbols, with the accept's own absorbing three excluded, a target of
 `FixedPairOriginAlignment.machine.accept` forces one of the three classification states `10`, `11`,
-`12` on `none`.  So H6 has exactly three live routed rows — plural, unlike every earlier handoff in
-this chain, and they write three different symbols.  Which one fires on a given input is **not**
+`12` on `none`.  So H6 has exactly three live routed rows — plural, the first such in forward
+execution order (H11, further right, already routes six), and they write three different symbols,
+`table_and_resource_pins` exhibiting all three.  Which one fires on a given input is **not**
 stated: those three states are `private` in the landed phase and no landed theorem identifies the
 control at `clock - 1`.  This quantifies over the alignment rows alone and says nothing about the
 composed table as a whole: the inherited right block keeps its own rows, and the only rows this
@@ -278,14 +286,16 @@ theorem accept_rows_unique (q : Fin FixedPairOriginAlignment.alignmentStateCount
   revert q
   decide
 
-/-- **The alignment table has exactly twenty-one rows targeting its reject.**  Over all twenty-six
-states and all three symbols, with both verdicts' own absorbing rows excluded, a target of
+/-- **Every row of the alignment table targeting its reject is one of twenty-one.**  Over all
+twenty-six states and all three symbols, with both verdicts' own absorbing rows excluded, a target of
 `FixedPairOriginAlignment.machine.reject` forces either `none` on one of `4, 5, 6, 16, 18` — the five
 probes that find the tape exhausted — or a Boolean on one of `0, 13, 14, 15, 19, 20, 21, 23` — the
-sixteen rows that find a cell occupied where the shift invariant requires it blank.  Both directions
-of the classification are exhaustive, so this is the whole list.  It is a statement about the fixed
-table, not about reachability: `alignment_first_arrival` proves no row of it is ever taken out of this
-slice's `startConfig`, and it characterises no malformed configuration in general. -/
+sixteen rows that find a cell occupied where the shift invariant requires it blank.  That single
+direction is what is stated — the list is exhaustive.  Its converse, that each of the twenty-one does
+target the reject, is **not** stated here; `check_reject_row_literals` exhibits three of them.  It is
+a statement about the fixed table, not about reachability: `alignment_first_arrival` proves no row of
+it is ever taken out of this slice's `startConfig`, and it characterises no malformed configuration in
+general. -/
 theorem reject_rows_unique (q : Fin FixedPairOriginAlignment.alignmentStateCount) (s : Option Bool)
     (ha : q ≠ FixedPairOriginAlignment.machine.accept)
     (hq : q ≠ FixedPairOriginAlignment.machine.reject)

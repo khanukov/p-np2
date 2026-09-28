@@ -6010,15 +6010,19 @@ end DeprecatedAC0CompatibilityAxiomAudit
 -- executed by the alignment phase's three live routed rows -- states 10, 11 and 12 on `none`, proved
 -- its only rows targeting its accept once the accept's own absorbing three are excluded -- into index
 -- 26 at the phase's own clock (10*a+7)*(a+m+1)+3*a, each routed row keeping its own restoration write
--- (`none`, `some false`, `some true`) and its left move, which at the endpoint head 0 is the clamp.
--- Which of the three fires on a given input is not claimed: those states are `private` in the landed
--- phase.  Its reject has exactly 21 live rows, proved the only ones over all 26 states and all three
--- symbols once both verdicts' own absorbing rows are excluded and each routed to the composed reject
--- 176; `alignment_first_arrival` shows none is ever taken out of this startConfig, and both left
+-- (`none`, `some false`, `some true`) and its left move -- a genuine step onto the origin, not a
+-- clamp, the landed `boundary_clamps` putting the phase's sole left clamp two steps earlier at source
+-- time clock-3.  Which of the three fires on a given input is not claimed: those states are `private`
+-- in the landed phase.  Every row targeting its reject is one of 21, proved exhaustive in that one
+-- direction over all 26 states and all three symbols once both verdicts' own absorbing rows are
+-- excluded, and each routed to the composed reject 176; `alignment_first_arrival` shows none is ever
+-- taken out of this startConfig, and both left
 -- verdict copies are dead.  `handoff_exact` takes no hypothesis at all and pins the strict left-block
 -- confinement.  H7 to H17 are inherited from G3k, its indices shifted by twenty-six.  Twelve handoffs
--- of seventeen; this switch time is the first in the chain that is not a function of a+m, so the
--- composed clock is quadratic in a and budget domination is not claimed.  The start still retags the
+-- of seventeen; this switch time is the first in the chain to depend on the split lengths a and m
+-- separately -- the landed ones are length-only in a+m, width-only in the decoded zeros, or
+-- input-dependent -- so the composed clock is quadratic in a and budget domination is not claimed.
+-- The start still retags the
 -- actual origin-shift-bootstrap endpoint, no raw-input `initialConfig` is executed, the lane stays
 -- unfenced, both inherited rejecting branches are forward direction only and no converse, and the
 -- mismatched-tag one is timed only at the gate's length-only deadline, not at its mismatch cell.  No

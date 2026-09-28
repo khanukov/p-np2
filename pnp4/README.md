@@ -809,14 +809,19 @@ one still timed only from the gate's length-only deadline on. Part A G3l (pnp3 o
 executed **H6** as well — the fixed 26-state, 78-row pair origin alignment prefixed to that G3k
 composite as one closed 177-state, 531-row table, again with no new row and no `mergeAccept` —
 taking the count to **twelve of seventeen** with **five** earlier handoffs still proof-level; the
-eleven-and-six counts just given are the ones G3k left. H6 is the first handoff of the chain whose
-live accept list is plural: **three** rows, the alignment states `10`, `11` and `12` on `none`,
+eleven-and-six counts just given are the ones G3k left. In **forward execution order** H6 is the
+first handoff of the chain whose live accept list is plural — the already-executed H11, further
+right, routes six: **three** rows, the alignment states `10`, `11` and `12` on `none`,
 proved the only ones targeting the phase's accept once the accept's own absorbing three are
-excluded, each routed to index `26` keeping its own restoration write and its left move, which at
-the endpoint head `0` is the clamp; which of the three fires on a given input is not claimed. Its
-reject is the largest complete live list so far, exactly **21** rows, proved exhaustive and each
+excluded, each routed to index `26` keeping its own restoration write and its left move, a genuine
+step onto the origin and **not** a clamp (the phase's sole left clamp is two steps earlier, at source
+time `clock - 3`); which of the three fires on a given input is not claimed. Its
+reject is the longest such list so far: every row targeting it is one of **21**, proved exhaustive in
+that one direction and each
 routed to the composed reject, none ever taken out of G3l's start. G3l's switch time
-`(10a + 7)(a + m + 1) + 3a` is the **first in the chain that is not a function of `N = a + m`**, so
+`(10a + 7)(a + m + 1) + 3a` is the **first in the chain to depend on the split lengths `a` and `m`
+separately** — the landed ones are length-only in `N = a + m`, width-only in the decoded `zeros`, or
+input-dependent — so
 the composed clock is quadratic in `a` and it is **not** proved that the cubic budget still
 dominates it. G3l is Infrastructure only and builds **no pnp4 bridge** either, on the same terms as
 G3k. No first arrival of the G3e composed accept is

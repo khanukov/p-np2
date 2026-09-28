@@ -144,8 +144,11 @@ def startConfig {a m : Nat} (B : Nat) (x : Bitstring a) (w : Bitstring m) :
     FixedContentGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.machine
     (FixedContentTagGate.startConfig B x w)
 
-/-- The tag gate's strict first arrival, and its own length-only deadline: three steps per physical
-cell to rewind, then the seven tag cells and the step that leaves the eighth. -/
+/-- The tag gate's strict first arrival on a matching tag, and its own length-only deadline for
+every input: three steps per physical cell to rewind to the origin, then **seven** more, one per tag
+cell `1` through `7`, the last of them entering the accept as it leaves the eighth tag cell.  Tag
+cell `0` is checked by the rewind's own terminal step, so those seven are the whole post-rewind
+cost. -/
 def switchTime (N : Nat) : Nat := 3 * N + 7
 
 /-- Exact cost of the tag-gate phase followed by the whole of G3i: the gate's length-only first
@@ -239,9 +242,9 @@ theorem table_and_resource_pins :
 three symbols, with the accept's own absorbing three excluded, a target of
 `FixedContentTagGate.machine.accept` forces the last tag state `12` on `some false`.  So H8 has
 exactly one live routed row.  This quantifies over the gate's rows alone and says nothing about the
-composed table as a whole: the inherited right block keeps its own rows, and the excluded rows are
-the dead left copies' own, which `seq` routes to `tailStart` and to the composed reject and no
-composed row ever enters. -/
+composed table as a whole: the inherited right block keeps its own rows, and the only rows this
+excludes are the dead left accept copy's own three — the reject copy's are *not* excluded here —
+which `seq` routes to `tailStart` and no composed row ever enters. -/
 theorem accept_row_unique (q : Fin FixedContentTagGate.stateCount) (s : Option Bool)
     (hq : q ≠ FixedContentTagGate.machine.accept)
     (h : (FixedContentTagGate.machine.rawStep q s).1 = FixedContentTagGate.machine.accept) :
@@ -384,7 +387,10 @@ theorem gate_reject_arrival {a m B : Nat} (x : Bitstring a) (w : Bitstring m)
 /-- G2's `startConfig` is the tag gate's run at `switchTime N`, retagged — and this holds for
 **every** input, matching tag or not, because the gate's `run_deadline` is unconditional.  This is
 the semantic dependency H8 has to respect; it executes nothing.  Only the *handoff* needs the
-matching tag, since only then is that run the gate's accept. -/
+matching tag, since only then is that run the gate's accept.  The `first_arrival` in the name is
+that matching-tag reading of `switchTime N`, the one `gate_first_arrival` proves; this statement
+claims no arrival at all, and on a mismatched tag `switchTime N` is only the gate's deadline and
+need **not** be its first arrival. -/
 theorem terminator_start_at_first_arrival {a m B : Nat} (x : Bitstring a) (w : Bitstring m) :
     FixedContentGammaTerminator.startConfig B x w =
       FixedContentGammaTerminator.retag

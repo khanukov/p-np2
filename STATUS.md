@@ -2785,17 +2785,24 @@ described below brought into this tree and is authoritative for it; and the
 authorized
 GN-E2-5a values/tail writer slice described above, whose stage (a) `11dc8e82`
 landed the new frozen bytes and whose stage (b) `311abc6b` repinned the freeze
-onto them, so the freeze checker passes on this tree again. **No head of
-GN-E2-5a has a full `./scripts/check.sh` of its own**: stage (a) ran only
-targeted builds, stage (b) only the freeze checker, and the three docs-only
-corrections no Lean build at all. One complete run is nevertheless on record for
-this branch's content, logged between `4abaac92` and `d01e2c3e` at
+onto them, so the freeze checker passes on this tree again. **History through
+`bceb38db98cf7d43fda523384969d3f320ed4ced` (review inventory recorded
+2026-09-29): no GN-E2-5a head has a full `./scripts/check.sh` of its own**.
+Stage (a) ran targeted builds, stage (b) the freeze checker; the docs-only
+corrections `3195ffc1`, `40ea2346` and `51db7753` recorded the earlier local
+check suites and no Lean build. The separate `bceb38db` author account records
+only whitespace, doc-honesty and read-only freeze checks, with no full check or
+build; it does not inherit the earlier shell/policy tests or reviewer runs.
+`TMVERIFIER_FREEZE.md` gives each account and its evidence. One complete run is
+nevertheless on record for this branch's content, logged between `4abaac92`
+and `d01e2c3e` at
 `/root/pnp2-agent-reports/gn-e25-4aba-full-check.log` — this slice's own
 118-object freeze pin in its preflight, all seventeen numbered steps, no
 `error:` line and a closing "All checks passed" — but the log names no commit,
-branch or working directory, its content fingerprint places it at `4abaac92`
-rather than any later head, and its exclusivity is unestablished, so it is no
-head's gate result and does not cover the G3l Lean modules `d01e2c3e` merged in;
+branch or working directory, its fingerprint matches the audit-command layout
+at `4abaac92` without establishing exact bytes or checkout identity, and its
+exclusivity is unestablished, so it is no head's gate result and does not cover
+the G3l Lean modules `d01e2c3e` merged in;
 `TMVERIFIER_FREEZE.md` states exactly what it does and does not establish. The
 exclusive full run at the final head is still owed, and GN-E2-4a's passing run
 at `6718b422` transfers nothing to it. At GN-E2-4a's stage-(b) head
@@ -2818,14 +2825,22 @@ two **P2** documentation findings — the freeze header's blanket denial of any
 review at the later heads, and this file's, the freeze record's and the session
 plan's blanket denial of any full check — with no APPROVE/BLOCK label and again
 no blocking theorem or freeze-content defect, while a second run there ended at
-its turn limit with no verdict; the docs-only correction carrying this sentence
-is the fix for both findings. The freeze record names the reviewed heads,
-verdicts, evidence and
-finding dispositions. Every commit after `311abc6b` — those three corrections
-and both integration merges of `main` — changes the head again, so **no review
-is claimed for the corrected head this correction creates**, none is claimed for
-`3195ffc1` or `4abaac92`, and no earlier verdict carries to any of them.
-GN-E2-5a still owes that review,
+its turn limit with no verdict; `51db7753` fixes both findings. The exact-head
+Codex review of `51db7753` returned **FINDINGS**, one P3 and no P0–P2: the
+historical log establishes layout agreement, not byte identity. `bceb38db`
+fixes that P3. At `bceb38db`, Codex initially returned **PASS**, while Opus
+returned **FINDINGS** on P2-A (author-check attribution) and P2-B (stale review
+history). The subsequent Codex adjudication upheld both and the nonblocking
+six-of-eight scan wording nit, acknowledged its earlier documentation PASS was
+too broad, and qualified Opus's stronger claims about absent checks and reviews.
+None reported a blocking theorem or freeze-content defect. The freeze record
+names the reports, evidence, limits and dispositions, including that the
+historical author scan covers six of eight changed `.lean` files, not a
+retroactively enlarged scan. The later first-parent heads through `bceb38db`
+are `3195ffc1`, `4abaac92`, `d01e2c3e`, `40ea2346`, `51db7753` and `bceb38db`.
+No review is claimed for `3195ffc1` or `4abaac92`; reviews apply only to their
+named SHA, and **none reviews or approves a later documentation correction SHA**.
+GN-E2-5a still owes a fresh exact-head review of the corrected head,
 the complete `./scripts/check.sh`, final-head remote CI and freeze-policy
 success, the owner's exact full-SHA attestation and label, the required PR
 review, and a non-squash merge preserving both stage commits, with the owner's

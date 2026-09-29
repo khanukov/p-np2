@@ -12,20 +12,25 @@ returned **APPROVE** with no blocking finding and one P3 documentation note,
 and Claude returned **BLOCK** on four documentation findings. Neither reported
 a Lean, execution, surface, size-gate-arithmetic or freeze-content defect; both
 are recorded with their verdicts, evidence and limits in the GN-E2-5a record
-below. The docs-only commit `3195ffc1` is the fix for those findings, and it
-changed the head again; this branch's two integration merges of `main` —
+below. **History through `bceb38db98cf7d43fda523384969d3f320ed4ced`
+(review inventory recorded 2026-09-29):** the later first-parent heads are the
+docs-only correction `3195ffc1`, this branch's integration merges of `main` —
 `4abaac92`, which brought in `main` at `71179c6d`, and `d01e2c3e`, which brought
-in `main` at `9445a93e` — each moved the head once more, as did the docs-only
-commit `40ea2346`, and as does the docs-only commit carrying this sentence. Two
-of those five later heads carry reviews of their own, and neither is a claim
-about the current head: two independent exact-head reviews split at `d01e2c3e`,
-and at `40ea2346` an exact-head Codex review reported two **P2** documentation
-findings — the two this commit fixes — with no blocking theorem or
-freeze-content defect and no APPROVE/BLOCK label, while a second run there ended
-at its turn limit with no verdict. All are recorded with their evidence and
-limits in the GN-E2-5a record below. **No review is claimed for the corrected
-head this commit creates**, nor for `3195ffc1` or `4abaac92`, and no attestation
-or label is claimed for any head on this branch. One complete
+in `main` at `9445a93e` — and the docs-only corrections `40ea2346`, `51db7753`
+and `bceb38db`, in that order. `3195ffc1` fixes the stage-(b) findings; the
+reviews at `d01e2c3e` split, and `40ea2346` fixes their documentation findings.
+At `40ea2346`, Codex reported two **P2** documentation findings with no
+APPROVE/BLOCK label; the second run ended at its turn limit with no verdict.
+`51db7753` fixes those P2 findings. Codex reviewed `51db7753` as **FINDINGS**,
+one P3 and no P0–P2; `bceb38db` fixes that P3 layout-versus-byte-identity wording.
+At `bceb38db`, Codex initially returned **PASS**, while Opus returned
+**FINDINGS** on P2-A/P2-B provenance defects. The subsequent Codex adjudication
+upheld both and the nonblocking six-of-eight scan wording nit, acknowledging
+that its earlier documentation PASS was too broad. None reported a blocking
+theorem or freeze-content defect. The reports, disagreement, evidence and limits
+are recorded below. No review is claimed for `3195ffc1` or `4abaac92`.
+**None of these reports reviews or approves a later correction SHA**; no
+attestation or label is claimed for any head on this branch. One complete
 `./scripts/check.sh` is on record for this branch's content — logged between
 `4abaac92` and `d01e2c3e`, carrying this slice's own freeze pin and ending "All
 checks passed" — but its checkout and exclusivity are not established and it is
@@ -1440,9 +1445,8 @@ The docs-only commit `40ea2346` is the fix for D-1 through D-7 and
 for N4 below. It changes no frozen byte, no Lean source, no pinned constant and
 no manifest entry, so it disturbs neither review's content findings — and, by
 the same token, neither outcome transfers to the head it created, and neither
-discharges any gate owed below. The fresh exact-head review that head then owed
-is the `40ea2346` review recorded below; the head this commit creates owes one
-again.
+discharges any gate owed below. The subsequent `40ea2346` review is recorded
+below; reviews apply only to their named SHA.
 
 **Two further nonblocking notes, and their disposition.** **N3** — raised by
 Codex at `d01e2c3e` — is that `gnCS_encodeGN_firstRequestReady_exact` states
@@ -1479,26 +1483,89 @@ surface files **against existing cached imports only** — **not** a clean
 dependency build, whole-file `AxiomsAudit`, a full repository build,
 `./scripts/check.sh`, negative controls, remote CI, approval or attestation —
 and it edited, committed and pushed nothing. Its two findings were both **P2**
-documentation defects, and the commit carrying this paragraph is their fix:
+documentation defects, fixed by `51db7753`:
 that this file's header denied any review at the later heads while the
 `d01e2c3e` pair above was recorded, so the header had to separate those
 historical reviews from the absence of a review of the corrected head; and that
 the "no full check at any head" claim here, in `STATUS.md` and in
 `TMVerifier_Session_Plan.md` denied evidence that exists — the log covered in
-the next paragraph — instead of recording it with its limits. A second review
-run at this head, `claude-opus-5`, ended at its 30-turn limit and produced **no
+the full-check record below — instead of recording it with its limits. A second
+review run at this head, `claude-opus-5`, ended at its 30-turn limit and produced **no
 verdict and no report**; its result record is
-`/root/reports/gn-e25-40ea-opus.json`. Neither outcome transfers to the head
-this commit creates, and neither discharges any gate owed below.
+`/root/reports/gn-e25-40ea-opus.json`. Neither outcome transfers to `51db7753`
+or any later SHA, and neither discharges any gate owed below.
+
+**Review at the docs head `51db7753`.** Codex reviewed
+`51db77532dfe471cb03a26477cf92e98448143fd` against `9445a93e`, recorded in
+`/root/reports/gn-e25-51db-codex.txt`: **FINDINGS**, one **P3**, no P0–P2
+finding and no blocking theorem or freeze-content defect. It marked the
+`40ea2346` P2 findings resolved. Its P3 was that audit-command positions and
+counts establish layout agreement, not exact source bytes; an in-memory
+comment-only counterexample preserved that layout while changing the hash.
+`bceb38db98cf7d43fda523384969d3f320ed4ced` resolves P3 by saying the fingerprint
+matches the audit-command layout at `4abaac92` and establishes neither exact
+file bytes nor checkout identity. This FINDINGS verdict is not an approval.
+The review reported source/signature and surface/root/registration inspection,
+118-object read-only freeze verification, independent hashes and in-memory
+manifest regeneration, ancestry checks, the 1497-line/8-file size measurement,
+and an added-line forbidden-token scan across all eight changed `.lean` files.
+It elaborated the four changed implementation files and both changed surface
+files against cached imports, evaluated the 28 audit roots (only `propext`,
+`Classical.choice`, `Quot.sound`) and reproduced the literal execution probe.
+It ran no full `./scripts/check.sh`, full build or clean dependency rebuild,
+whole-file `AxiomsAudit` elaboration, freeze negative controls, doc-honesty
+script, remote gates, attestation or approval. These are reviewer checks at
+`51db7753`, not author checks or results for a later SHA.
+
+**Reviews and adjudication at `bceb38db` (2026-09-29).** Both exact-head
+reports reviewed `bceb38db98cf7d43fda523384969d3f320ed4ced` against `9445a93e`:
+
+- **Codex: PASS**, in `/root/reports/gn-e25-bceb38db-codex.txt`. It confirmed
+  the P3 correction and initially found no new documentation contradiction.
+  It reported Git/whitespace/size/ancestry and source/surface/axiom checks,
+  read-only freeze verification, independent hashes and in-memory manifest
+  regeneration, an all-eight added-line scan, historical log comparisons,
+  cached-import elaboration of the four implementation and two surface files,
+  and evaluation of the 28 audit roots and literal execution probe. It excluded
+  the full check/build, clean rebuild, whole-file audit, negative controls,
+  doc-honesty script, remote gates, attestation and PR approval.
+- **Opus (`claude-opus-5`, explicit fallback): FINDINGS**, in
+  `/root/reports/gn-e25-bceb38db-opus.txt`. It agreed that P3 was fixed and
+  found no theorem or freeze-content defect, but raised **P2-A**, ambiguous
+  attribution of the inherited author-check suite, and **P2-B**, stale head
+  and review history omitting the `51db7753` review. It inspected Git history,
+  diffs, source/surfaces, size arithmetic and historical audit-command layout.
+  It ran no Lean elaboration/axiom evaluation, freeze checker or independent
+  hashes/manifest regeneration, whole-slice token scan, whitespace check,
+  doc-honesty, negative controls, full check, remote gates or attestation.
+- **Codex adjudication: UPHOLD P2-A and P2-B**, in
+  `/root/reports/gn-e25-bceb38db-debate-codex.txt`, also upholding the
+  nonblocking six-versus-eight wording nit without enlarging the historical
+  scan. It explicitly called its earlier unconditional documentation PASS too
+  broad. It qualified Opus's reasoning: editing a paragraph does not necessarily
+  move its historical referent; the driver log does evidence some `bceb38db`
+  author checks; and absence of a claimed review is not absence of an existing
+  review. The upheld defects are ambiguous attribution and an incomplete,
+  unanchored status record. The adjudication used only read-only Git, file
+  inspection and in-memory arithmetic, with no build, Lean, checker, linter,
+  negative-control or remote run.
+
+None of these reports reviews or approves any later correction SHA, supplies
+final-head gate credit or establishes merge readiness.
 
 **One full `./scripts/check.sh` is on record for GN-E2-5a, and it is no head's
 gate result.** Stage (a) ran only the
 targeted implementation, surface, rewind-surface and axiom-audit builds named
 above; stage (b) ran the freeze checker; the docs-only commits `3195ffc1`,
-`40ea2346` and the one carrying this paragraph each ran `git diff --check`, the
+`40ea2346` and `51db7753` each ran `git diff --check`, the
 freeze checker, the freeze shell tests, the freeze-policy script test and the
 doc-honesty linter, re-measured the §6.1 size gate, and ran no Lean build at
-all. **What the commit carrying this paragraph ran.** `git diff --check` clean;
+all.
+
+**Checks recorded for the docs change committed as
+`51db77532dfe471cb03a26477cf92e98448143fd`.** `HEAD` in these recorded commands
+denotes the checkout in that historical run, not a reader's later checkout.
+`git diff --check` clean;
 `scripts/check_tmverifier_freeze.py` **OK** at 118 Git objects matching tree
 `4213b315075f` with reviewed provenance `11dc8e820036` verified;
 `scripts/test_tmverifier_freeze.sh` and
@@ -1511,11 +1578,25 @@ re-measurement, still 1497 changed Lean lines across 8 modules against
 `git merge-base --is-ancestor` exits `0` for both stage commits against `HEAD`,
 and `spec/tmverifier_freeze.json`, both checker scripts and their pinned
 `FROZEN_COMMIT`, `FROZEN_TREE` and schema-3 constants are undirtied; and a
-forbidden-token scan over the slice's six changed Lean files with no hit for
-`axiom`, `sorry`, `admit`, `native_decide`, `Classical.choose`,
-`Classical.arbitrary`, `Nat.find` or a placeholder marker. It ran **no** Lean
+reported forbidden-token scan over six of the slice's eight changed `.lean`
+files with no hit for `axiom`, `sorry`, `admit`, `native_decide`, `Classical.choose`,
+`Classical.arbitrary`, `Nat.find` or a placeholder marker. The historical account
+does not identify the six paths; the reviewers' separate all-eight scans do not
+enlarge this author scan's recorded coverage. It ran **no** Lean
 build, no `AxiomsAudit` elaboration, no `./scripts/check.sh` and nothing remote,
-and it changes no Lean byte, so no targeted build was owed for it. Between
+and it changes no Lean byte, so no targeted build was owed for it.
+
+**Author checks for the docs change committed as
+`bceb38db98cf7d43fda523384969d3f320ed4ced`.**
+`/root/reports/gn-e25-51db-p3fix-driver.log` records successful
+`git diff --check` (including staged and committed diff checks),
+`bash scripts/check_doc_honesty.sh`, and the read-only
+`python3 scripts/check_tmverifier_freeze.py` (118 objects, tree `4213b315075f`,
+provenance `11dc8e820036`), together with the committed diff and final SHA.
+It records no full check or build. The `51db7753` freeze shell/policy tests
+and the reviewer checks above are not attributed to this author run.
+
+**Historical full-check evidence.** Between
 `4abaac92` and `d01e2c3e` one complete `./scripts/check.sh` was
 nevertheless run and logged, at
 `/root/pnp2-agent-reports/gn-e25-4aba-full-check.log`. **What the log shows.**
@@ -1529,9 +1610,9 @@ checkout. Its only timestamps are four candidate-verifier progress stamps
 inside step 13, `2026-09-28T17:51:20Z` through `2026-09-28T17:52:07Z`; they
 fall between `4abaac92` (committed 17:47:48Z) and
 `d01e2c3e` (18:35:56Z), and its `pnp3/Tests/AxiomsAudit.lean` diagnostics occupy
-exactly 5066 distinct command positions with maximum line 6234 — which is that
-file at `4abaac92`, where 5064 `#print axioms` plus two `#check` commands fill
-6234 lines, and not that file at `d01e2c3e`, where it is 6318 lines with 5122
+exactly 5066 distinct command positions with maximum line 6234 — matching the
+layout at `4abaac92`, where 5064 `#print axioms` plus two `#check` commands fill
+6234 lines, rather than at `d01e2c3e`, where the file is 6318 lines with 5122
 `#print axioms`. Consistently, GN-E2-5a's writer and its surface module appear
 throughout the log, while the G3l origin-alignment countdown module that
 `d01e2c3e` merged in from `main` at `9445a93e` never appears in it. This fingerprint
@@ -1540,15 +1621,16 @@ file bytes nor checkout identity, and **exclusivity is not established** —
 nothing in the log shows what else was running or that the tree was otherwise
 clean. The run is therefore evidence about this branch's content at `4abaac92`
 and about nothing later: `d01e2c3e` brought in `main`'s G3l Lean modules, which
-that run never compiled, and `40ea2346` and this commit moved the head again.
+that run never compiled, and `40ea2346`, `51db7753` and `bceb38db` subsequently
+moved the head again in the history through `bceb38db`.
 **The exclusive full check at the final head is still owed**, and nothing above
 is claimed as it. The passing local full `./scripts/check.sh`
 named in the GN-E2-4a record belongs to that slice at `6718b422` and says
 nothing about this slice's head.
 
 Still owed before merge: a fresh exact-head review of the corrected head
-(neither the `311abc6b` pair, the `d01e2c3e` pair nor the `40ea2346` review
-above carries over), the
+(the `311abc6b`, `d01e2c3e`, `40ea2346`, `51db7753` and `bceb38db` reviews
+and the `bceb38db` adjudication apply only to their named SHA), the
 exclusive full
 `./scripts/check.sh`, all final-head remote checks, the repository owner's
 exact `/tmverifier-unfreeze <full-sha>` attestation, the `tmverifier-unfreeze`

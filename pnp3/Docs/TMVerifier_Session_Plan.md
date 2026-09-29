@@ -1,7 +1,7 @@
 # Plan: closing the TM verifier for canonical asymptotic GapPartialMCSP
 
 > **Frozen historical plan (2026-09-03; amended 2026-09-20, 2026-09-22,
-> 2026-09-27 and 2026-09-28; review record corrected 2026-09-28).**
+> 2026-09-27 and 2026-09-28; review provenance corrected 2026-09-29).**
 > The freeze pin now names Git tree `4213b315`, the subtree of commit
 > `11dc8e82`; see `pnp3/Docs/TMVERIFIER_FREEZE.md`, whose migration record
 > covers four unfreezes since `42c59881`: S11 below, reviewed and completed;
@@ -27,14 +27,21 @@
 > what the first of this branch's two integration merges of `main`, `4abaac92`,
 > brought into this tree, and
 > `TMVERIFIER_FREEZE.md` now carries it in full; none of it transfers to
-> GN-E2-5a. **No head of GN-E2-5a has a full `./scripts/check.sh` of its own**:
-> stage (a) ran targeted builds, stage (b) the freeze checker, and the three
-> docs-only corrections no Lean build at all. One complete run is nevertheless on
+> GN-E2-5a. **History through `bceb38db98cf7d43fda523384969d3f320ed4ced`
+> (review inventory recorded 2026-09-29): no GN-E2-5a head has a full
+> `./scripts/check.sh` of its own**. Stage (a) ran targeted builds, stage (b) the
+> freeze checker; the docs-only corrections `3195ffc1`, `40ea2346` and
+> `51db7753` recorded the earlier local check suites and no Lean build. The
+> separate `bceb38db` author account records only whitespace, doc-honesty and
+> read-only freeze checks, with no full check or build; it does not inherit the
+> earlier shell/policy tests or reviewer runs. `TMVERIFIER_FREEZE.md` gives each
+> account and its evidence. One complete run is nevertheless on
 > record for this branch's content — logged between `4abaac92` and `d01e2c3e` at
 > `/root/pnp2-agent-reports/gn-e25-4aba-full-check.log`, carrying this slice's
 > own 118-object freeze pin and ending "All checks passed" — but it names no
-> checkout, its content fingerprint places it at `4abaac92` rather than any later
-> head, and its exclusivity is unestablished, so it is no head's gate result and
+> checkout, its fingerprint matches the audit-command layout at `4abaac92`
+> without establishing exact bytes or checkout identity, and its exclusivity is
+> unestablished, so it is no head's gate result and
 > never compiled the G3l modules `d01e2c3e` merged in; `TMVERIFIER_FREEZE.md`
 > states exactly what it does and does not establish, and the exclusive
 > final-head run is still owed. GN-E2-4a's passing run belongs to `6718b422` and
@@ -59,10 +66,21 @@
 > later heads, and the blanket denial of any full check carried here, in
 > `STATUS.md` and in the freeze record — with no APPROVE/BLOCK label and again no
 > blocking theorem or freeze-content defect, while a second run there ended at its
-> turn limit with no verdict. The docs-only correction carrying this sentence is
-> the fix for those two and changes the head again, so **no review is claimed for
-> the corrected head it creates**, none is claimed for `3195ffc1` or `4abaac92`,
-> and no earlier verdict carries to any of them.
+> turn limit with no verdict. `51db7753` fixes those two findings. Its exact-head
+> Codex review returned **FINDINGS**, one P3 and no P0–P2: the historical log
+> establishes layout agreement, not byte identity. `bceb38db` fixes that P3.
+> At `bceb38db`, Codex initially returned **PASS**, while Opus returned
+> **FINDINGS** on P2-A (author-check attribution) and P2-B (stale review history).
+> The subsequent Codex adjudication upheld both and the nonblocking six-of-eight
+> scan wording nit, acknowledged its earlier documentation PASS was too broad,
+> and qualified Opus's stronger claims about absent checks and reviews. None
+> reported a blocking theorem or freeze-content defect. The freeze record names
+> the reports, evidence, limits and dispositions; the historical author scan
+> remains six of eight changed `.lean` files, not a retroactively enlarged scan.
+> The later first-parent heads through `bceb38db` are `3195ffc1`, `4abaac92`,
+> `d01e2c3e`, `40ea2346`, `51db7753` and `bceb38db`. No review is claimed for
+> `3195ffc1` or `4abaac92`; reviews apply only to their named SHA, and **none
+> reviews or approves a later documentation correction SHA**.
 > GN-E2-5a still owes the complete `./scripts/check.sh`, a review of the
 > corrected head, final-head remote CI and freeze-policy success, the owner's
 > exact full-SHA attestation and label — reissued against whatever head is

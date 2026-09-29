@@ -1752,6 +1752,27 @@ clock takes two length arguments, the composed clock is quadratic in `a`, and it
 that the cubic budget still dominates it. G3l is Infrastructure only and builds **no pnp4 bridge**
 either: no G3l bridge module exists, this bridge still starts at G3e's composite, and no
 `ContentVerifierBridge`, raw-input acceptance, advice-freedom claim or P-vs-NP mainline progress
+follows from it. Part A G3m (pnp3 only) has since executed **H5** as well — the fixed 7-state,
+21-row structural one-cell origin shift prefixed to that G3l composite as one closed 184-state,
+552-row table, again with no new row and no `mergeAccept`, switching at the shift phase's own strict
+first arrival `4a + 3m + 5`, which was already landed in the shape `seq` consumes and
+hypothesis-free, so G3m's `handoff_exact` takes no hypothesis either and additionally pins strict
+left-block confinement — taking the count to **thirteen of seventeen** with **four** earlier
+handoffs still proof-level; the twelve-and-five counts just given are the ones G3l left. H5's live
+accept list is as narrow as a live handoff's can be: one row, the bootstrap fetch state `4` on
+`none`, proved the only one targeting the phase's accept once the accept's own absorbing three are
+excluded, routed to index `7` keeping its written `none` and its `.stay`, so it costs nothing and
+clamps on neither budget — the phase's own last right move, at source time `clock - 2`, is what
+clamps, and exactly when `B = 0`. Its reject side is proved an **equivalence**, not just exhaustive:
+once **both** verdicts' own absorbing rows are excluded, a row targets the phase's reject exactly when
+the symbol is a Boolean and the state is one of `1`, `2`, `3`, six rows in all, each routed to the
+composed reject, and none ever taken out of G3m's start. G3m's switch time is linear, far below G3l's
+quadratic one, but it still reads the two split lengths apart, so G3m's chain clock likewise takes
+two length arguments, the composed clock stays quadratic in `a`, and it is still **not** proved that
+the cubic budget dominates it. G3m is Infrastructure only and builds **no pnp4 bridge** either: no
+G3m bridge module exists, this bridge still starts at G3e's composite, the composed start still
+retags the actual tag-removal endpoint rather than executing a raw input, and no
+`ContentVerifierBridge`, raw-input acceptance, advice-freedom claim or P-vs-NP mainline progress
 follows from it. `S` is the first
 time H12 fires, but no theorem says `C` is the first time the composed accept is entered; the first
 arrival proved is G2p-a's, inside the left block. All seven tables are unfenced, hence so is the

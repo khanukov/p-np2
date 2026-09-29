@@ -1,6 +1,43 @@
 # Project Status (current)
 
-Updated: 2026-09-28
+Updated: 2026-09-29
+
+**Part A G3n — Infrastructure: executed tag-removal → unchanged G3m handoff H4.**
+`Complexity.Uniform.V1.FixedPairTagRemovalShiftAlignmentCountdown` composes the existing
+nine-state tag-removal machine with G3m using unchanged `UniformTM.seq`: 193 states,
+579 rows, start 0, accept 191, reject 192. **Fourteen of seventeen handoffs are now
+executed; H1–H3 remain proof-level connections.** The single live H4 row is state 1
+on blank, routed to state 9, writing blank and staying, at `a * (a + 5) + 2` steps.
+The origin clamp occurs separately at `clock a - 2`. Exactly seven live rows target
+the removal reject once both verdict source states are excluded.
+
+`handoff_exact` has no proposition premises and proves actual `UniformTM.run`
+execution: strict left-block confinement before H4, no composed verdict through H4,
+whole-configuration handoff at head 0 over `compactTape`, and every later G3m
+configuration under the right embedding. The inherited H5/H6/H7 controls are 16/42/46.
+`tag_removal_countdown_drained` retains exactly eight G3m premises: matching tag,
+gamma width, dispatcher `StrictFirstTerminalAt`, width at least two, `v ≤ F`,
+allocation room, register-bit identification, and zero high bits. It reaches accept
+at `removalChainClock`, head `a + m + 2 + zeros`, tape `loopTape B x w zeros 0 v`,
+and persists. This is not first arrival of composed accept. Tiny independent
+reduction probes cover empty inputs at budgets 0/1 and both singleton query bits
+with empty/nonempty witnesses. The large fixture is theorem-derived: hand-supplied
+`v = 24`, 2972 = 106 + 2866 steps, accept 191, head 23,
+`loopTape 22 tag physWord 4 0 24`. This is execution nonvacuity, not `ContentAccepts`
+nonvacuity; the full large run is not kernel-reduced.
+
+The start is the encoded-pair tag-removal phase configuration, not raw input.
+G3m already executes origin alignment; G3n adds only H4. No later parser field,
+`TM.runConfig` conversion, runtime fence, budget-domination theorem, language
+acceptance, advice-freedom claim, verifier bridge, or P-vs-NP mainline progress is
+supplied. `C`, `q`, and `v` remain theorem parameters, never selected runtime data.
+Rejection transport remains forward-only, with the mismatched branch guaranteed
+only from the inherited deadline. No pnp4 bridge advances: the accepted-content
+composite bridge still starts at G3e. Neither `SearchMCSPWeakLowerBound` nor
+`VerifiedNPDAGLowerBoundSource` is reduced.
+
+The following G3m record describes its own earlier thirteen/four boundary; G3n above
+is the current fourteen/three boundary.
 
 **Part A G3m, the executed origin-shift → origin-alignment handoff H5: the same sequential
 composition applied a thirteenth time, one block further left, with no new table row and no new
@@ -12,7 +49,7 @@ the left block `[0, 7)` followed by the whole landed G3l 177-state composite on 
 closed 184-state, 552-row table, `FixedPairOriginShiftBootstrap.machine.seq
 FixedPairOriginAlignmentContentMarkerEraseTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.machine`,
 with accept `182` and reject `183`. Write `N = a+m` and `d = borrow x w zeros`. **Thirteen** of the
-seventeen handoffs are now performed by a finite table and **four** remain proof-level retags.
+seventeen handoffs were then performed by a finite table and **four** remained proof-level retags.
 
 * **H5 is executed by one live routed row, and it is a `.stay`.** Over all seven bootstrap states and
   all three symbols, with the accept's own absorbing three excluded, a target of the phase's accept
@@ -155,7 +192,8 @@ with its surface test. **No new table row and no landed module's code edited**; 
 FixedPairContentMarkerEraseTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown.machine`,
 with accept `175` and reject `176`. Write `N = a+m` and `d = borrow x w zeros`. **Twelve** of the
 seventeen handoffs were performed by a finite table when this slice landed and **five** remained
-proof-level retags; G3m above has since executed H5 as well, taking the counts to thirteen and four.
+proof-level retags; G3m above executed H5, taking the counts to thirteen and four; G3n now executes H4,
+taking them to fourteen and three.
 
 * **H6 is executed by three live routed rows, not one.** Over all twenty-six alignment states and
   all three symbols, with the accept's own absorbing three excluded, a target of the phase's accept

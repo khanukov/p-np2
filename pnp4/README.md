@@ -824,12 +824,22 @@ separately** — the landed ones are length-only in `N = a + m`, width-only in t
 input-dependent — so
 the composed clock is quadratic in `a` and it is **not** proved that the cubic budget still
 dominates it. G3l is Infrastructure only and builds **no pnp4 bridge** either, on the same terms as
-G3k. Part A G3m (pnp3 only) has since executed **H5** as well — the fixed 7-state, 21-row structural
+G3k. Part A G3n (pnp3 only) now executes **H4**, tag removal into unchanged G3m,
+using `FixedPairTagRemovalShiftAlignmentCountdown`: **fourteen of seventeen**
+executed handoffs, with **three** remaining (H1–H3). Its closed 193-state, 579-row
+`UniformTM` hands over at `a * (a + 5) + 2` with no proposition premises and preserves
+the whole configuration. The exact drain retains the eight G3m hypotheses; the
+2972-step fixture is derived with hand-supplied `v = 24`, not `ContentAccepts`
+nonvacuity or first arrival of composed accept. This is **Infrastructure only** and
+builds **no pnp4 bridge**: the accepted-content composite bridge still starts at
+G3e. No raw-input execution, later parser field, `TM.runConfig` conversion,
+runtime fence, advice-freedom claim, verifier bridge, or P-vs-NP mainline progress
+follows. The following G3m counts describe its earlier boundary. Part A G3m (pnp3 only) has since executed **H5** as well — the fixed 7-state, 21-row structural
 one-cell origin shift prefixed to that G3l composite as one closed 184-state, 552-row table, again
 with no new row and no `mergeAccept`, switching at the shift phase's own strict first arrival
 `4a + 3m + 5`, which was already landed in the shape `seq` consumes and hypothesis-free, so G3m's
 `handoff_exact` takes no hypothesis either and additionally pins strict left-block confinement —
-taking the count to **thirteen of seventeen** with **four** earlier handoffs still proof-level; the
+then taking the count to **thirteen of seventeen** with **four** earlier handoffs still proof-level; the
 twelve-and-five counts just given are the ones G3l left. H5's live accept list is as narrow as a live
 handoff's can be: **one** row, the bootstrap fetch state `4` on `none`, proved the only one targeting
 the phase's accept once the accept's own absorbing three are excluded, routed to index `7` keeping

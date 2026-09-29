@@ -356,6 +356,7 @@ lean_lib PnP3 where
     -- gate's length-only deadline, and no raw-input execution, first arrival of the composed accept,
     -- pnp4 bridge, or language acceptance is claimed.
     Glob.one `Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown,
+    Glob.one `Complexity.Uniform.V1.FixedPairTagRemovalShiftAlignmentCountdown,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
@@ -977,6 +978,7 @@ lean_lib PnP3 where
     Glob.one
       `Tests.UniformV1FixedPairOriginAlignmentContentMarkerEraseTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests,
     Glob.one `Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests,
+    Glob.one `Tests.UniformV1FixedPairTagRemovalShiftAlignmentCountdownSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,

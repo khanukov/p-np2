@@ -1,5 +1,20 @@
 # Project Status (current)
 
+**Owner-docstring correction (2026-09-29, Infrastructure only):** Qodo's
+finding at PR #1804 exact head
+`1b5aa3e219d30d2292c8cd13bbc8e68acbbb1d90`, as supplied by the owner,
+is addressed by the two-stage migration recorded in `TMVERIFIER_FREEZE.md`.
+Stage (a) is `1e7fe40592001142378ff3620c888045d8c10594`; stage (b)
+repins tree `145252565dc2538c6c01c19fc2f6814abc1c3a8d` and updates these
+records. The current size is **1499 changed Lean lines (1468 added, 31 deleted)
+across 8 files**, including `lakefile.lean`, against merge base
+`2f8a3d5e6f90fe41a2cd7bc240d3c9fad407b68e`. The 1497-line counts below
+are historical measurements before this correction. The owner-label deferral
+is closed; GN-E2-5b implementation remains paused. No review of either new
+correction head is claimed. The sole repository category remains
+`Infrastructure`; the existing `tmverifier-unfreeze` labeling intent remains.
+No remote label or attestation is issued by this local correction.
+
 Updated: 2026-09-29
 
 **Lane B integration update (2026-09-29, Infrastructure):** this branch's third
@@ -2893,20 +2908,17 @@ reserved output slot immediately, so no theorem in this slice executes them,
 and the zero-input literal probe is a nonvacuity witness for execution, **not**
 a witness of a values copy. The per-value copy round, its list induction and
 the nonempty-input capstone are GN-E2-5b's. The older label `E2-4b` is retired
-in favour of that name: this file's two uses of it — the pause sentence in
-**Current engineering priority** below and the freeze note under **What Is
-Still Open** — now say GN-E2-5b, and outside this file the label survives in
-`pnp3/Docs/TMVERIFIER_FREEZE.md`, `pnp3/Docs/TMVerifier_Session_Plan.md` and
-the frozen `GateNValuesRewind.lean` docstring, the first two of which record
-the redirection explicitly, while the in-tree docstring is left as written
-because correcting it would change frozen bytes. There is no rewind to
+in favour of that name. The frozen `GateNValuesRewind.lean:531` owner label
+now also says `GN-E2-5b`, through the separate two-stage docstring migration
+recorded in `pnp3/Docs/TMVERIFIER_FREEZE.md`. Historical references in that
+record and `TMVerifier_Session_Plan.md` retain their dated context. There is no rewind to
 the scratch `bof`, launch, delegation, commit, next-gate loop, total installer
 clock, verdict, acceptance, language-level statement, or any claim that
 `evalGNProgram` is executed by this machine.
 
 **Current engineering priority.** The one-tape `pnp3/Complexity/TMVerifier/`
-tree is frozen at Git tree `4213b315`, the subtree of commit `11dc8e82`; see
-`pnp3/Docs/TMVERIFIER_FREEZE.md`, whose migration record covers the four
+tree is frozen at Git tree `14525256`, the subtree of commit `1e7fe405`; see
+`pnp3/Docs/TMVERIFIER_FREEZE.md`, whose migration record covers the five
 unfreezes since `42c59881` (the reviewed S11 one-gate acceptance closure; the
 authorized GN-E2-3b body-driver slice, landed by PR #1777 as merge
 commit `48151689` on 2026-09-23, an ancestor of this branch, so its history was
@@ -2936,7 +2948,8 @@ described below brought into this tree and is authoritative for it; and the
 authorized
 GN-E2-5a values/tail writer slice described above, whose stage (a) `11dc8e82`
 landed the new frozen bytes and whose stage (b) `311abc6b` repinned the freeze
-onto them, so the freeze checker passes on this tree again. **History through
+onto them; and the owner-docstring correction, whose stage (a) `1e7fe405`
+changes only the owner label and whose separate stage (b) repins it). **History through
 `bceb38db98cf7d43fda523384969d3f320ed4ced` (review inventory recorded
 2026-09-29): no GN-E2-5a head has a full `./scripts/check.sh` of its own**.
 Stage (a) ran targeted builds, stage (b) the freeze checker; the docs-only
@@ -3982,11 +3995,11 @@ fixed-slice `PpolyDAG` membership:
 ### Canonical-track TM-verifier deliverable (frozen historical roadmap)
 
 > **Freeze note.** This roadmap is paused; the tree snapshot is pinned at Git
-> tree `4213b315`, the subtree of commit `11dc8e82` (four migrations since
+> tree `14525256`, the subtree of commit `1e7fe405` (five migrations since
 > `42c59881`: the reviewed S11 acceptance closure, the authorized
 > GN-E2-3b body-driver slice, the authorized GN-E2-4a values-rewind slice, and
-> the authorized GN-E2-5a values/tail writer slice, the one the current pin
-> names, each of the last three landing a stage (a) that committed the new
+> the authorized GN-E2-5a values/tail writer slice, plus the owner-docstring
+> correction the current pin names, each of the last four landing a stage (a) that committed the new
 > frozen bytes and a stage (b) that repinned the freeze onto them, so the
 > freeze checker passes on this tree again; none of them resumed the roadmap,
 > and GN-E2-5b — the per-value copy round, formerly called `E2-4b` — and later

@@ -1,5 +1,20 @@
 # TMVerifier freeze decision
 
+**Owner-docstring correction (2026-09-29, Infrastructure only):** Qodo's
+finding at PR #1804 exact head
+`1b5aa3e219d30d2292c8cd13bbc8e68acbbb1d90`, as supplied by the owner,
+is addressed by the two-stage migration recorded in `TMVERIFIER_FREEZE.md`.
+Stage (a) is `1e7fe40592001142378ff3620c888045d8c10594`; stage (b)
+repins tree `145252565dc2538c6c01c19fc2f6814abc1c3a8d` and updates these
+records. The current size is **1499 changed Lean lines (1468 added, 31 deleted)
+across 8 files**, including `lakefile.lean`, against merge base
+`2f8a3d5e6f90fe41a2cd7bc240d3c9fad407b68e`. The 1497-line counts below
+are historical measurements before this correction. The owner-label deferral
+is closed; GN-E2-5b implementation remains paused. No review of either new
+correction head is claimed. The sole repository category remains
+`Infrastructure`; the existing `tmverifier-unfreeze` labeling intent remains.
+No remote label or attestation is issued by this local correction.
+
 **Integration update (2026-09-29, Infrastructure):** the third integration merge
 has parents `03b8184402fb7bf092d3bcd72ca7c936fab9862b` and
 `2f8a3d5e6f90fe41a2cd7bc240d3c9fad407b68e`, in that order. It preserves G3m
@@ -11,13 +26,13 @@ current are the prior snapshot's bookkeeping. Historical reviews and checks
 remain attached only to their recorded heads; this integration establishes no
 full-check or review gate result and does not begin GN-E2-5b.
 
-**Status:** frozen infrastructure snapshot. Both stages of the GN-E2-5a
-migration recorded at the end of this file have now landed on this branch:
-stage (a), commit `11dc8e82`, committed the new frozen bytes together with
-their registration, and the immediately following stage (b) re-pins the freeze
-onto that commit and its subtree. The two pinned constants below therefore name
-the GN-E2-5a stage-(a) commit `11dc8e82` and its subtree `4213b315`. The freeze
-checker passes again after regeneration of the manifest. Two independent
+**Status:** frozen infrastructure snapshot. The Qodo owner-docstring correction
+uses a separate two-stage migration: stage (a), `1e7fe40592001142378ff3620c888045d8c10594`,
+changes only `which E2-4b owns` to `which GN-E2-5b owns`; stage (b)
+repins the checker and manifest to that commit and subtree `145252565dc2538c6c01c19fc2f6814abc1c3a8d`.
+The GN-E2-5a pair `11dc8e82` → `311abc6b` remains in ancestry.
+The new correction heads have no independent review claimed.
+Two independent
 exact-head reviews ran at the stage-(b) head `311abc6b` and split: Codex
 returned **APPROVE** with no blocking finding and one P3 documentation note,
 and Claude returned **BLOCK** on four documentation findings. Neither reported
@@ -69,22 +84,24 @@ provenance commit `7b53a08f` is an ancestor of this branch. Local Git records
 neither the remote gate results for that merge nor the required PR review, so
 neither is claimed; what it discharged and what local history cannot show are
 split out in its record, not here.
-**Frozen tree (authoritative):** `4213b315075f67468451a6736afc04486df0350c` —
+**Frozen tree (authoritative):** `145252565dc2538c6c01c19fc2f6814abc1c3a8d` —
 the Git tree object of the subtree below, and the content source the checker
 verifies against.
 **Reviewed-provenance commit (`FROZEN_COMMIT`):**
-`11dc8e8200368db075821d74ed9acd60665bc398` (2026-09-28) — the GN-E2-5a
+`1e7fe40592001142378ff3620c888045d8c10594` (2026-09-29) — the owner-docstring correction
 stage-(a) commit whose subtree the pin names. The checker calls this value
 "reviewed provenance" because that is the role the constant plays; independent
 review of the final migration head remains owed.
-**Previously frozen at:** tree `c544405f94cb68755cad3dc5c6a0639517a2967b`,
+**Previously frozen at:** tree `4213b315075f67468451a6736afc04486df0350c`,
+provenance commit `11dc8e8200368db075821d74ed9acd60665bc398` (2026-09-28),
+before that at tree `c544405f94cb68755cad3dc5c6a0639517a2967b`,
 provenance commit `b35bdca2cb24af709144998af5c4402d42a18aa5` (2026-09-27),
 before that at tree `b49456d6e08bbce69fd94af2d2a97beef438d210`, provenance
 commit `7b53a08fc13517fcf8b2c73b45f6515102a13863` (2026-09-20), before
 that at tree `7ef6ac6e119f0f078f9c896f17415fa560a6edf3`, provenance commit
 `249435bfa4cb540822e47844107781042f18537f` (2026-09-19), and before that at
 commit `42c598815c8e7d27a53f26102705f84455c6979d` (2026-09-02); see the
-migration record below for the four unfreezes since then.
+migration record below for the five unfreezes since then.
 
 **Those SHAs are provenance commits, not reviewed heads.** Each one is the
 `FROZEN_COMMIT` its pin named — the commit whose subtree the pin identified — and
@@ -1400,15 +1417,12 @@ restatement of its own; `check_gnTransition_dataExit` restates the narrowing
 only at the `carried (.data b)` case and `TMGateNBodyRoundSurfaceTests.lean`
 pins the bare name — is **not** addressed here, because closing it means adding
 a Lean wrapper and this is a documentation-only commit; it is carried forward
-to GN-E2-5b. One further inconsistency is **deferred for the same reason
-GN-E2-4a's in-tree notes were**: `GateNValuesRewind.lean:531` still says the
-values copy is what "E2-4b owns", while `GateNValuesWriter.lean:38-39` assigns
-it to GN-E2-5b. Both docstrings are inside the frozen tree, so reconciling them
-would change frozen bytes and needs its own stage (a) plus stage (b) unfreeze
-pair and a new pin. The accurate reading — the label `E2-4b` is retired and the
-owner is GN-E2-5b — is recorded outside the frozen tree, in the
-`TMVerifier_Session_Plan.md` header block, and nothing here authorizes that
-later in-tree edit.
+to GN-E2-5b. The owner-label inconsistency was deferred at that docs-only head:
+`GateNValuesRewind.lean:531` still assigned the values copy to `E2-4b`, while
+`GateNValuesWriter.lean:38-39` assigned it to GN-E2-5b. That deferral is now
+closed by the separately authorized owner-docstring stage (a) and stage (b)
+recorded below. Only the owner label changes; N1 and the other frozen wording
+notes remain outside this correction's scope.
 
 **Reviews at the second integration-merge head `d01e2c3e` — which reviewer,
 which verdict.** Two further independent read-only exact-head reviews ran
@@ -1488,7 +1502,8 @@ evaluating to `propext`, `Classical.choice` and `Quot.sound` only; and
 independently reproduced the literal probe at 700 + 84 = 784 with head 80 and
 cells 72 and 76 turning true. It confirmed D-1 through D-7 present and the
 superseded-base caveat repaired, and it raised no new nonblocking note: N1, N3
-and the frozen in-tree `E2-4b` label stay deferred as recorded. It ran
+and the frozen in-tree `E2-4b` label were deferred at that head (the label is
+now corrected by the migration below). It ran
 read-only elaboration of the four changed implementation files and both changed
 surface files **against existing cached imports only** — **not** a clean
 dependency build, whole-file `AxiomsAudit`, a full repository build,
@@ -1650,3 +1665,58 @@ longer among the owed items: it is green at the current merge base, as recorded
 above. Every push requires a fresh attestation. The branch
 must not be squash-merged or rebased because stage (a) is the provenance commit
 named by the pin.
+
+### 2026-09-29 — PR #1804 Qodo exact-head owner-label correction
+
+**Classification: Infrastructure only.** The owner supplied the legitimate
+Qodo finding against exact head `1b5aa3e219d30d2292c8cd13bbc8e68acbbb1d90`:
+`GateNValuesRewind.lean:531` assigned the values copy to the retired `E2-4b`
+name instead of `GN-E2-5b`. This records that finding, not an independently
+retrieved review, an overall Qodo verdict, or review of either correction head.
+
+Stage (a), `1e7fe40592001142378ff3620c888045d8c10594`, has that exact
+reviewed head as its parent and changes only `which E2-4b owns` to
+`which GN-E2-5b owns`. Checker pins and manifest are byte-identical to the
+parent. The old freeze checker detected precisely this expected one-file drift
+before the repin. No theorem signature or executable semantics changed.
+Stage (b), the separate commit carrying this record, changes no frozen bytes:
+it repoints `FROZEN_COMMIT` to stage (a), `FROZEN_TREE` to
+`145252565dc2538c6c01c19fc2f6814abc1c3a8d`, and regenerates schema-3
+`spec/tmverifier_freeze.json` with
+`python3 scripts/check_tmverifier_freeze.py --write-manifest`.
+Only the rewind blob entry and the two provenance fields change in the manifest.
+This is the fifth migration since `42c59881`; prior migrations remain historical.
+The older `11dc8e82` → `311abc6b` pair and all ancestry through `1b5aa3e`
+are preserved. No superseded GN-E2-4b1 donor worktree or commit was touched.
+
+Local validation for this correction:
+
+- `pnp2-lake lane-b build Complexity.TMVerifier.TuringToolkit.GateNValuesRewind
+  Complexity.TMVerifier.TuringToolkit.GateNValuesWriter
+  Tests.TMGateNValuesRewindSurfaceTests Tests.TMGateNValuesWriterSurfaceTests`
+  passed on the stage-(a) source bytes (existing linter warnings only; log
+  `/tmp/gn-e25-qodo-lane-b.log`). Stage (b) changes no Lean source.
+- `bash scripts/check_tmverifier_freeze.sh` passed: 118 objects, the new tree,
+  and stage-(a) provenance verified. `bash scripts/test_tmverifier_freeze.sh`
+  and `node scripts/test_tmverifier_freeze_policy.js` passed their local tests.
+- `bash scripts/check_doc_honesty.sh` and `git diff --check` passed.
+- `python3 /tmp/gn-e25-provenance.py` verified the exact one-line replacement,
+  stage-(a) unchanged pins, stage-(b) unchanged frozen bytes, the manifest's
+  exact commit/subtree, and ancestry with `git merge-base --is-ancestor` for
+  `11dc8e82`, `311abc6b`, `1b5aa3e` and stage (a), plus `311abc6b^ = 11dc8e82`.
+  Its `git diff --numstat` against the current merge base with `main`,
+  `2f8a3d5e6f90fe41a2cd7bc240d3c9fad407b68e`, measured 1468 additions and
+  31 deletions: **1499 Lean lines across 8 files**, within §6.1's 1500/10 cap.
+- Forbidden-token scan over all eight changed Lean files covered `axiom`,
+  `sorry`, `admit`, `native_decide`, `Classical.choose`, `Classical.arbitrary`,
+  `Nat.find` and TODO/FIXME/PLACEHOLDER markers. The raw scan found two existing
+  line comments in `AxiomsAudit.lean` (one TODO and one use of the word axiom);
+  excluding line comments produced no hits. Neither comment changes here.
+
+No global `./scripts/check.sh` was run: the owner explicitly excluded it because
+CI/builds are active and full checks require exclusivity. The full final-head
+gate, fresh exact-head review, remote CI, owner attestation and PR review remain
+owed; local policy tests do not establish the remote policy gate. The category
+is only `Infrastructure`, and `tmverifier-unfreeze` remains the intended unfreeze
+label, not a second category or a newly applied label. No push, PR operation,
+history rewrite or GN-E2-5b implementation is part of this correction.

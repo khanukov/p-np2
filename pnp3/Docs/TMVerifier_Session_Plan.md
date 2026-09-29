@@ -1,5 +1,20 @@
 # Plan: closing the TM verifier for canonical asymptotic GapPartialMCSP
 
+**Owner-docstring correction (2026-09-29, Infrastructure only):** Qodo's
+finding at PR #1804 exact head
+`1b5aa3e219d30d2292c8cd13bbc8e68acbbb1d90`, as supplied by the owner,
+is addressed by the two-stage migration recorded in `TMVERIFIER_FREEZE.md`.
+Stage (a) is `1e7fe40592001142378ff3620c888045d8c10594`; stage (b)
+repins tree `145252565dc2538c6c01c19fc2f6814abc1c3a8d` and updates these
+records. The current size is **1499 changed Lean lines (1468 added, 31 deleted)
+across 8 files**, including `lakefile.lean`, against merge base
+`2f8a3d5e6f90fe41a2cd7bc240d3c9fad407b68e`. The 1497-line counts below
+are historical measurements before this correction. The owner-label deferral
+is closed; GN-E2-5b implementation remains paused. No review of either new
+correction head is claimed. The sole repository category remains
+`Infrastructure`; the existing `tmverifier-unfreeze` labeling intent remains.
+No remote label or attestation is issued by this local correction.
+
 > **Integration update (2026-09-29, Infrastructure):** a third integration merge
 > brings `main` at `2f8a3d5e6f90fe41a2cd7bc240d3c9fad407b68e` into Lane B's
 > `03b8184402fb7bf092d3bcd72ca7c936fab9862b`, preserving G3m, GN-E2-5a and
@@ -11,14 +26,15 @@
 
 > **Frozen historical plan (2026-09-03; amended 2026-09-20, 2026-09-22,
 > 2026-09-27 and 2026-09-28; review provenance corrected 2026-09-29).**
-> The freeze pin now names Git tree `4213b315`, the subtree of commit
-> `11dc8e82`; see `pnp3/Docs/TMVERIFIER_FREEZE.md`, whose migration record
-> covers four unfreezes since `42c59881`: S11 below, reviewed and completed;
+> The freeze pin now names Git tree `14525256`, the subtree of commit
+> `1e7fe405`; see `pnp3/Docs/TMVERIFIER_FREEZE.md`, whose migration record
+> covers five unfreezes since `42c59881`: S11 below, reviewed and completed;
 > GN-E2-3b below, whose stage (a) committed the new frozen bytes and whose
 > stage (b) repinned the freeze onto them; GN-E2-4a below, which landed both of
-> those stages in that same order; and GN-E2-5a below, the migration the current
-> pin names, whose stage (a) is `11dc8e82` and whose stage (b) is `311abc6b`,
-> landed in that same order, so the freeze checker passes on this tree again.
+> those stages in that same order; GN-E2-5a below, whose stage (a) is
+> `11dc8e82` and whose stage (b) is `311abc6b`; and the owner-docstring
+> correction whose stage (a) is `1e7fe405` and whose separate stage (b) repins
+> that source commit. No independent review of these correction heads is claimed.
 > GN-E2-4a has since merged: **PR #1801** merged it into `main` on 2026-09-28 as
 > the merge commit `71179c6d`, which preserved history, so its provenance commit
 > `b35bdca2` and its final head `a312622f` are both ancestors of `main`. An

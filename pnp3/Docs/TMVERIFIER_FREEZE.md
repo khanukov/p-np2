@@ -1534,9 +1534,9 @@ file at `4abaac92`, where 5064 `#print axioms` plus two `#check` commands fill
 6234 lines, and not that file at `d01e2c3e`, where it is 6318 lines with 5122
 `#print axioms`. Consistently, GN-E2-5a's writer and its surface module appear
 throughout the log, while the G3l origin-alignment countdown module that
-`d01e2c3e` merged in from `main` at `9445a93e` never appears in it. That is a
-content fingerprint, not a checkout: it pins one file's bytes and one module's
-absence, not the whole working tree, and **exclusivity is not established** —
+`d01e2c3e` merged in from `main` at `9445a93e` never appears in it. This fingerprint
+matches the audit-command layout at `4abaac92`; it establishes neither exact
+file bytes nor checkout identity, and **exclusivity is not established** —
 nothing in the log shows what else was running or that the tree was otherwise
 clean. The run is therefore evidence about this branch's content at `4abaac92`
 and about nothing later: `d01e2c3e` brought in `main`'s G3l Lean modules, which

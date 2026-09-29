@@ -3,6 +3,12 @@ import Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement
 /-!
 # The gamma target unary countdown round (Part A G2s-a)
 
+The original slice description below is historical. G3u adds `entry_head_bound`,
+`round_traced` and `exhaust_traced` without changing the old execution propositions
+or transition table. `FixedRawLengthFenceCountdown` uses these new footprints to
+prove generic fenced raw execution; the original footprint/fence deferrals below
+refer to the G2s-a surfaces.
+
 One **new** fixed 11-state, 33-row machine, the second new table since the G2p-d round.  Write
 `N = a + m`.  `pnp3/Docs/UniformP_V1.md` carries the long-form design notes.  Classification:
 **Infrastructure**.  Nothing here is P-vs-NP mainline progress.
@@ -730,6 +736,34 @@ private theorem clear_at {a m B zeros r t : Nat} {x : Bitstring a} {w : Bitstrin
         · rw [if_neg (show ¬ (a + m + 1 + (i + 1) ≤ j ∧ j ≤ a + m + 1 + zeros) by omega),
             if_neg hin]
 
+/- G3u Infrastructure: checkpoint bounds for framing an installed fence. -/
+private theorem head_distance {n B : Nat} (c : Config stateCount n B) (t u : Nat)
+    (htu : t ≤ u) :
+    (machine.run t c).head.val ≤ (machine.run u c).head.val + (u-t) ∧
+    (machine.run u c).head.val ≤ (machine.run t c).head.val + (u-t) := by
+  have one (h : Fin (tapeLength n B)) (mv : Move) :
+      h.val ≤ (moveHead h mv).val+1 ∧ (moveHead h mv).val ≤ h.val+1 := by
+    cases mv <;> simp only [moveHead]
+    · omega
+    · omega
+    · split <;> (try dsimp) <;> omega
+  have aux (d : Config stateCount n B) (k : Nat) :
+      d.head.val ≤ (machine.run k d).head.val+k ∧
+      (machine.run k d).head.val ≤ d.head.val+k := by
+    induction k with
+    | zero => simp [UniformTM.run]
+    | succ k ih =>
+      have h := one (machine.run k d).head (machine.step (machine.run k d).state
+        ((machine.run k d).tape (machine.run k d).head)).2.2
+      change d.head.val ≤ (machine.stepConfig (machine.run k d)).head.val+(k+1) ∧
+        (machine.stepConfig (machine.run k d)).head.val ≤ d.head.val+(k+1)
+      change (machine.run k d).head.val ≤ (machine.stepConfig (machine.run k d)).head.val+1 ∧
+        (machine.stepConfig (machine.run k d)).head.val ≤ (machine.run k d).head.val+1 at h
+      omega
+  have h := aux (machine.run t c) (u-t)
+  rw [← machine.run_add, Nat.add_sub_of_le htu] at h
+  exact h
+
 /-! ### Public execution theorems -/
 
 /-- **The entry.**  Out of an arbitrary configuration matching the entry ABI — `qStart` on the
@@ -761,23 +795,42 @@ theorem entry_generic {a m B zeros v d : Nat} (x : Bitstring a) (w : Bitstring m
   exact At_tape (At_time (stepAt_stay h2 (loopNat_sep x w (by omega) (by omega)) rfl rfl
     (loopNat_sep x w (by omega) (by omega)) (fun _ _ => rfl)) rfl rfl)
 
+/-- Entry never scans beyond the separator; suitable for an installed fence. -/
+theorem entry_head_bound {a m B zeros v d : Nat} (x : Bitstring a) (w : Bitstring m)
+    (hroom : a+m+2+zeros < tapeLength (pairLength a m) B) (hd : d ≤ zeros)
+    (hlow : ∀ b, b < d → v.testBit b = true) (hstop : v.testBit d = false)
+    (c : Config stateCount (pairLength a m) B) (hq : c.state = qStart)
+    (hh : c.head.val = a+m+1+zeros-d) (ht : c.tape = loopTape B x w zeros v 0) :
+    ∀ t, t ≤ d+2 → (machine.run t c).head.val ≤ a+m+2+zeros := by
+  intro t htime
+  by_cases he : t = d+2
+  · subst t; exact Nat.le_of_eq (entry_generic x w hroom hd hlow hstop c hq hh ht).2.1
+  · have h := (head_distance c 0 t (by omega)).2
+    change (machine.run t c).head.val ≤ c.head.val+(t-0) at h
+    rw [hh] at h; omega
+
 /-- **One round.**  Out of an arbitrary `qLoop` configuration on the separator blank with a register
 holding a positive `v` that has no digit above `zeros`, the machine is after exactly
 `roundClock zeros r = 2*zeros + 2*r + 7` steps back in `qLoop` on the same cell, with the register
 holding `v - 1` and **one more mark** in the lane.  The cost does not depend on how long the borrow
 ran, because `qPadL` and `qPadR` pad the sweep back out to the full register; that is what makes the
-round clock closed-form.  No tag, width, footprint or first-arrival hypothesis or conjunct occurs:
-the round never reads a cell left of `N`, and `loopTape` places the blank at `N` explicitly.
+round clock closed-form.  No tag or decoded-width hypothesis occurs. The extra scan checkpoint and head bounds
+support G3u framing; `loopTape` places the left boundary blank at `N` explicitly.
 `qLoop` does not absorb, so this is an exact time and not a deadline, and nothing here iterates
 it. -/
-theorem round_generic {a m B zeros v r : Nat} (x : Bitstring a) (w : Bitstring m)
+theorem round_traced {a m B zeros v r : Nat} (x : Bitstring a) (w : Bitstring m)
     (hroom : a + m + 3 + zeros + r < tapeLength (pairLength a m) B) (hpos : 1 ≤ v)
     (hhigh : ∀ b, zeros < b → v.testBit b = false)
     (c : Config stateCount (pairLength a m) B) (hq : c.state = qLoop)
     (hh : c.head.val = a + m + 2 + zeros) (ht : c.tape = loopTape B x w zeros v r) :
     let e := machine.run (roundClock zeros r) c
-    e.state = qLoop ∧ e.head.val = a + m + 2 + zeros ∧
-      e.tape = loopTape B x w zeros (v - 1) (r + 1) := by
+    (e.state = qLoop ∧ e.head.val = a + m + 2 + zeros ∧
+      e.tape = loopTape B x w zeros (v - 1) (r + 1)) ∧
+    (let s := machine.run (2*zeros+5+r) c
+     s.state = qRunEnd ∧ s.head.val = a+m+3+zeros+r ∧
+       s.tape = loopTape B x w zeros (v-1) r) ∧
+    (∀ t, t < 2*zeros+5+r → (machine.run t c).head.val < a+m+3+zeros+r) ∧
+    (∀ t, t ≤ roundClock zeros r → (machine.run t c).head.val ≤ a+m+3+zeros+r) := by
   obtain ⟨hd, hlow, hstop⟩ := lowRun_pins hpos hhigh
   set d := lowRun v zeros with hdef
   have hc : At c qLoop (a + m + 2 + zeros) (loopNat B x w zeros v r) := At_of hq hh ht
@@ -825,10 +878,35 @@ theorem round_generic {a m B zeros v r : Nat} (x : Bitstring a) (w : Bitstring m
     intro j h1 h2
     rw [loopNat_mark x w (by omega) (by omega)]
     rfl
-  refine At_tape (At_time (stepAt_stay hJ (loopNat_sep x w (by omega) (by omega)) rfl rfl
-    (loopNat_sep x w (by omega) (by omega)) (fun _ _ => rfl)) ?_ rfl)
-  unfold roundClock
-  omega
+  have hend := At_tape (At_time (stepAt_stay hJ (loopNat_sep x w (by omega) (by omega)) rfl rfl
+    (loopNat_sep x w (by omega) (by omega)) (fun _ _ => rfl))
+    (show 2*zeros+2*r+6+1 = roundClock zeros r by unfold roundClock; omega) rfl)
+  have hpre : ∀ t, t < 2*zeros+5+r → (machine.run t c).head.val < a+m+3+zeros+r := by
+    intro t htime
+    by_cases hb : t ≤ zeros+2
+    · have h := (head_distance c t (zeros+2) hb).1
+      rw [hD.2.1] at h; omega
+    · have h := (head_distance c (zeros+2) t (by omega)).2
+      rw [hD.2.1] at h; omega
+  refine ⟨hend, At_tape hH, hpre, ?_⟩
+  intro t htime
+  by_cases hb : t < 2*zeros+5+r
+  · exact Nat.le_of_lt (hpre t hb)
+  · by_cases he : t = 2*zeros+5+r
+    · subst t; exact Nat.le_of_eq hH.2.1
+    · have h := (head_distance c t (roundClock zeros r) htime).1
+      rw [hend.2.1] at h
+      unfold roundClock at h; omega
+
+/-- Original one-round surface, with its unchanged proposition. -/
+theorem round_generic {a m B zeros v r : Nat} (x : Bitstring a) (w : Bitstring m)
+    (hroom : a+m+3+zeros+r < tapeLength (pairLength a m) B) (hpos : 1 ≤ v)
+    (hhigh : ∀ b, zeros < b → v.testBit b = false)
+    (c : Config stateCount (pairLength a m) B) (hq : c.state = qLoop)
+    (hh : c.head.val = a+m+2+zeros) (ht : c.tape = loopTape B x w zeros v r) :
+    let e := machine.run (roundClock zeros r) c
+    e.state = qLoop ∧ e.head.val = a+m+2+zeros ∧ e.tape = loopTape B x w zeros (v-1) (r+1) :=
+  (round_traced x w hroom hpos hhigh c hq hh ht).1
 
 /-- **The exhaustion.**  Out of a `qLoop` configuration whose register is all `false`, the borrow
 walks off the register's left end onto the boundary blank, `qFin` walks back clearing every digit it
@@ -837,13 +915,14 @@ separator blank with the tape **unchanged**, marks and all.  The last conjunct i
 first arrival: `qDone` absorbs, so the endpoint holds at every later time, and no theorem here says
 `qDone` is entered for the first time at `zeroClock zeros`.  `qDone` is an internal control tag of
 this phase, not language acceptance. -/
-theorem exhaust_generic {a m B zeros r : Nat} (x : Bitstring a) (w : Bitstring m)
+theorem exhaust_traced {a m B zeros r : Nat} (x : Bitstring a) (w : Bitstring m)
     (hroom : a + m + 2 + zeros < tapeLength (pairLength a m) B)
     (c : Config stateCount (pairLength a m) B) (hq : c.state = qLoop)
     (hh : c.head.val = a + m + 2 + zeros) (ht : c.tape = loopTape B x w zeros 0 r) :
     let e := machine.run (zeroClock zeros) c
-    e.state = qDone ∧ e.head.val = a + m + 2 + zeros ∧ e.tape = loopTape B x w zeros 0 r ∧
-      (∀ t, zeroClock zeros ≤ t → machine.run t c = e) := by
+    (e.state = qDone ∧ e.head.val = a + m + 2 + zeros ∧ e.tape = loopTape B x w zeros 0 r ∧
+      (∀ t, zeroClock zeros ≤ t → machine.run t c = e)) ∧
+    (∀ t, t ≤ zeroClock zeros → (machine.run t c).head.val ≤ a+m+2+zeros) := by
   have hc : At c qLoop (a + m + 2 + zeros) (loopNat B x w zeros 0 r) := At_of hq hh ht
   have hB : At (machine.run (zeros + 2) c) qBorrow (a + m) (clearNat B x w zeros r 0) := by
     rw [← mix_eq_clear]
@@ -866,9 +945,28 @@ theorem exhaust_generic {a m B zeros r : Nat} (x : Bitstring a) (w : Bitstring m
     unfold zeroClock
     omega
   obtain ⟨h1, h2, h3⟩ := At_tape hE
-  refine ⟨h1, h2, h3, fun t hts => ?_⟩
-  rw [show t = zeroClock zeros + (t - zeroClock zeros) by omega, machine.run_add]
-  exact machine.run_accept _ h1 _
+  refine ⟨⟨h1, h2, h3, fun t hts => ?_⟩, ?_⟩
+  · rw [show t = zeroClock zeros + (t - zeroClock zeros) by omega, machine.run_add]
+    exact machine.run_accept _ h1 _
+  · intro t htime
+    by_cases hb : t ≤ zeros+2
+    · have h := (head_distance c t (zeros+2) hb).1
+      rw [hB.2.1] at h; omega
+    · by_cases he : t = zeroClock zeros
+      · subst t; omega
+      · have h := (head_distance c (zeros+3) t (by omega)).2
+        rw [hC.2.1] at h
+        unfold zeroClock at *; omega
+
+/-- Original exhaustion surface, with its unchanged proposition. -/
+theorem exhaust_generic {a m B zeros r : Nat} (x : Bitstring a) (w : Bitstring m)
+    (hroom : a+m+2+zeros < tapeLength (pairLength a m) B)
+    (c : Config stateCount (pairLength a m) B) (hq : c.state = qLoop)
+    (hh : c.head.val = a+m+2+zeros) (ht : c.tape = loopTape B x w zeros 0 r) :
+    let e := machine.run (zeroClock zeros) c
+    e.state = qDone ∧ e.head.val = a+m+2+zeros ∧ e.tape = loopTape B x w zeros 0 r ∧
+      (∀ t, zeroClock zeros ≤ t → machine.run t c = e) :=
+  (exhaust_traced x w hroom c hq hh ht).1
 
 /-- **The concrete exact run: the entry and the first round out of `startConfig`.**  On a matching
 tag, a decoded `2 ≤ zeros`, the room `a+m+3+zeros < tapeLength …` and a positive `v` whose digit

@@ -222,6 +222,7 @@ lean_lib PnP3 where
     Glob.one `Complexity.Uniform.V1.FixedRawLengthFenceOverflowWitness,
     Glob.one `Complexity.Uniform.V1.FixedGammaSuffixFootprint,
     Glob.one `Complexity.Uniform.V1.FixedRawLengthFenceSuffix,
+    Glob.one `Complexity.Uniform.V1.FixedRawLengthFenceCountdown,
     -- Part A G3g, generic half: `M.mergeAccept e` retargets every row aiming at a second absorbing
     -- success endpoint e to M.accept, leaving e dead, so `seq` routes both.  No acceptance claim.
     Glob.one `Complexity.Uniform.V1.AcceptMerge,
@@ -1015,6 +1016,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedRawLengthFenceSurfaceTests,
     Glob.one `Tests.UniformV1FixedRawLengthFenceContentSurfaceTests,
     Glob.one `Tests.UniformV1FixedRawLengthFenceSuffixSurfaceTests,
+    Glob.one `Tests.UniformV1FixedRawLengthFenceCountdownSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,

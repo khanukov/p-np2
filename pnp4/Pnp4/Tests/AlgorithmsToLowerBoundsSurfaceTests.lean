@@ -8096,3 +8096,35 @@ theorem check_raw_fenced_h17_parsed_target (k : Nat) {a m : Nat} (x : Bitstring 
   raw_fenced_h17_parsed_target k x w hpr htag hn
 end Pnp4.Tests.G3tRawFencedDecrementInfrastructure
 #print axioms Pnp4.Tests.G3tRawFencedDecrementInfrastructure.check_raw_fenced_h17_parsed_target
+
+namespace Pnp4.Tests.G3uRawFencedCountdownInfrastructure
+open Pnp4.Frontier.ContractExpansion Pnp4.AlgorithmsToLowerBounds
+open Pnp3.Complexity.Uniform.V1 PairEncoding FixedRawLengthFence
+theorem check_raw_fenced_countdown_parsed_target (k : Nat) {a m : Nat} (x : Bitstring a) (w : Bitstring m)
+    {pr : Sigma fun r : Nat =>
+      PrefixInput (Pnp4.Frontier.treeMCSPSearchProblem (thresholdPoly k)
+        (Pnp4.Frontier.TreeMCSPSearchWitnessEncoding.ofCodec (treeCircuitWitnessCodec (thresholdPoly k))))
+        (treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k)) r)}
+    (hpr : contentInput? (treeCircuitWitnessCodec (thresholdPoly k)) (Fin.append x w) = some pr)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true) (hn : 3 ≤ pr.2.n) :
+    let B := allocation (pairLength a m)
+    pr.2.n = pr.1 ∧ ∃ (z C : Nat) (q : Fin FixedGammaPayloadDispatcher.stateCount)
+      (hS : a+m+2+z < tapeLength (pairLength a m) B),
+      2 ≤ z ∧ FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some z ∧
+      contentHeader? (Fin.append x w) = some (pr.2.n,2*z+1) ∧ C ≤ 2*(a+m)*(a+m) ∧
+      FixedGammaPayloadDispatcherFirstArrival.StrictFirstTerminalAt B x w C q ∧
+      (pr.2.n ≤ capacity a m z →
+        countdownSuccessClock a m z C (FixedGammaTargetRegisterDecrement.borrow x w z) pr.2.n ≤
+          countdownDeadline (pairLength a m) ∧
+        prefixed.run (countdownSuccessClock a m z C (FixedGammaTargetRegisterDecrement.borrow x w z) pr.2.n)
+          (initialConfig prefixed B (encodePair x w)) =
+          ⟨prefixed.accept,⟨a+m+2+z,hS⟩,countdownTape B x w z 0 pr.2.n⟩) ∧
+      (capacity a m z < pr.2.n →
+        countdownRejectClock a m z C (FixedGammaTargetRegisterDecrement.borrow x w z) ≤
+          countdownDeadline (pairLength a m) ∧
+        prefixed.run (countdownRejectClock a m z C (FixedGammaTargetRegisterDecrement.borrow x w z))
+          (initialConfig prefixed B (encodePair x w)) =
+          ⟨prefixed.reject,⟨fencePos (pairLength a m),by have h := (resource_bounds (pairLength a m)).1; simp only [fencePos,tapeLength]; omega⟩,
+            countdownTape B x w z (pr.2.n-capacity a m z-1) (capacity a m z)⟩) :=
+  raw_fenced_countdown_parsed_target k x w hpr htag hn
+end Pnp4.Tests.G3uRawFencedCountdownInfrastructure

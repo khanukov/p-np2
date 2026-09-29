@@ -220,6 +220,8 @@ lean_lib PnP3 where
     Glob.one `Complexity.Uniform.V1.TapeFrame,
     Glob.one `Complexity.Uniform.V1.FixedRawLengthFenceContent,
     Glob.one `Complexity.Uniform.V1.FixedRawLengthFenceOverflowWitness,
+    Glob.one `Complexity.Uniform.V1.FixedGammaSuffixFootprint,
+    Glob.one `Complexity.Uniform.V1.FixedRawLengthFenceSuffix,
     -- Part A G3g, generic half: `M.mergeAccept e` retargets every row aiming at a second absorbing
     -- success endpoint e to M.accept, leaving e dead, so `seq` routes both.  No acceptance claim.
     Glob.one `Complexity.Uniform.V1.AcceptMerge,
@@ -994,6 +996,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedPairSentinelCursorHoleTagRemovalShiftAlignmentCountdownSurfaceTests,
     Glob.one `Tests.UniformV1FixedRawLengthFenceSurfaceTests,
     Glob.one `Tests.UniformV1FixedRawLengthFenceContentSurfaceTests,
+    Glob.one `Tests.UniformV1FixedRawLengthFenceSuffixSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,
@@ -1295,6 +1298,7 @@ lean_lib Pnp4 where
     -- convention is *not* restored — the top cell may be cleared; every converse, parser
     -- execution, acceptance and clock composition stay deferred.
     Glob.one `Pnp4.Frontier.ContractExpansion.ContentFixedGammaTargetRegisterDecrementBridge,
+    Glob.one `Pnp4.Frontier.ContractExpansion.ContentRawFencedDecrementBridge,
     -- Part A G2t: the first countdown round runs on the parsed target.  It supplies the
     -- value G2s-a left universally quantified: on a decoded header the G2r digits make
     -- `v := n` legal, so the landed `startConfig` enters `qLoop` on the separator blank in

@@ -1754,6 +1754,22 @@ either: no G3l bridge module exists, this bridge still starts at G3e's composite
 `ContentVerifierBridge`, raw-input acceptance, advice-freedom claim or P-vs-NP mainline progress
 follows from it.
 
+**Part A G3t — Infrastructure: raw fenced target-register connection.**
+`ContentRawFencedDecrementBridge.raw_fenced_h17_parsed_target` uses the canonical
+`treeCircuitWitnessCodec (thresholdPoly k)` and the same dependent result `pr`
+of `contentInput?`. The new generic pnp3 execution theorem reaches a complete
+fenced H17 configuration from raw `initialConfig`, with actual register cells
+holding `pr.2.n`'s digits, for a matching tag and `3 ≤ pr.2.n`. It produces its
+dispatcher witness at the fixed raw-length allocation and proves a quadratic
+prefix bound. See the synchronized G3t records in `STATUS.md` and
+`pnp3/Docs/UniformP_V1.md` for exact scope and regressions.
+
+This stops at countdown entry, state 245. Generic fenced countdown, the other
+parsed fields and GN/witness checks, complete rejection and acceptance proofs,
+whole-verifier resources/advice freedom, and the V1-to-legacy model simulation
+remain open. `ContentVerifierBridge` is unconstructed; no lower-bound source
+obligation is reduced. The following G3r record describes its historical scope.
+
 **Part A G3r — Infrastructure: executed raw-length false fence and exact G3q handoff.**
 `FixedRawLengthFence.machine` is a fixed **48-state / 144-row** three-symbol table,
 start 0, accept 2, reject 3. For raw length R, it reads every bit, uses an origin

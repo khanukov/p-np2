@@ -3030,6 +3030,50 @@ timeout guard.  The table is fixed and complete but not claimed state-minimal.  
 `SearchMCSPWeakLowerBound` nor `VerifiedNPDAGLowerBoundSource` is reduced.  It is infrastructure, not
 P-vs-NP mainline progress.
 
+**Part A G3t — Infrastructure: generic fenced raw execution through H17.**
+`FixedGammaSuffixFootprint` and `FixedRawLengthFenceSuffix` extend the actual raw
+execution of the unchanged 256-state `FixedRawLengthFence.prefixed` through
+countdown entry, global state **245**, for arbitrary dependent words `x/w`, every
+`B ≥ 2*R+2`, matching tag, decoded gamma width `zeros ≥ 2`, and the actual strict
+dispatcher arrival `C/q`. Here `R=2*a+1+m` and `L=a+m`; the physical tape domain
+remains `Fin (R+B+1)` throughout. The whole endpoint is
+`fencedDecrementConfig`: head `L+1+zeros-borrow x w zeros`, complete `decTape`,
+and the existing false fence at `P=3*R+2`. No transition, initializer, encoding,
+allocation, or interpreter changes.
+
+The trace proves `head ≤ 3*L < P` after installation through H17, preservation
+of the literal false fence, and exclusion of both verdicts at every such time.
+The cell theorem exposes every register digit, both adjacent blanks, and the
+blank lane up to the fence. The exact clock is installation plus G3s's
+`contentClock` plus `h17SuffixClock`; `h17_clock_bound` bounds it by
+`h17Deadline R = 32*(R+1)^2`. `raw_fenced_h17_allocated` existentially produces
+the actual dispatcher `C/q` at the unchanged `B=16*(R+1)^2`. This is a polynomial
+prefix bound on the stated valid branch, not a whole-machine halting bound.
+
+`ContentRawFencedDecrementBridge.raw_fenced_h17_parsed_target` fixes
+`treeCircuitWitnessCodec (thresholdPoly k)` and the **same dependent `pr`** from
+`contentInput?`. For `3 ≤ pr.2.n` and the explicit matching tag, it identifies
+actual raw endpoint digits with `pr.2.n.testBit (zeros-j)`, including zero high
+bits. It neither executes the parser nor supplies a different parsed witness.
+Named full-proposition surfaces and direct axiom roots cover all public results.
+The raw regressions derive the existing 2335-step overflow H17 endpoint via the
+new generic theorem and cover width-two physical-zero, virtual, and positive
+pending paths, including a strictly larger allocation.
+
+G3t stops at nonterminal countdown entry 245. Generic **fenced countdown**,
+including success at exact capacity and overflow rejection, remains open.
+Remaining parser fields, GN program/serialization/start configuration and
+witness checks, malformed-input rejection completeness, acceptance equivalence,
+whole-verifier length-only resource domination, and operational advice freedom
+remain open. The V1 Option-Bool/raw-pair model still needs its initialization,
+alphabet/encoding, clock and verdict simulation into the legacy exact-step
+Boolean `TM.accepts` model. `ContentVerifierBridge` is unconstructed; Part A is
+unfinished. No `SearchMCSPWeakLowerBound`, `VerifiedNPDAGLowerBoundSource`, or
+`NP_not_subset_PpolyDAG` obligation is reduced. This is Infrastructure, not
+P-vs-NP mainline progress.
+
+The following G3s record is historical; G3t narrows its generic prefix gap.
+
 **Part A G3s — Infrastructure: generic fenced H1–H7 and one raw overflow rejection.**
 The machine is unchanged: `FixedRawLengthFence.prefixed`, **256 states / 768 rows**,
 start 0, accept 254, reject 255. No transition or runtime interpreter is added.

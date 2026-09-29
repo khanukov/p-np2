@@ -528,7 +528,7 @@ private theorem gnFirstRecordDone_eq_rewindConfig {r : GNProgram}
 first gate `g`, the machine runs exactly `gnValuesEntrySteps r g` rows of
 genuine `TM.runConfig (M := GNM)` execution and stops in the exact values
 boundary.  Nothing has been written since `recordDone`; what remains is the
-values copy itself, which E2-4b owns. -/
+values copy itself, which GN-E2-5b owns. -/
 theorem gnCS_encodeGN_valuesEntry_exact {r : GNProgram}
     {g : SLGate r.inputs.length} (hg : r.program.gates[0]? = some g) :
     TM.runConfig (M := GNM) (GNM.initialConfig (gnPoint (encodeGN r)))

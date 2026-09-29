@@ -1683,8 +1683,9 @@ Stage (b), the separate commit carrying this record, changes no frozen bytes:
 it repoints `FROZEN_COMMIT` to stage (a), `FROZEN_TREE` to
 `145252565dc2538c6c01c19fc2f6814abc1c3a8d`, and regenerates schema-3
 `spec/tmverifier_freeze.json` with
-`python3 scripts/check_tmverifier_freeze.py --write-manifest`.
-Only the rewind blob entry and the two provenance fields change in the manifest.
+`python3 scripts/check_tmverifier_freeze.py --write-manifest`.  The regenerated
+manifest changes the rewind blob entry, adds the `GateNValuesWriter.lean` entry,
+and updates the two provenance fields.
 This is the fifth migration since `42c59881`; prior migrations remain historical.
 The older `11dc8e82` → `311abc6b` pair and all ancestry through `1b5aa3e`
 are preserved. No superseded GN-E2-4b1 donor worktree or commit was touched.

@@ -2954,9 +2954,10 @@ the bootstrap `finalConfig`, which `run_exact` shows *is* the bootstrap run at `
 every input, and `alignment_start_at_first_arrival` records that hypothesis-free as whole-`Config`
 equality.  So the switch hands over exactly the head and tape the right block's own `startConfig`
 carries -- the `shiftedTape`, whose content-plus-marker block starts at cell `a` and which is therefore
-**not yet origin-aligned**; G3l's own first `(10 * a + 7) * (N + 1) + 3 * a` steps are what move that
-block down to the origin, and `handoff_endpoint_pins` records, for a nonempty query block, that this
-tape is **not** the `alignedTape`.
+**not yet origin-aligned** unless the query block is empty, where cell `a` *is* the origin; G3l's own
+first `(10 * a + 7) * (N + 1) + 3 * a` steps are what move that block down to the origin, and
+`handoff_endpoint_pins` records, for a nonempty query block, that this tape is **not** the
+`alignedTape`.
 
 `switchTime a m = 4 * a + 3 * m + 5` -- one `a + 1`-cell scan to the top of the blank prefix, then
 three steps, fetch, carry and hole, for each of the `N + 1` cells of the block, then the closing

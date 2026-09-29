@@ -309,6 +309,57 @@ composed accept is still the countdown's phase-local `qDone`, G3m's two inherite
 forward-direction only with the mismatched one timed only at the gate's length-only deadline, and G3m
 likewise constructs no `ContentVerifierBridge` or other pnp4 bridge, no fence, no raw-input acceptance
 and no advice-freedom claim, so it too is no P-vs-NP mainline progress.
+
+**Part A G3r — Infrastructure: executed raw-length false fence and exact G3q handoff.**
+`FixedRawLengthFence.machine` is a fixed **48-state / 144-row** three-symbol table,
+start 0, accept 2, reject 3. For raw length R, it reads every bit, uses an origin
+hole and a temporary tally, restores the input, erases the tally and accepts at head
+zero with exactly one nonblank cell beyond the input: `some false` at `3*R+2`.
+The endpoint has blank cells R and R+1, including R=0. The installation clock is
+4 for R=0 and `3*R*R+9*R+5` otherwise. For every `2*R+2 ≤ B`,
+`install_exact` proves complete configuration equality from literal raw
+`initialConfig`; `install_trace` proves strict first terminal arrival, head
+at most `3*R+2`, and no attempted boundary clamping. `installed_cells` states
+the executed restoration and unique suffix marker. Insufficient-room probes
+can clamp and accept with a misplaced marker; no all-budget result is claimed.
+
+`allocation R = 16*(R+1)^2` supplies both room and a polynomial installation
+deadline. No transition takes R, B, a parser result, target, proof or advice.
+`prefixed = machine.seq G3q.machine` has **256 states / 768 rows**, start 0,
+accept 254, reject 255. `raw_fence_handoff_exact` runs from literal raw input
+at that allocation: at `installClock R+s` its whole configuration equals
+G3q's actual s-step run from state 0, head zero and the installed fenced tape,
+embedded at offset 48. At s=0 the composite is in state 48, neither verdict.
+The raw `[true,false,true]` witness has R=3, B=256, time 59 and marker 11;
+the full tape contains only cells 0=true, 1=false, 2=true and 11=false.
+
+The following obligations remain open, in order:
+1. Preserve the fence through H1–H17 and prove fenced countdown success and
+   literal overflow rejection from the actual predecessor configuration.
+   The existing G3q whole-tape drain theorem ends in an unfenced `loopTape`
+   and cannot be substituted for this missing proof.
+2. Identify every field of the **same** `pr` returned by `contentInput? codec z`,
+   with `codec := treeCircuitWitnessCodec (thresholdPoly k)` and `z := Fin.append x w`:
+   `pr.2.tag`, `.n`, `.x`, `.i`, `.p`, `.padBits`, `.pad`, and dependent lengths.
+   The semantic fact `pr.2.n = pr.1` does not identify the executed register.
+3. Build the actual dependent `GNProgram`, serialization and physical starting
+   configuration from those fields and `contentWitness codec z pr.2.n`;
+   complete gate/witness verification. An already encoded GN input supplies
+   neither bridge. Frozen GN work and GN-E2-4b donor-only status are unchanged.
+4. Connect V1 Option Bool/pair execution to legacy Boolean/`concatBitstring`
+   `TM.runConfig`, including initialization, time, space and verdicts.
+5. Prove explicit whole-machine length-only polynomial allocation and clock,
+   domination on every branch and operational advice freedom. G3r's resource
+   theorem covers installation alone, not the unbounded suffix time s.
+6. Prove the final exact-step acceptance equation for `contentSemanticAccepts`,
+   including malformed input and failed witness checks; timeout is not rejection.
+`ContentVerifierBridge`, canonical NP witnesses, Part A completion,
+`SearchMCSPWeakLowerBound` and `VerifiedNPDAGLowerBoundSource` remain open.
+This is Infrastructure, not P-vs-NP mainline progress. The pnp4 accepted-content
+bridge remains at G3e; no bridge instance or acceptance theorem is added.
+
+The following G3q record concerns its original unfenced raw entry.
+
 **Part A G3q — Infrastructure: executed sentinel → unchanged G3p handoff H1.**
 `FixedPairSentinelCursorHoleTagRemovalShiftAlignmentCountdown.machine` is exactly
 `FixedPairConcatSentinel.machine.seq

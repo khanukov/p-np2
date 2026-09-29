@@ -1,3 +1,4 @@
+import Tests.UniformV1FixedRawLengthFenceSurfaceTests
 import Magnification.FinalResult
 import Magnification.AC0AtlasBridge
 import Magnification.AC0ApproxFamilyBridge
@@ -6629,3 +6630,40 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedPairSentinelCursorHoleTagRemovalShiftAlignmentCountdownSurfaceTests.check_drained_literal_endpoint
 #print axioms Pnp3.Tests.UniformV1FixedPairSentinelCursorHoleTagRemovalShiftAlignmentCountdownSurfaceTests.check_rejection_endpoint_probes
 #print axioms Pnp3.Tests.UniformV1FixedPairSentinelCursorHoleTagRemovalShiftAlignmentCountdownSurfaceTests.check_h5_h7_tapes
+
+/-! G3r Infrastructure: direct audits of execution and every named surface. -/
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.table_and_resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.install_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.install_trace
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.installed_cells
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.resource_bounds
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.raw_install_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.prefixed_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.fence_handoff_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.raw_fence_handoff_exact
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceSurfaceTests.check_table_and_resource_pins
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceSurfaceTests.check_install_exact
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceSurfaceTests.check_install_trace
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceSurfaceTests.check_installed_cells
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceSurfaceTests.check_resource_bounds
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceSurfaceTests.check_raw_install_exact
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceSurfaceTests.check_prefixed_pins
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceSurfaceTests.check_fence_handoff_exact
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceSurfaceTests.check_raw_fence_handoff_exact
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceSurfaceTests.check_small_runs
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceSurfaceTests.check_extra_room
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceSurfaceTests.check_mixed_trace
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceSurfaceTests.check_insufficient_room
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceSurfaceTests.check_raw_capstone
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceSurfaceTests.check_handoff_literal
+
+-- Closed machine data and endpoint descriptions.
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.machine
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.fencePos
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.installClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.allocation
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.fenceTape
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.installedConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.G
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.prefixed
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.g3qEntry

@@ -1,3 +1,4 @@
+import Complexity.Uniform.V1.FixedRawLengthFenceHandoff
 import Pnp4.AlgorithmsToLowerBounds.BasicCircuitClasses
 import Pnp4.AlgorithmsToLowerBounds.Growth
 import Pnp4.AlgorithmsToLowerBounds.SuperPolynomialBridge
@@ -8029,3 +8030,38 @@ end ThresholdTaggedContentFramingSurface
 
 end Tests
 end Pnp4
+
+/-! G3r Infrastructure only: installation and actual handoff; no content verifier bridge. -/
+namespace Pnp4.Tests.G3rRawLengthFenceInfrastructure
+open Pnp3.Complexity.Uniform.V1 FixedRawLengthFence
+
+theorem check_install_exact {R B : Nat} (input : Bitstring R) (hroom : 2*R+2 ≤ B) :
+    machine.run (installClock R) (initialConfig machine B input) = installedConfig B input :=
+  install_exact input hroom
+
+theorem check_install_trace {R B : Nat} (input : Bitstring R) (hroom : 2*R+2 ≤ B) :
+    (∀ t, t < installClock R →
+      (machine.run t (initialConfig machine B input)).state ≠ machine.accept ∧
+      (machine.run t (initialConfig machine B input)).state ≠ machine.reject) ∧
+    (∀ t, t ≤ installClock R →
+      (machine.run t (initialConfig machine B input)).head.val ≤ fencePos R) ∧
+    (∀ t, t < installClock R →
+      let c := machine.run t (initialConfig machine B input)
+      let mv := (machine.step c.state (c.tape c.head)).2.2
+      (mv = Move.left → 0 < c.head.val) ∧
+      (mv = Move.right → c.head.val+1 < tapeLength R B)) :=
+  install_trace input hroom
+
+theorem check_raw_fence_handoff_exact {R : Nat} (input : Bitstring R) (s : Nat) :
+    prefixed.run (installClock R+s) (initialConfig prefixed (allocation R) input) =
+      machine.seqEmbedRight G (G.run s (g3qEntry (allocation R) input)) :=
+  raw_fence_handoff_exact input s
+
+theorem check_resource_bounds (R : Nat) : 2*R+2 ≤ allocation R ∧ installClock R ≤ allocation R :=
+  resource_bounds R
+
+end Pnp4.Tests.G3rRawLengthFenceInfrastructure
+#print axioms Pnp4.Tests.G3rRawLengthFenceInfrastructure.check_install_exact
+#print axioms Pnp4.Tests.G3rRawLengthFenceInfrastructure.check_install_trace
+#print axioms Pnp4.Tests.G3rRawLengthFenceInfrastructure.check_raw_fence_handoff_exact
+#print axioms Pnp4.Tests.G3rRawLengthFenceInfrastructure.check_resource_bounds

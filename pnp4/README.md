@@ -824,7 +824,23 @@ separately** — the landed ones are length-only in `N = a + m`, width-only in t
 input-dependent — so
 the composed clock is quadratic in `a` and it is **not** proved that the cubic budget still
 dominates it. G3l is Infrastructure only and builds **no pnp4 bridge** either, on the same terms as
-G3k. No first arrival of the G3e composed accept is
+G3k. Part A G3m (pnp3 only) has since executed **H5** as well — the fixed 7-state, 21-row structural
+one-cell origin shift prefixed to that G3l composite as one closed 184-state, 552-row table, again
+with no new row and no `mergeAccept`, switching at the shift phase's own strict first arrival
+`4a + 3m + 5`, which was already landed in the shape `seq` consumes and hypothesis-free, so G3m's
+`handoff_exact` takes no hypothesis either and additionally pins strict left-block confinement —
+taking the count to **thirteen of seventeen** with **four** earlier handoffs still proof-level; the
+twelve-and-five counts just given are the ones G3l left. H5's live accept list is as narrow as a live
+handoff's can be: **one** row, the bootstrap fetch state `4` on `none`, proved the only one targeting
+the phase's accept once the accept's own absorbing three are excluded, routed to index `7` keeping
+its written `none` and its `.stay`, so it costs nothing and clamps on neither budget. Its reject side
+is proved an **equivalence**, not just exhaustive: once **both** verdicts' own absorbing rows are
+excluded, a row targets the phase's reject exactly when the symbol is a Boolean and the state is one
+of `1`, `2`, `3`, six rows in all, each routed to the composed reject, none ever taken out of G3m's
+start. G3m's switch time is linear, far below G3l's quadratic one, but it still reads the two split
+lengths apart, so the composed clock stays quadratic in `a` and it is still **not** proved that the
+cubic budget dominates it. G3m is Infrastructure only and builds **no pnp4 bridge** either, on the
+same terms as G3l. No first arrival of the G3e composed accept is
 proved (the first arrival proved is G2p-a's, inside the left block), the lane is still unfenced, the
 composed accept is still the countdown's phase-local `qDone` rather than language acceptance, the
 machine is a V1 `UniformTM` on `Option Bool` cells against `pairLength a m` and not

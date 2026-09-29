@@ -146,6 +146,7 @@ import
   Tests.UniformV1FixedPairContentMarkerEraseTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests
 import
   Tests.UniformV1FixedPairOriginAlignmentContentMarkerEraseTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests
+import Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests
 import Tests.UniformV1BudgetTransportSurfaceTests
 import Tests.UniformV1CombinedMachineSurfaceTests
 import Tests.UniformV1CombinedCorrectnessSurfaceTests
@@ -6183,6 +6184,86 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedPairOriginAlignmentContentMarkerEraseTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_h6_literal_probe
 #print axioms Pnp3.Tests.UniformV1FixedPairOriginAlignmentContentMarkerEraseTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_h6_accept_row_probes
 #print axioms Pnp3.Tests.UniformV1FixedPairOriginAlignmentContentMarkerEraseTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests.check_composed_reject_probe
+
+-- Part A G3m (2026-09-28), infrastructure only.  The fixed 7-state, 21-row structural one-cell origin
+-- shift, then the whole G3l composite, as one closed 184-state, 552-row table with no new row.  H5 is
+-- executed by the bootstrap phase's single live routed row -- the fetch state 4 on `none`, proved its
+-- only row targeting its accept once the accept's own absorbing three are excluded -- into index 7 at
+-- the phase's own linear clock 4*a+3*m+5, the routed row writing `none` and staying, so H5 clamps on
+-- neither budget, while the phase's own last right move, at source time clock-2, clamps exactly when
+-- B=0 -- an equivalence the landed `clamps` proves.  Every row targeting its reject is one of six,
+-- either Boolean on each of the states 1, 2 and 3, proved an equivalence over all 7 states and all
+-- three symbols once both verdicts' own absorbing rows are excluded, and each routed to the composed
+-- reject 183; `bootstrap_first_arrival` shows none is ever taken out of this startConfig, and both
+-- left verdict copies are dead.  `handoff_exact` takes no hypothesis at all and pins the strict
+-- left-block confinement.  H6 to H17 are inherited from G3l, its indices shifted by seven.  Thirteen
+-- handoffs of seventeen; the switch time is linear but still reads the split lengths a and m apart, so
+-- the composed clock stays quadratic in a and budget domination is not claimed.  The start still
+-- retags the actual tag-removal endpoint, no raw-input `initialConfig` is executed, the lane stays
+-- unfenced, both inherited rejecting branches are forward direction only and no converse, and the
+-- mismatched-tag one is timed only at the gate's length-only deadline, not at its mismatch cell.  No
+-- first arrival of the composed accept, no footprint theorem and no pnp4 bridge; reaching the composed
+-- accept is neither halting on a raw input nor language acceptance.
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown.tailMachine
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown.tailStartConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown.tailSwitchTime
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown.machine
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown.inShift
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown.inTail
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown.route
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown.tailStart
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown.startConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown.switchTime
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown.shiftChainClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown.table_and_resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown.accept_rows_unique
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown.reject_rows_unique
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown.reject_rows_routed
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown.handoff_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown.clock_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown.bootstrap_first_arrival
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown.alignment_start_at_first_arrival
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown.handoff_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown.handoff_endpoint_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown.inherited_alignment_switch
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown.shift_alignment_countdown_drained
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown.malformed_reject_handoff
+#print axioms Pnp3.Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown.mismatched_tag_reject_handoff
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_machine
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_tailMachine
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_inShift
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_inTail
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_route
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_tailStart
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_startConfig
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_tailStartConfig
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_switchTime
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_tailSwitchTime
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_shiftChainClock
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_table_and_resource_pins
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_accept_rows_unique
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_reject_rows_unique
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_reject_rows_routed
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_handoff_pins
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_clock_pins
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_bootstrap_first_arrival
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_alignment_start_at_first_arrival
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_handoff_exact
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_handoff_endpoint_pins
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_inherited_alignment_switch
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_shift_alignment_countdown_drained
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_malformed_reject_handoff
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_mismatched_tag_reject_handoff
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_clock_values
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_row_literals
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_handoff_literal
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_inherited_literal
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_drained_literal_endpoint
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_malformed_literal
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_mismatched_literal
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_h5_literal_probe
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_h5_boundary_probes
+#print axioms Pnp3.Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests.check_composed_reject_probe
 
 -- S11 (2026-09-19), infrastructure only: all-request one-gate acceptance
 -- closure in main's transducer convention.  `accepts = r.spec.isSome`, so a

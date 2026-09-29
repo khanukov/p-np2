@@ -1,5 +1,16 @@
 # TMVerifier freeze decision
 
+**Integration update (2026-09-29, Infrastructure):** the third integration merge
+has parents `03b8184402fb7bf092d3bcd72ca7c936fab9862b` and
+`2f8a3d5e6f90fe41a2cd7bc240d3c9fad407b68e`, in that order. It preserves G3m
+and GN-E2-5a, including the stage-(a) and stage-(b) ancestry, with no frozen
+subtree, pin or manifest changes. The current comparison base is now the second
+parent; the changed-Lean count remains **1497 lines across 8 files**, including
+`lakefile.lean`. References below to two integration merges or `9445a93e` as
+current are the prior snapshot's bookkeeping. Historical reviews and checks
+remain attached only to their recorded heads; this integration establishes no
+full-check or review gate result and does not begin GN-E2-5b.
+
 **Status:** frozen infrastructure snapshot. Both stages of the GN-E2-5a
 migration recorded at the end of this file have now landed on this branch:
 stage (a), commit `11dc8e82`, committed the new frozen bytes together with

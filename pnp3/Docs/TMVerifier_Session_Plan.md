@@ -1,5 +1,14 @@
 # Plan: closing the TM verifier for canonical asymptotic GapPartialMCSP
 
+> **Integration update (2026-09-29, Infrastructure):** a third integration merge
+> brings `main` at `2f8a3d5e6f90fe41a2cd7bc240d3c9fad407b68e` into Lane B's
+> `03b8184402fb7bf092d3bcd72ca7c936fab9862b`, preserving G3m, GN-E2-5a and
+> both histories. The frozen subtree and pins are unchanged. The current base
+> is now `2f8a3d5e`, with **1497 changed Lean lines across 8 files**, including
+> `lakefile.lean`. The two-merge count and `9445a93e` current-base references
+> below describe the preceding snapshot. No full-check or review gate result
+> transfers to this integration. GN-E2-5b remains paused.
+
 > **Frozen historical plan (2026-09-03; amended 2026-09-20, 2026-09-22,
 > 2026-09-27 and 2026-09-28; review provenance corrected 2026-09-29).**
 > The freeze pin now names Git tree `4213b315`, the subtree of commit

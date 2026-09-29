@@ -340,6 +340,22 @@ lean_lib PnP3 where
     -- bridge, or language acceptance is claimed.
     Glob.one
       `Complexity.Uniform.V1.FixedPairOriginAlignmentContentMarkerEraseTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdown,
+    -- Part A G3m: the fixed 7-state, 21-row structural one-cell origin shift, then that whole G3l
+    -- composite, as one closed 184-state, 552-row table.  H5 is newly executed by the bootstrap
+    -- phase's single live routed row -- the fetch state 4 on `none`, proved its only row targeting its
+    -- accept once the accept's own absorbing three are excluded -- into index 7 at the phase's own
+    -- linear clock 4a+3m+5, the routed row writing `none` and staying, so H5 clamps on neither budget
+    -- while the phase's own last right move clamps exactly when B=0; H6 to H17 are inherited.  Once
+    -- both verdicts' own absorbing rows are excluded, exactly six bootstrap rows target its reject --
+    -- either Boolean on each of the states 1, 2, 3 -- proved an equivalence, each routed to 183, and
+    -- `bootstrap_first_arrival` shows none is taken out of this startConfig.  `handoff_exact` takes no
+    -- hypothesis at all and pins the strict left-block confinement.  Thirteen handoffs of seventeen,
+    -- four still proof-level; the source is now the tag-removal endpoint, the composed clock stays
+    -- quadratic in a and budget domination is not claimed, the lane stays unfenced, both inherited
+    -- rejecting branches are forward-direction only and the mismatched one is timed only at the
+    -- gate's length-only deadline, and no raw-input execution, first arrival of the composed accept,
+    -- pnp4 bridge, or language acceptance is claimed.
+    Glob.one `Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
@@ -965,6 +981,7 @@ lean_lib PnP3 where
       `Tests.UniformV1FixedPairContentMarkerEraseTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests,
     Glob.one
       `Tests.UniformV1FixedPairOriginAlignmentContentMarkerEraseTagGateGammaTerminatorAnchorPayloadDispatcherScratchBootstrapFirstPayloadSecondPayloadMarkersLoopDecrementCountdownSurfaceTests,
+    Glob.one `Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,

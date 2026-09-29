@@ -279,10 +279,34 @@ the **first in the chain to depend on the split lengths `a` and `m` separately**
 are length-only in `N = a + m`, width-only in the decoded `zeros`, or input-dependent — and
 `clock_pins` exhibits `21`, `54` and `87` at `N = 2`, so `switchTime` and the chain clock take two
 length arguments, the composed clock is quadratic in `a`, and it is **not** proved that
-the cubic budget still dominates it. **Twelve** of the seventeen handoffs are therefore now performed
-by a finite table; the **five** earlier ones remain proof-level identifications, the composed accept
+the cubic budget still dominates it. **Twelve** of the seventeen handoffs were therefore then performed
+by a finite table; the **five** earlier ones remained proof-level identifications, the composed accept
 is still the countdown's phase-local `qDone`, G3l's two inherited rejecting branches are
 forward-direction only with the mismatched one timed only at the gate's length-only deadline, and G3l
+likewise constructs no `ContentVerifierBridge` or other pnp4 bridge, no fence, no raw-input acceptance
+and no advice-freedom claim, so it too is no P-vs-NP mainline progress. Part A G3m then executes the one
+before *that*, **H5** — the structural one-cell origin shift into the pair origin alignment — inside a
+single composed 184-state, 552-row machine, `FixedPairOriginShiftBootstrap.machine.seq` the G3l
+composite, once again with **no new table row** and no new combinator: the bootstrap phase too has
+exactly two absorbing states, so the landed `UniformTM.seq` routes both. Its live accept list is as
+narrow as one can be — **one** row, the fetch state `4` on `none`, the probe that finds the block
+exhausted, proved by `accept_rows_unique` the only row targeting the phase's accept once the accept's
+own absorbing three are excluded, routed to index `7` keeping its written `none` and its `.stay`, so
+H5 clamps on neither budget, while the phase's own last right move, at source time `clock - 2`, clamps
+exactly when `B = 0`, an equivalence the landed `clamps` proves. Its reject side is proved an
+**equivalence**, not just exhaustive: over all seven states and all three symbols, once **both**
+verdicts' own absorbing rows are excluded, a row of the table targets its reject **iff** the symbol is
+a Boolean and the state is one of `1`, `2`, `3`, six rows in all, each routed to the composed reject,
+and none is ever taken out of this slice's start. Because the phase's strict first arrival was already
+landed hypothesis-free in the shape `seq` consumes, `handoff_exact` here again takes **no hypothesis at
+all** and additionally pins strict left-block confinement. This switch time, `4 * a + 3 * m + 5`, is
+linear and far below G3l's quadratic one, but it still reads the two split lengths apart — `clock_pins`
+exhibits `11`, `12` and `13` at `N = 2` — and it is **not** the smallest in the chain, the length-only
+`N + 3` and `3 * N + 7` being smaller at the tagged fixture, so the composed clock stays quadratic in
+`a` and budget domination is still **not** proved. **Thirteen** of the seventeen handoffs are therefore
+now performed by a finite table; the **four** earlier ones remain proof-level identifications, the
+composed accept is still the countdown's phase-local `qDone`, G3m's two inherited rejecting branches are
+forward-direction only with the mismatched one timed only at the gate's length-only deadline, and G3m
 likewise constructs no `ContentVerifierBridge` or other pnp4 bridge, no fence, no raw-input acceptance
 and no advice-freedom claim, so it too is no P-vs-NP mainline progress.
 This is Infrastructure only. Wrapper-level `L'`

@@ -3030,36 +3030,52 @@ timeout guard.  The table is fixed and complete but not claimed state-minimal.  
 `SearchMCSPWeakLowerBound` nor `VerifiedNPDAGLowerBoundSource` is reduced.  It is infrastructure, not
 P-vs-NP mainline progress.
 
-**Part A G3n — Infrastructure: executed tag-removal → unchanged G3m handoff H4.**
-`Complexity.Uniform.V1.FixedPairTagRemovalShiftAlignmentCountdown` composes the existing
-nine-state tag-removal machine with G3m using unchanged `UniformTM.seq`: 193 states,
-579 rows, start 0, accept 191, reject 192. **Fourteen of seventeen handoffs are now
-executed; H1–H3 remain proof-level connections.** The single live H4 row is state 1
-on blank, routed to state 9, writing blank and staying, at `a * (a + 5) + 2` steps.
-The origin clamp occurs separately at `clock a - 2`. Exactly seven live rows target
-the removal reject once both verdict source states are excluded.
+**Part A G3o — Infrastructure: executed separator-hole → unchanged G3n handoff H3.**
+`Complexity.Uniform.V1.FixedPairSeparatorHoleTagRemovalShiftAlignmentCountdown`
+sequences the unchanged three-state hole machine into unchanged G3n with
+`UniformTM.seq`: **196 states, 588 rows**, start 0, accept 194, reject 195,
+tail start 3. **Fifteen of seventeen handoffs are executed; H1–H2 remain
+proof-level connections.** H3's sole live accepting row reads `some true` at
+state 0, writes blank, stays, and enters state 3 in exactly one transition.
+The two bad scanned symbols route to reject; dead left verdict copies also
+have cross-block rows. Neither dead copy (1 or 2) is a target or the start.
 
-`handoff_exact` has no proposition premises and proves actual `UniformTM.run`
-execution: strict left-block confinement before H4, no composed verdict through H4,
-whole-configuration handoff at head 0 over `compactTape`, and every later G3m
-configuration under the right embedding. The inherited H5/H6/H7 controls are 16/42/46.
-`tag_removal_countdown_drained` retains exactly eight G3m premises: matching tag,
-gamma width, dispatcher `StrictFirstTerminalAt`, width at least two, `v ≤ F`,
-allocation room, register-bit identification, and zero high bits. It reaches accept
-at `removalChainClock`, head `a + m + 2 + zeros`, tape `loopTape B x w zeros 0 v`,
-and persists. This is not first arrival of composed accept. Tiny independent
-reduction probes cover empty inputs at budgets 0/1 and both singleton query bits
-with empty/nonempty witnesses. The large fixture is theorem-derived: hand-supplied
-`v = 24`, 2972 = 106 + 2866 steps, accept 191, head 23,
-`loopTape 22 tag physWord 4 0 24`. This is execution nonvacuity, not `ContentAccepts`
-nonvacuity; the full large run is not kernel-reduced.
+The unconditional strict handoff starts from the phase-local encoded-pair
+configuration: head `2*a`, full `sentinelTape`, scanned `some true`. At time 1
+it has head `2*a` and complete `holeTape`. It proves left-block confinement
+before that time, no composed verdict through that time, routed-left equality
+through time 1, and whole-configuration transport of every G3n suffix. H3 is
+stationary even at `a=0` or `B=0`; the inherited removal origin clamp still
+occurs at `1 + (Removal.clock a - 2)`. H4 arrives separately at
+`1 + Removal.clock a`, control 12, head 0, full `compactTape`; H5/H6/H7 are
+19/45/49 at G3n's times plus one, preserving H6's head 0 and `alignedTape`.
 
-The start is the encoded-pair tag-removal phase configuration, not raw input.
-G3m already executes origin alignment; G3n adds only H4. No later parser field,
-`TM.runConfig` conversion, runtime fence, budget-domination theorem, language
-acceptance, advice-freedom claim, verifier bridge, or P-vs-NP mainline progress is
-supplied. `C`, `q`, and `v` remain theorem parameters, never selected runtime data.
-Rejection transport remains forward-only, with the mismatched branch guaranteed
-only from the inherited deadline. No pnp4 bridge advances: the accepted-content
-composite bridge still starts at G3e. Neither `SearchMCSPWeakLowerBound` nor
-`VerifiedNPDAGLowerBoundSource` is reduced.
+`separator_hole_countdown_drained` retains exactly G3n's eight premises:
+matching tag, gamma width, dispatcher `StrictFirstTerminalAt`, width at least
+two, `v ≤ F`, allocation room, register-bit identification, and zero high bits.
+Strict dispatcher arrival excludes every earlier terminal. The endpoint at
+`holeChainClock = 1 + removalChainClock` is accept 194, head
+`a+m+2+zeros`, whole `loopTape B x w zeros 0 v`, with persistence thereafter.
+This is not first arrival of composed accept. Both inherited rejection
+branches are forward guarantees with complete head/tape endpoints; mismatch
+retains its deadline guarantee, not a first-rejection claim. Source rejection
+is only a scanned-symbol guarantee on arbitrary configurations.
+
+Independent `decide` probes cover empty and singleton pairs, both bit values,
+empty/nonempty witnesses, budgets 0/1, H3 and H4, and both bad scanned symbols.
+The large witness discharges all eight premises and is theorem-derived:
+`a=8, m=9, B=22, zeros=4, C=18, q=qHasOne, borrow=0, v=F=24`;
+**2973 = 1 + 2972 steps**, accept 194, head 23, full
+`loopTape 22 tag physWord 4 0 24`, persistent thereafter. Its 49-cell allocation
+has zero register bits at 18–22, blank 23, marks 24–47, blank 48. The whole tape
+equality is authoritative. This witnesses satisfiable execution premises,
+not `ContentAccepts` nonvacuity or runtime decoding of 24; the full run is not
+kernel-reduced. `B` allocates tape and does not bound the runtime.
+
+G3o executes only H3. No H1/H2 execution, raw-input composition, later parser
+fields, `TM.runConfig` simulation, runtime fence or budget domination, runtime
+selection of `C/q/v`, composed-accept minimality, rejection equivalence,
+language acceptance, advice-freedom claim, or verifier bridge is supplied.
+**No pnp4 bridge advances**: the accepted-content composite bridge still starts
+at G3e. Neither `SearchMCSPWeakLowerBound` nor
+`VerifiedNPDAGLowerBoundSource` is reduced; this is not P-vs-NP mainline progress.

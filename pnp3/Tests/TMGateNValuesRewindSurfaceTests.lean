@@ -87,7 +87,8 @@ theorem check_gnTransition_rewind_rows (phase : Fin 1)
         (0, .rewind (.p3 false false false), scan, .right) ∧
       gnTransition phase (.rewind (.p3 b0 b1 b2)) scan =
         (0, .valuesEntry, scan, .right) ∧
-      gnTransition phase .valuesEntry scan = (0, .valuesEntry, scan, .stay) :=
+      gnTransition phase .valuesEntry scan =
+        (0, .values .probe (.p1 scan), scan, .right) :=
   gnTransition_rewind_rows phase b0 b1 b2 b3 scan
 
 theorem check_gnTransition_rewind_decision (phase : Fin 1) :

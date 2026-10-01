@@ -272,3 +272,44 @@ exits 1 naming exactly the control owner and writer. These facts are recorded in
 `stage-a-scope.log`, `build-focused-4.log` and `precommit-old-freeze.log` in the
 Qodo logs directory. The committed stage-(a) freeze failure is checked again
 before its immediate repin child.
+
+## PR #1810 Qodo correction: ordered freeze migration (2026-10-01)
+
+| Item | Exact value |
+| --- | --- |
+| Parent integration head | `58c334417d29086245c488bf980d2154194f1b8f` |
+| Stage (a), all implementation/tests/docs | `09d043bd242a81458fbe68caf26e4aadbf4b4ac3` |
+| Stage-(a) whole repository tree | `2217c7cb3afe9f8c6b800e1a2b60f33412a5c95e` |
+| Authoritative TMVerifier subtree | `455c53bd237af6319c1cadb744cc2575081a13e2` |
+| Previous provenance | `f07c4439c3f04a5455b624403be8efcfb16be29e` |
+| Previous authoritative subtree | `bf871e090bf1ca564293502e4ff09c1c5f8ca9a0` |
+
+This stage-(b) commit is stage (a)'s immediate child. It changes only the two
+pin constants, regenerated schema-3 manifest, and these migration records;
+no Lean or frozen byte changes. The old checker was run against the committed
+stage (a) and intentionally exited 1, naming exactly
+`GateNFixedDelegateRelocation.lean` and `GateNValuesWriter.lean`; see
+`/root/reports/gn-e25d-qodo-logs/stage-a-old-freeze.log`. The manifest retains
+all 120 paths/modes with exactly those two blob/hash replacements. Original
+GN-E2-5c/5d stages and the integration head remain ancestors.
+
+The 18-target Lane B build passed before stage (a), including both owners,
+launch and examples, full-proposition surfaces, focused and aggregate audits,
+and the affected downstream regression surfaces. Its exact command is
+`/root/reports/gn-e25d-qodo-logs/targeted-build.sh`; output is
+`stage-a-targeted.log` in that directory. The existing private `.lake` cache
+was retained; Lake rebuilt changed sources and their affected dependencies.
+Scope against `origin/main` (`36e907c493fad8ac54556401e92ff1fa39554268`) is
+**893 additions + 17 deletions = 910 changed Lean LOC**, eight modules plus
+`lakefile.lean`. All 19 public propositions have named full-proposition wrappers;
+both audits directly root them and the writer pair (40 focused roots), with
+only `propext`, `Classical.choice`, `Quot.sound` dependencies. Whitespace,
+forbidden-token, surface and frozen-scope checks passed before stage (a).
+
+The required post-stage-(b) replay of the targeted build, freeze checker,
+negative controls and policy tests follows this commit; its exact head/results
+belong in the local completion report. This record does not preclaim them.
+The prior Codex/Fable APPROVE and 17-step full gate remain evidence only for
+`58c33441`; fresh release-head full gate, reviews, CI and owner attestation are
+not claimed. No push is performed. All mathematical and machine-completion
+obligations listed above remain open; this is Infrastructure only.

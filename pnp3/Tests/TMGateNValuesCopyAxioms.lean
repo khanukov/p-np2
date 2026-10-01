@@ -1,0 +1,48 @@
+import Tests.TMGateNValuesCopySurfaceTests
+
+/-! Focused direct axiom audit for the GN-E2-5b Infrastructure slice. -/
+
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_values_classify
+#print axioms Pnp3.Tests.TMGateNValuesCopySurface.check_gnCS_values_classify
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_values_data_to_install_eight
+#print axioms Pnp3.Tests.TMGateNValuesCopySurface.check_gnCS_values_data_to_install_eight
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_dataExit_to_valuesEntry_one
+#print axioms Pnp3.Tests.TMGateNValuesCopySurface.check_gnCS_dataExit_to_valuesEntry_one
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnValueCopySteps_provenance
+#print axioms Pnp3.Tests.TMGateNValuesCopySurface.check_gnValueCopySteps_provenance
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_valueCopy_exit_exact
+#print axioms Pnp3.Tests.TMGateNValuesCopySurface.check_gnCS_valueCopy_exit_exact
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_valueCopy_return_exact
+#print axioms Pnp3.Tests.TMGateNValuesCopySurface.check_gnCS_valueCopy_return_exact
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_values_cons_exact
+#print axioms Pnp3.Tests.TMGateNValuesCopySurface.check_gnCS_values_cons_exact
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_values_nonempty_handoff
+#print axioms Pnp3.Tests.TMGateNValuesCopySurface.check_gnCS_values_nonempty_handoff
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_values_nil_tail_handoff
+#print axioms Pnp3.Tests.TMGateNValuesCopySurface.check_gnCS_values_nil_tail_handoff
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnRecordFrames_map_image
+#print axioms Pnp3.Tests.TMGateNValuesCopySurface.check_gnRecordFrames_map_image
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnValueCopyMiddle_length
+#print axioms Pnp3.Tests.TMGateNValuesCopySurface.check_gnValueCopyMiddle_length
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnValueCopy_frames
+#print axioms Pnp3.Tests.TMGateNValuesCopySurface.check_gnValueCopy_frames
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnValueCopyMiddle_admissible
+#print axioms Pnp3.Tests.TMGateNValuesCopySurface.check_gnValueCopyMiddle_admissible
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnFirstValueCopySteps_provenance
+#print axioms Pnp3.Tests.TMGateNValuesCopySurface.check_gnFirstValueCopySteps_provenance
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_encodeGN_firstValueCopied_exact
+#print axioms Pnp3.Tests.TMGateNValuesCopySurface.check_gnCS_encodeGN_firstValueCopied_exact
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnFirstValueCopiedConfig_structure
+#print axioms Pnp3.Tests.TMGateNValuesCopySurface.check_gnFirstValueCopiedConfig_structure
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNValuesCopyProbes.literal_cap_firstValueCopied
+#print axioms Pnp3.Tests.TMGateNValuesCopySurface.check_literal_cap_firstValueCopied
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNValuesCopyProbes.literal_tiny_copy
+#print axioms Pnp3.Tests.TMGateNValuesCopySurface.check_literal_tiny_copy
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNValuesCopyProbes.literal_tiny_executable
+#print axioms Pnp3.Tests.TMGateNValuesCopySurface.check_literal_tiny_executable
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNValuesCopyProbes.literal_two_values_handoff
+#print axioms Pnp3.Tests.TMGateNValuesCopySurface.check_literal_two_values_handoff
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNValuesCopyProbes.literal_singleton_tail_handoff
+#print axioms Pnp3.Tests.TMGateNValuesCopySurface.check_literal_singleton_tail_handoff
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNValuesCopyProbes.literal_reserved_reject
+#print axioms Pnp3.Tests.TMGateNValuesCopySurface.check_literal_reserved_reject

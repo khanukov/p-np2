@@ -1,5 +1,22 @@
 # Plan: closing the TM verifier for canonical asymptotic GapPartialMCSP
 
+**GN-E2-5b validated local Infrastructure slice (2026-10-01):** on exact
+merged base `b83de46cc67ecfbf52093807b66b9cd7acf04010`, the live classifier
+and installer copy one value in `8*d+37` rows through the data exit; its
+stationary dispatch returns to `valuesEntry` after `8*d+38`. The real initial
+capstone returns at head 8 with the destination extended by one `data` frame
+and the request tail pending (1184 rows in the literal example). Targeted
+Lane B builds and all 44 focused audit roots passed. The delta is **903 changed
+Lean lines across seven Lean files including `lakefile.lean`**. No transition
+row changes. See [the frozen target and completion record](GN_E2_5B_VALUES_COPY.md).
+Stage (a) commits the validated bytes first; stage (b) separately repins the
+freeze. The user authorizes only this one-value slice and targeted builds:
+no full repository gate, independent review, remote gate, owner attestation,
+push or PR is claimed. Full-list execution and nonempty request completion
+remain deferred. Historical GN-E2-5a references below to GN-E2-5b being paused,
+to its formerly broader scope, or to previous current pins/counts are superseded
+by this record for this limited slice.
+
 **Owner-docstring correction (2026-09-29, Infrastructure only):** Qodo's
 finding at PR #1804 exact head
 `1b5aa3e219d30d2292c8cd13bbc8e68acbbb1d90`, as supplied by the owner,

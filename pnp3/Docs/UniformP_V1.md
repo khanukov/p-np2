@@ -3029,3 +3029,37 @@ language acceptance.  `run` permits more steps than `B`, which fixes the tape ex
 timeout guard.  The table is fixed and complete but not claimed state-minimal.  Neither
 `SearchMCSPWeakLowerBound` nor `VerifiedNPDAGLowerBoundSource` is reduced.  It is infrastructure, not
 P-vs-NP mainline progress.
+
+**Part A G3n — Infrastructure: executed tag-removal → unchanged G3m handoff H4.**
+`Complexity.Uniform.V1.FixedPairTagRemovalShiftAlignmentCountdown` composes the existing
+nine-state tag-removal machine with G3m using unchanged `UniformTM.seq`: 193 states,
+579 rows, start 0, accept 191, reject 192. **Fourteen of seventeen handoffs are now
+executed; H1–H3 remain proof-level connections.** The single live H4 row is state 1
+on blank, routed to state 9, writing blank and staying, at `a * (a + 5) + 2` steps.
+The origin clamp occurs separately at `clock a - 2`. Exactly seven live rows target
+the removal reject once both verdict source states are excluded.
+
+`handoff_exact` has no proposition premises and proves actual `UniformTM.run`
+execution: strict left-block confinement before H4, no composed verdict through H4,
+whole-configuration handoff at head 0 over `compactTape`, and every later G3m
+configuration under the right embedding. The inherited H5/H6/H7 controls are 16/42/46.
+`tag_removal_countdown_drained` retains exactly eight G3m premises: matching tag,
+gamma width, dispatcher `StrictFirstTerminalAt`, width at least two, `v ≤ F`,
+allocation room, register-bit identification, and zero high bits. It reaches accept
+at `removalChainClock`, head `a + m + 2 + zeros`, tape `loopTape B x w zeros 0 v`,
+and persists. This is not first arrival of composed accept. Tiny independent
+reduction probes cover empty inputs at budgets 0/1 and both singleton query bits
+with empty/nonempty witnesses. The large fixture is theorem-derived: hand-supplied
+`v = 24`, 2972 = 106 + 2866 steps, accept 191, head 23,
+`loopTape 22 tag physWord 4 0 24`. This is execution nonvacuity, not `ContentAccepts`
+nonvacuity; the full large run is not kernel-reduced.
+
+The start is the encoded-pair tag-removal phase configuration, not raw input.
+G3m already executes origin alignment; G3n adds only H4. No later parser field,
+`TM.runConfig` conversion, runtime fence, budget-domination theorem, language
+acceptance, advice-freedom claim, verifier bridge, or P-vs-NP mainline progress is
+supplied. `C`, `q`, and `v` remain theorem parameters, never selected runtime data.
+Rejection transport remains forward-only, with the mismatched branch guaranteed
+only from the inherited deadline. No pnp4 bridge advances: the accepted-content
+composite bridge still starts at G3e. Neither `SearchMCSPWeakLowerBound` nor
+`VerifiedNPDAGLowerBoundSource` is reduced.

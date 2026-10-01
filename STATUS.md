@@ -26,14 +26,16 @@ open. **Lane B owns the deferred N1/N3 follow-up**, explicitly still open in the
 [carry-forward register](pnp3/Docs/GN_E2_5B_VALUES_COPY.md#carry-forward-ownership).
 Historical GN-E2-5a records below retain their dated scope.
 
-**Historical owner-docstring correction (2026-09-29, Infrastructure only):** Qodo's
+**GN-E2-5a current-main record before G3n integration
+(2026-09-29, Infrastructure only):** Qodo's
 finding at PR #1804 exact head
 `1b5aa3e219d30d2292c8cd13bbc8e68acbbb1d90`, as supplied by the owner,
 is addressed by the two-stage migration recorded in `TMVERIFIER_FREEZE.md`.
 Stage (a) is `1e7fe40592001142378ff3620c888045d8c10594`; stage (b)
 repins tree `145252565dc2538c6c01c19fc2f6814abc1c3a8d` and updates these
-records. The size at that correction was **1499 changed Lean lines
-(1468 added, 31 deleted) across 8 files**, including `lakefile.lean`, against merge base
+records. At main `b83de46cc67ecfbf52093807b66b9cd7acf04010`, the GN-E2-5a
+dependency-closed delta is **1499 changed Lean lines (1468 added, 31 deleted)
+across 8 files**, including `lakefile.lean`, against merge base
 `2f8a3d5e6f90fe41a2cd7bc240d3c9fad407b68e`. The 1497-line counts below
 are historical measurements before this correction. The owner-label deferral
 was closed; GN-E2-5b implementation was paused at that date. No review of
@@ -44,7 +46,8 @@ No remote label or attestation is issued by this local correction.
 
 Updated: 2026-10-01
 
-**Historical Lane B integration update (2026-09-29, Infrastructure):** this branch's third
+**Historical Lane B integration update (2026-09-29, Infrastructure):**
+the GN-E2-5a branch's third
 integration merge brings `main` at `2f8a3d5e6f90fe41a2cd7bc240d3c9fad407b68e`
 into `03b8184402fb7bf092d3bcd72ca7c936fab9862b`, preserving both histories.
 G3m and GN-E2-5a remain intact; the frozen subtree and pins are unchanged.
@@ -53,6 +56,47 @@ Against that new base, GN-E2-5a still changes **1497 Lean lines across 8 files**
 `9445a93e` as the current base describe the preceding snapshot. This integration
 did not establish a full-check or review gate result. GN-E2-5b was still paused
 at that integration; the authorized one-value result is recorded above.
+
+**Part A G3n — Infrastructure: executed tag-removal → unchanged G3m handoff H4.**
+`Complexity.Uniform.V1.FixedPairTagRemovalShiftAlignmentCountdown` composes the existing
+nine-state tag-removal machine with G3m using unchanged `UniformTM.seq`: 193 states,
+579 rows, start 0, accept 191, reject 192. **Fourteen of seventeen handoffs are now
+executed; H1–H3 remain proof-level connections.** The single live H4 row is state 1
+on blank, routed to state 9, writing blank and staying, at `a * (a + 5) + 2` steps.
+The origin clamp occurs separately at `clock a - 2`. Exactly seven live rows target
+the removal reject once both verdict source states are excluded.
+
+Relative to current main `b83de46cc67ecfbf52093807b66b9cd7acf04010`,
+this integration adds **528 Lean lines across 4 registered Lean files**
+(528 added, 0 deleted).
+
+`handoff_exact` has no proposition premises and proves actual `UniformTM.run`
+execution: strict left-block confinement before H4, no composed verdict through H4,
+whole-configuration handoff at head 0 over `compactTape`, and every later G3m
+configuration under the right embedding. The inherited H5/H6/H7 controls are 16/42/46.
+`tag_removal_countdown_drained` retains exactly eight G3m premises: matching tag,
+gamma width, dispatcher `StrictFirstTerminalAt`, width at least two, `v ≤ F`,
+allocation room, register-bit identification, and zero high bits. It reaches accept
+at `removalChainClock`, head `a + m + 2 + zeros`, tape `loopTape B x w zeros 0 v`,
+and persists. This is not first arrival of composed accept. Tiny independent
+reduction probes cover empty inputs at budgets 0/1 and both singleton query bits
+with empty/nonempty witnesses. The large fixture is theorem-derived: hand-supplied
+`v = 24`, 2972 = 106 + 2866 steps, accept 191, head 23,
+`loopTape 22 tag physWord 4 0 24`. This is execution nonvacuity, not `ContentAccepts`
+nonvacuity; the full large run is not kernel-reduced.
+
+The start is the encoded-pair tag-removal phase configuration, not raw input.
+G3m already executes origin alignment; G3n adds only H4. No later parser field,
+`TM.runConfig` conversion, runtime fence, budget-domination theorem, language
+acceptance, advice-freedom claim, verifier bridge, or P-vs-NP mainline progress is
+supplied. `C`, `q`, and `v` remain theorem parameters, never selected runtime data.
+Rejection transport remains forward-only, with the mismatched branch guaranteed
+only from the inherited deadline. No pnp4 bridge advances: the accepted-content
+composite bridge still starts at G3e. Neither `SearchMCSPWeakLowerBound` nor
+`VerifiedNPDAGLowerBoundSource` is reduced.
+
+The following G3m record describes its own earlier thirteen/four boundary; G3n above
+is the current fourteen/three boundary.
 
 **Part A G3m, the executed origin-shift → origin-alignment handoff H5: the same sequential
 composition applied a thirteenth time, one block further left, with no new table row and no new

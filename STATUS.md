@@ -33,6 +33,13 @@ full gate, push and PR creation from this local task. Prior release reviews
 and full gates below are historical and do not certify GN-E2-5d.
 See the [frozen targets, premises and implementation evidence](pnp3/Docs/GN_E2_5D_FIRST_REQUEST_LAUNCH.md).
 
+Stage (a), `f07c4439c3f04a5455b624403be8efcfb16be29e`, commits the validated implementation with the old
+pin intentionally failing on exactly two frozen files. Its direct child is the
+stage-(b) content-address repin to subtree `bf871e090bf1ca564293502e4ff09c1c5f8ca9a0` (120 objects), with no
+Lean or frozen-byte change. The repinned checker, freeze negative controls and
+local policy tests pass. Both GN-E2-5c stages and the exact base remain ancestors.
+The local work is complete; no push, PR or full exclusive gate was performed.
+
 **Historical GN-E2-5c values induction and first-request tail (2026-10-01,
 Infrastructure only):** on base `b71eb6ca3ff4101d6d1596dfb4fc06ce63f845c7`,
 `GateNValuesInduction` executes every actual input value through the live

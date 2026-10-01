@@ -33,6 +33,13 @@ full gate, push and PR creation from this local task. Prior release reviews
 and full gates below are historical and do not certify GN-E2-5d.
 See the [frozen targets, premises and implementation evidence](GN_E2_5D_FIRST_REQUEST_LAUNCH.md).
 
+Stage (a), `f07c4439c3f04a5455b624403be8efcfb16be29e`, commits the validated implementation with the old
+pin intentionally failing on exactly two frozen files. Its direct child is the
+stage-(b) content-address repin to subtree `bf871e090bf1ca564293502e4ff09c1c5f8ca9a0` (120 objects), with no
+Lean or frozen-byte change. The repinned checker, freeze negative controls and
+local policy tests pass. Both GN-E2-5c stages and the exact base remain ancestors.
+The local work is complete; no push, PR or full exclusive gate was performed.
+
 **Historical GN-E2-5c values induction and first-request tail (2026-10-01,
 Infrastructure only):** on base `b71eb6ca3ff4101d6d1596dfb4fc06ce63f845c7`,
 `GateNValuesInduction` executes every actual input value through the live
@@ -67,8 +74,8 @@ Request launch, delegation, returned-bit commit, repeated gates, verdict,
 acceptance, first arrival and new-clock/runtime adequacy remain open, together
 with Lane B's N1/N3 carry-forward items. No P-vs-NP source obligation is reduced.
 
-**Current authoritative frozen tree:** `b2762b378800f81e6adaaa3ecbe6b277ddd59482`.
-**Current provenance commit (`FROZEN_COMMIT`):** `d1694e4b8c3e4838fb38d682f4c10d5ffacc6eb8`.
+**Current authoritative frozen tree:** `bf871e090bf1ca564293502e4ff09c1c5f8ca9a0`.
+**Current provenance commit (`FROZEN_COMMIT`):** `f07c4439c3f04a5455b624403be8efcfb16be29e`.
 **Stage-(a) whole repository tree:** `2e9f958a192376763a84e2bc9beb0633820972e9`.
 This provenance identifies the authorized implementation snapshot, not an
 independent review or remote attestation. The checker’s “reviewed provenance”

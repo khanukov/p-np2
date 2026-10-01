@@ -172,3 +172,30 @@ fixture and 136-row two-value kernel fixture were rebuilt unchanged.
 All 36 direct focused roots also passed in the aggregate audit. Explicit scope
 and surface checks passed, as did `git diff --check`. The frozen subtree has
 120 files: 118 unchanged and only the two authorized blob changes.
+
+## Final commit and freeze evidence
+
+Stage (a), `f07c4439c3f04a5455b624403be8efcfb16be29e`, commits the validated implementation with the old
+pin intentionally failing on exactly two frozen files. Its direct child is the
+stage-(b) content-address repin to subtree `bf871e090bf1ca564293502e4ff09c1c5f8ca9a0` (120 objects), with no
+Lean or frozen-byte change. The repinned checker, freeze negative controls and
+local policy tests pass. Both GN-E2-5c stages and the exact base remain ancestors.
+The local work is complete; no push, PR or full exclusive gate was performed.
+
+Stage (a) is a direct child of the exact base. The stage-(b) commit is a
+separate immediate child; its exact SHA is included in the external completion
+report so this committed record does not try to name its own hash. Schema 3
+and all 120 manifest paths/modes are retained; exactly the owner and writer
+entries receive new blob/hash values. No other frozen bytes change in either
+stage, and stage (b) changes no Lean byte at all.
+
+Actual checker output:
+`[tmverifier-freeze] OK: 120 Git objects match tree bf871e090bf1 (reviewed provenance f07c4439c3f0 verified)`.
+The negative suite reports OK for manifest trust/schema, 4 manifest,
+8 filesystem, 4 rewritten-history, 8 provenance, 5 object-state,
+1 no-object-store, 1 nested-prefix, 5 authoring, 3 tracing, 1 root-authoring,
+and 1 provenance-free self-hosted controls. The policy suite reports OK for
+blanket paths, rename, attestation and API completeness. Logs are
+`/root/reports/gn-e25d-logs/stage-b-freeze-check.log`,
+`stage-b-freeze-negative-controls.log`, and `stage-b-policy.log` in that directory.
+The completed implementation reduces no mathematical source obligation.

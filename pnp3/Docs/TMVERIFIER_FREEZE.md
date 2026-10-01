@@ -9,13 +9,23 @@ and the request tail pending (1184 rows in the literal example). Targeted
 Lane B builds and all 44 focused audit roots passed. The delta is **903 changed
 Lean lines across seven Lean files including `lakefile.lean`**. No transition
 row changes. See [the frozen target and completion record](GN_E2_5B_VALUES_COPY.md).
-Stage (a) commits the validated bytes first; stage (b) separately repins the
-freeze. The user authorizes only this one-value slice and targeted builds:
+Stage (a) is `b16d816e011560e86ea81ffa1a08da20e18cd2d2`; stage (b) is the separate commit
+carrying this record and repins frozen tree `e4fa8f333a055e8bbce4c258af7f84719426416a`.
+The manifest now has 119 objects (schema 3); its checker and negative controls
+passed. Stage (b) changes no frozen byte. The user authorizes only this
+one-value slice and targeted builds:
 no full repository gate, independent review, remote gate, owner attestation,
 push or PR is claimed. Full-list execution and nonempty request completion
 remain deferred. Historical GN-E2-5a references below to GN-E2-5b being paused,
 to its formerly broader scope, or to previous current pins/counts are superseded
 by this record for this limited slice.
+
+**Current authoritative frozen tree:** `e4fa8f333a055e8bbce4c258af7f84719426416a`.
+**Current provenance commit (`FROZEN_COMMIT`):** `b16d816e011560e86ea81ffa1a08da20e18cd2d2`.
+**Stage-(a) whole repository tree:** `7ef7a45e0c53bbd1d24c615a9a523d7615810b25`.
+The provenance is the validated stage-(a) snapshot, not an independent review
+or owner attestation. The inherited GN-E2-5a preamble immediately below is
+historical; its old pins and review outcomes do not apply to GN-E2-5b.
 
 **Owner-docstring correction (2026-09-29, Infrastructure only):** Qodo's
 finding at PR #1804 exact head
@@ -101,10 +111,10 @@ provenance commit `7b53a08f` is an ancestor of this branch. Local Git records
 neither the remote gate results for that merge nor the required PR review, so
 neither is claimed; what it discharged and what local history cannot show are
 split out in its record, not here.
-**Frozen tree (authoritative):** `145252565dc2538c6c01c19fc2f6814abc1c3a8d` —
-the Git tree object of the subtree below, and the content source the checker
-verifies against.
-**Reviewed-provenance commit (`FROZEN_COMMIT`):**
+**GN-E2-5a historical frozen tree:** `145252565dc2538c6c01c19fc2f6814abc1c3a8d` —
+the Git tree object of that snapshot, verified by the checker before the
+GN-E2-5b repin recorded above.
+**GN-E2-5a historical provenance commit:**
 `1e7fe40592001142378ff3620c888045d8c10594` (2026-09-29) — the owner-docstring correction
 stage-(a) commit whose subtree the pin names. The checker calls this value
 "reviewed provenance" because that is the role the constant plays; independent
@@ -1741,3 +1751,52 @@ owed; local policy tests do not establish the remote policy gate. The category
 is only `Infrastructure`, and `tmverifier-unfreeze` remains the intended unfreeze
 label, not a second category or a newly applied label. No push, PR operation,
 history rewrite or GN-E2-5b implementation is part of this correction.
+
+### 2026-10-01 — GN-E2-5b exact one-value copy
+
+This is the explicitly authorized local Infrastructure continuation from merged
+GN-E2-5a `b83de46cc67ecfbf52093807b66b9cd7acf04010`, scoped to one value,
+its return to the live classifier, and its residual-list/tail handoffs.
+The frozen target, theorem premises, literal fixtures, targeted build command,
+44 direct audit roots, and completion limits are in
+[GN_E2_5B_VALUES_COPY.md](GN_E2_5B_VALUES_COPY.md).
+
+The migration preserves the required order and existing ancestry:
+
+| Item | Exact value |
+| --- | --- |
+| Stage (a), committed frozen bytes and registration | `b16d816e011560e86ea81ffa1a08da20e18cd2d2` |
+| Stage-(a) whole repository tree | `7ef7a45e0c53bbd1d24c615a9a523d7615810b25` |
+| New authoritative TMVerifier subtree | `e4fa8f333a055e8bbce4c258af7f84719426416a` |
+| Previous provenance | `1e7fe40592001142378ff3620c888045d8c10594` |
+| Previous authoritative subtree | `145252565dc2538c6c01c19fc2f6814abc1c3a8d` |
+
+Stage (a) carries no pin change. Stage (b), the separate commit containing this
+record, changes the checker's two pin constants and regenerates the manifest
+from that committed Git tree. Schema 3 and `spec/version_manifest.toml` are
+unchanged. There are 119 manifest objects, up from 118: one added blob,
+`TuringToolkit/GateNValuesCopy.lean`, and one changed blob,
+`TuringToolkit/GateNValuesWriter.lean` (public classifier visibility and scope
+prose). No object is removed, and no mode or type changes. No transition-owner
+byte, machine, encoder, clock, state constructor or row is changed.
+
+The Lane B targeted build passed, including old writer/rewind surfaces; the
+focused audit emitted all 44 roots with only `propext`, `Classical.choice` and
+`Quot.sound`. The freeze checker and its negative-control suite both passed;
+logs are `/root/reports/gn-e25b-targeted.log`,
+`/root/reports/gn-e25b-freeze-check.log` and
+`/root/reports/gn-e25b-freeze-tests.log`. The suite covered manifest/schema,
+filesystem, rewritten history, provenance, object-state, missing object store,
+nested prefix, authoring, tracing, root authoring and its provenance-free
+self-hosted run. None is a full repository gate or an independent review.
+
+The source delta is 903 changed Lean lines (898 added, 5 deleted), seven Lean
+files including `lakefile.lean`, against the exact base above. No donor commit
+was merged/cherry-picked. Only donor proof geometry was adapted; its conflicting
+entry and exit rows and `8*d+30` clock were not restored. The proved exit costs
+`8*d+37`; returning to `valuesEntry` costs one additional dispatch row. The
+1184-row real initial fixture and the independent 46-row kernel reduction both
+leave the scratch request tail pending. Full-list execution, nonempty request
+completion, launch, delegation, commit, repeated gates, total installer clock,
+verdict and acceptance remain deferred. No full gate, remote check, independent
+review, attestation, push or PR is claimed for either migration stage.

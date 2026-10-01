@@ -9,8 +9,11 @@ and the request tail pending (1184 rows in the literal example). Targeted
 Lane B builds and all 44 focused audit roots passed. The delta is **903 changed
 Lean lines across seven Lean files including `lakefile.lean`**. No transition
 row changes. See [the frozen target and completion record](pnp3/Docs/GN_E2_5B_VALUES_COPY.md).
-Stage (a) commits the validated bytes first; stage (b) separately repins the
-freeze. The user authorizes only this one-value slice and targeted builds:
+Stage (a) is `b16d816e011560e86ea81ffa1a08da20e18cd2d2`; stage (b) is the separate commit
+carrying this record and repins frozen tree `e4fa8f333a055e8bbce4c258af7f84719426416a`.
+The manifest now has 119 objects (schema 3); its checker and negative controls
+passed. Stage (b) changes no frozen byte. The user authorizes only this
+one-value slice and targeted builds:
 no full repository gate, independent review, remote gate, owner attestation,
 push or PR is claimed. Full-list execution and nonempty request completion
 remain deferred. Historical GN-E2-5a references below to GN-E2-5b being paused,

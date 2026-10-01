@@ -135,8 +135,34 @@ No independent review, remote gate, owner attestation, push or PR is claimed.
 The long initial wait for another job's exclusive build lock was respected;
 all Lean compilation in this lane used `pnp2-lake lane-b` and isolated caches.
 
-Stage (a) commits this validated frozen snapshot, registration and audits
-without changing either freeze pin. Stage (b) will record stage (a)'s exact
-commit and trees, repin the checker, regenerate the manifest from Git, and run
-the focused freeze checker and its negative controls. No donor commit has
-been merged or cherry-picked; all three donor SHAs remain outside ancestry.
+Stage (a), `b16d816e011560e86ea81ffa1a08da20e18cd2d2`, commits this validated frozen snapshot,
+registration and audits without changing either freeze pin. Its whole repository
+tree is `7ef7a45e0c53bbd1d24c615a9a523d7615810b25` and its TMVerifier subtree is
+`e4fa8f333a055e8bbce4c258af7f84719426416a`. It is a direct child of the exact base.
+Stage (b) is the separate commit containing this completion record and the
+checker/manifest repin. It changes no frozen byte and preserves stage (a) as
+its parent; neither stage is amended or rebased.
+
+The previous pin was provenance `1e7fe40592001142378ff3620c888045d8c10594`,
+frozen subtree `145252565dc2538c6c01c19fc2f6814abc1c3a8d`. The generated
+manifest retains schema 3 and grows from 118 to 119 objects: only the copy
+module is added and the writer module changes; no mode/type or removal delta.
+`spec/version_manifest.toml` is unchanged. The new copy blob is
+`1fb4efd1fe2a66c6d461f687abd5ba3660b78da1` (SHA-256
+`f20950b4f3795575e21ec91afb06ea64f64bc8b83998272e02f047875ca798e6`).
+
+Both focused freeze checks passed on the repinned bytes:
+
+```text
+python3 scripts/check_tmverifier_freeze.py
+python3 scripts/test_tmverifier_freeze.py
+```
+
+Logs: `/root/reports/gn-e25b-freeze-check.log` (119 matching objects and
+verified provenance), `/root/reports/gn-e25b-freeze-tests.log` (all manifest,
+filesystem, history, provenance, object-state, authoring, tracing and
+self-hosted controls passed). These local checks are not a full repository
+gate or independent review. No donor commit has been merged or cherry-picked;
+all three donor SHAs remain outside ancestry. The final local commit IDs and
+clean-worktree result are recorded in
+`/root/reports/gn-e25b-writer-codex-final.txt` after stage (b) is committed.

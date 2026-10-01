@@ -83,6 +83,7 @@ import Tests.TMGateNValuesRewindSurfaceTests
 import Complexity.TMVerifier.TuringToolkit.GateNValuesWriter
 import Tests.TMGateNValuesWriterSurfaceTests
 import Tests.TMGateNValuesCopySurfaceTests
+import Tests.TMGateNValuesInductionSurfaceTests
 import Complexity.TMVerifier.TuringToolkit.GateNRelocationExamples
 import Complexity.Uniform.V1.Examples
 import Complexity.DagGadgets
@@ -6642,3 +6643,27 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.TMGateNValuesCopySurface.check_literal_singleton_tail_handoff
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.GNValuesCopyProbes.literal_reserved_reject
 #print axioms Pnp3.Tests.TMGateNValuesCopySurface.check_literal_reserved_reject
+
+-- GN-E2-5c: executed values-list induction and complete first-request tail.
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_values_outputFalse_tail_exact
+#print axioms Pnp3.Tests.TMGateNValuesInductionSurface.check_gnCS_values_outputFalse_tail_exact
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnValuesListSteps_cons
+#print axioms Pnp3.Tests.TMGateNValuesInductionSurface.check_gnValuesListSteps_cons
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_values_list_exact
+#print axioms Pnp3.Tests.TMGateNValuesInductionSurface.check_gnCS_values_list_exact
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_values_list_requestReady_exact
+#print axioms Pnp3.Tests.TMGateNValuesInductionSurface.check_gnCS_values_list_requestReady_exact
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnValuesRequestReadySteps_provenance
+#print axioms Pnp3.Tests.TMGateNValuesInductionSurface.check_gnValuesRequestReadySteps_provenance
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_valuesEntry_requestReady_exact
+#print axioms Pnp3.Tests.TMGateNValuesInductionSurface.check_gnCS_valuesEntry_requestReady_exact
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_encodeGN_valuesRequestReady_exact
+#print axioms Pnp3.Tests.TMGateNValuesInductionSurface.check_gnCS_encodeGN_valuesRequestReady_exact
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNValuesInductionProbes.literal_two_values_requestReady
+#print axioms Pnp3.Tests.TMGateNValuesInductionSurface.check_literal_two_values_requestReady
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNValuesInductionProbes.literal_two_values_executable
+#print axioms Pnp3.Tests.TMGateNValuesInductionSurface.check_literal_two_values_executable
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNValuesInductionProbes.literal_cap_valuesRequestReady
+#print axioms Pnp3.Tests.TMGateNValuesInductionSurface.check_literal_cap_valuesRequestReady
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNValuesInductionProbes.literal_reserved_reject_stable
+#print axioms Pnp3.Tests.TMGateNValuesInductionSurface.check_literal_reserved_reject_stable

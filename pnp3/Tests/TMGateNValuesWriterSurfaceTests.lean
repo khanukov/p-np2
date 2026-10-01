@@ -3,15 +3,17 @@ import Complexity.TMVerifier.TuringToolkit.GateNValuesWriter
 /-!
 # GN-E2-5a values/tail writer surface (2026-09-28)
 
-Definition pins and one direct full-proposition wrapper for every public
-theorem of `GateNValuesWriter`, together with definition pins for the public
+Definition pins and one direct full-proposition wrapper for every original
+GN-E2-5a public theorem of `GateNValuesWriter`, together with pins for the public
 control pieces GN-E2-5a adds to `GateNFixedDelegateRelocation`: the finite
 values mode type, its frame- and bit-level tables, the one mode/buffer row set,
 and the two `GNState` constructors `values` and `requestReady`.  Private kernel
 glue — the scanner and writer instances, the aligned-configuration helpers, the
 terminal-phase lemmas and the block geometry — is deliberately excluded.  A
 bare `#check @name` pins only the name, so every substantive signature is
-restated in full here.
+restated in full here. The classifier `gnCS_values_classify`, promoted to a
+public theorem for GN-E2-5b, is pinned and directly audited by the new
+`Tests.TMGateNValuesCopySurfaceTests` and `Tests.TMGateNValuesCopyAxioms`.
 -/
 
 namespace Pnp3.Tests.TMGateNValuesWriterSurface

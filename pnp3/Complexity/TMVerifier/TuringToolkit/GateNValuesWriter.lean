@@ -36,7 +36,9 @@ so the data classification, the four `back` rows and the carried-`data` exit
 dispatch are *installed and pinned* — by `gnTransition_values_rows` and
 `gnTransition_dataExit` — but **dormant**, executed by no theorem here.  The
 per-value copy round, its list induction and the resulting nonempty-input
-capstone are GN-E2-5b's obligation, and nothing here claims them.
+capstone were deferred by this module. GN-E2-5b's `GateNValuesCopy` now
+composes one copy round and a residual-list/tail handoff; full-list execution
+and completion of a nonempty request remain deferred.
 
 **Explicitly not here, and claimed nowhere.**  `requestReady` is a dormant
 absorbing arrival: there is no rewind to the scratch `bof`, no launch, no
@@ -369,7 +371,7 @@ private theorem gnCS_values_buffer (n base : Nat)
 `base` spells `frame`, the values boundary reads that window in exactly four
 physical rows, writes nothing, and lands one frame further right in the state
 the finite classification assigns to `frame`. -/
-private theorem gnCS_values_classify (n base : Nat)
+theorem gnCS_values_classify (n base : Nat)
     (hsafe : base + 4 < GNM.tapeLength n)
     (tape : Fin (GNM.tapeLength n) → Bool) (frame : G1Frame)
     (hbits : physicalBitsAt hsafe tape = frame.bits)

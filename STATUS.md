@@ -388,8 +388,9 @@ FixedPairContentMarkerEraseTagGateGammaTerminatorAnchorPayloadDispatcherScratchB
 with accept `175` and reject `176`. Write `N = a+m` and `d = borrow x w zeros`. **Twelve** of the
 seventeen handoffs were performed by a finite table when this slice landed and **five** remained
 proof-level retags; G3m above executed H5, taking the counts to thirteen and four;
-G3n subsequently executed H4, taking them to fourteen and three; G3o now executes
-H3, taking them to fifteen and two.
+G3n subsequently executed H4, taking them to fourteen and three; G3o then executed
+H3, taking them to fifteen and two; G3p above now executes H2, taking them to sixteen
+and one.
 
 * **H6 is executed by three live routed rows, not one.** Over all twenty-six alignment states and
   all three symbols, with the accept's own absorbing three excluded, a target of the phase's accept

@@ -97,6 +97,13 @@ runtime adequacy, ContentVerifierBridge and Lane B N1/N3 remain open. There is
 no pnp4 bridge or P-vs-NP mainline claim, and no equivalence is inferred from a
 one-directional implication.
 
+The frozen writer still contains two slice-local comments describing
+`requestReady` as dormant. Those comments narrate the GN-E2-5c endpoint, not the
+composed GN-E2-5d control: the authorized owner row now leaves `requestReady`,
+and the launch theorems below execute that transition. Updating the historical
+comments themselves would require another frozen-byte migration, so this record
+qualifies them while preserving the reviewed stage-(a) bytes.
+
 Stage (a) commits dependency-closed validated bytes/tests/audits/docs with old
 pin intentionally failing. Stage (b), a separate child without frozen-byte
 changes, pins stage (a)'s exact SHA/subtree and regenerates schema-3 manifest.

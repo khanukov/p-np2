@@ -76,7 +76,7 @@ with Lane B's N1/N3 carry-forward items. No P-vs-NP source obligation is reduced
 
 **Current authoritative frozen tree:** `bf871e090bf1ca564293502e4ff09c1c5f8ca9a0`.
 **Current provenance commit (`FROZEN_COMMIT`):** `f07c4439c3f04a5455b624403be8efcfb16be29e`.
-**Stage-(a) whole repository tree:** `2e9f958a192376763a84e2bc9beb0633820972e9`.
+**Stage-(a) whole repository tree:** `754cc5ce57827bacf71e92515fb00ecd808fda06`.
 This provenance identifies the authorized implementation snapshot, not an
 independent review or remote attestation. The checker’s “reviewed provenance”
 output verifies the commit/tree identity only. The freeze pins source bytes,
@@ -1991,3 +1991,47 @@ owner attestation and remote evidence are recorded in the release header above
 and in the linked GN-E2-5c slice record. Local policy tests alone are not a
 remote policy approval, and no release approval is inferred from historical
 reviews.
+
+### 2026-10-01 — GN-E2-5d first request launch and returned interception
+
+Infrastructure only. The exact targets, premises, clocks, scope limits and
+validation are in
+[GN_E2_5D_FIRST_REQUEST_LAUNCH.md](GN_E2_5D_FIRST_REQUEST_LAUNCH.md).
+The slice executes the selected first request from the real encoded GN input to
+the fixed delegated G1 start under the selected-first-gate premise. With the
+additional defined-specification equation it executes through output-done and
+the returned-state interception. Result commit, cursor/spent advance, repeated
+gates, verdict, GN acceptance, first-arrival minimality, composed runtime
+adequacy, `ContentVerifierBridge`, and Lane B N1/N3 remain open. Neither P-vs-NP
+source obligation is reduced.
+
+The ordered migration preserves ancestry and has the following exact values:
+
+| Item | Exact value |
+| --- | --- |
+| Stage (a), committed frozen bytes and registration | `f07c4439c3f04a5455b624403be8efcfb16be29e` |
+| Stage (b), checker/manifest repin | `2644c72452a5b327355a0a87ca8292e74a1f81ac` |
+| Stage-(a) whole repository tree | `754cc5ce57827bacf71e92515fb00ecd808fda06` |
+| New authoritative TMVerifier subtree | `bf871e090bf1ca564293502e4ff09c1c5f8ca9a0` |
+| Previous provenance | `d1694e4b8c3e4838fb38d682f4c10d5ffacc6eb8` |
+| Previous authoritative subtree | `b2762b378800f81e6adaaa3ecbe6b277ddd59482` |
+
+Stage (a) carries no pin change and changes exactly the authorized owner and
+writer blobs; the other 118 frozen objects remain byte-identical. Stage (b)
+changes no Lean or frozen byte, updates the two pin constants, and regenerates
+the schema-3 120-object manifest from the committed stage-(a) tree. Both prior
+GN-E2-5c migration stages and the exact base remain ancestors; no donor commit
+is merged or cherry-picked.
+
+Two writer docstrings retained in the frozen snapshot call `requestReady`
+"dormant". They are dated descriptions of the GN-E2-5c writer endpoint, not a
+claim about the composed GN-E2-5d machine: the authorized owner row now leaves
+`requestReady`, and the new launch theorems execute that row. Correcting those
+historical source comments would require another frozen-byte migration, so this
+record qualifies them without altering the reviewed stage-(a) bytes.
+
+The Lane B targeted build, both audits, freeze checker, negative controls and
+local policy tests passed as recorded in the linked slice record. At stage (b),
+the globally exclusive full gate, exact-head reviews, push, PR, owner
+attestation and remote checks were not yet claimed; later release evidence must
+be recorded on its actual descendant head.

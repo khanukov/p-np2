@@ -197,6 +197,11 @@ theorem check_gnFirstValueCopiedConfig_structure :
         g1PrefixFrames (gnFirstRequest r g) :=
   @Pnp3.Internal.PsubsetPpoly.TM.gnFirstValueCopiedConfig_structure
 
+/-- The literal contract pins the 1184-row endpoint, head, state, schedule and
+distance. Its endpoint tape is defined by `capFirstValueCopiedConfig`; there is
+no separate pre-state blank-cell conjunct. The frozen owner's phrase "was blank"
+is explanatory prose, not an additional theorem assertion. The distinct
+`check_literal_tiny_executable` below explicitly pins both cell values. -/
 theorem check_literal_cap_firstValueCopied :
     TM.runConfig (M := GNM)
         (GNM.initialConfig (gnPoint (encodeGN capProgram))) 1184 =

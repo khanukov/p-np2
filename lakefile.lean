@@ -770,7 +770,8 @@ lean_lib PnP3 where
     -- `requestReady` arrival; the per-value copy round is GN-E2-5b's, and
     -- there is no launch, delegation, commit, loop, verdict or acceptance.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNValuesWriter,
-    -- GN-E2-5b: one physical value copy, return and pending-tail handoff.
+    -- GN-E2-5b (2026-10-01): one physical value copy, return and pending-tail
+    -- handoff, including the real initial endpoint; full-list completion is open.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNValuesCopy,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
@@ -1106,7 +1107,11 @@ lean_lib PnP3 where
     -- structure, scoped clock, the two values-ingress rejection wrappers and
     -- the 784/80 literal proposition wrapper.
     Glob.one `Tests.TMGateNValuesWriterSurfaceTests,
+    -- GN-E2-5b (2026-10-01): 15 definition pins and 22 full-proposition
+    -- wrappers for the classifier, one-value endpoints, handoffs and fixtures.
     Glob.one `Tests.TMGateNValuesCopySurfaceTests,
+    -- GN-E2-5b (2026-10-01): 44 direct owner/wrapper audit roots, also in
+    -- Tests.AxiomsAudit; imports the surface module for focused validation.
     Glob.one `Tests.TMGateNValuesCopyAxioms,
     -- GN-E2-0 (2026-09-01): definition/configuration pins and direct explicit
     -- wrappers for pure physical stages, first-request geometry, and the

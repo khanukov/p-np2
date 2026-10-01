@@ -309,15 +309,18 @@ composed accept is still the countdown's phase-local `qDone`, G3m's two inherite
 forward-direction only with the mismatched one timed only at the gate's length-only deadline, and G3m
 likewise constructs no `ContentVerifierBridge` or other pnp4 bridge, no fence, no raw-input acceptance
 and no advice-freedom claim, so it too is no P-vs-NP mainline progress.
-Part A G3n now executes **H4**, tag removal into unchanged G3m, in a 193-state,
-579-row `UniformTM`: **fourteen** executed handoffs, **three** remaining (H1–H3).
-The premise-free whole-configuration handoff occurs at `a * (a + 5) + 2`; the drain
-capstone retains all eight G3m premises and adds that prefix cost. Its derived
-2972-step fixture uses hand-supplied `v = 24`, proving execution nonvacuity only.
-Still open: executing H1–H3 to connect raw input, the later parser fields, model
+Part A G3o now executes **H3**, separator-hole into unchanged G3n, in a
+196-state, 588-row `UniformTM`: **fifteen** executed handoffs, **two** remaining
+(H1–H2). The unconditional strict whole-configuration handoff costs one step;
+the drain retains exactly eight G3n premises. Its theorem-derived 2973-step
+fixture uses hand-supplied `v=24`, accept 194, head 23 and the complete drained
+tape with persistence, witnessing execution premises only. H4–H7 have controls
+12/19/45/49 at the inherited times plus one. Rejections remain forward guarantees.
+Still open: executing H1–H2 to connect raw input, later parser fields, model
 conversion, runtime fence, budget domination, and a verifier bridge. No first
-arrival of composed accept is proved. The pnp4 accepted-content bridge still starts
-at G3e; neither mainline lower-bound source obligation is reduced.
+arrival of composed accept, language acceptance or runtime selection of `C/q/v`
+is proved. The pnp4 accepted-content bridge still starts at G3e; neither
+mainline lower-bound source obligation is reduced.
 This is Infrastructure only. Wrapper-level `L'`
 padding invariance and formal runtime/advice enforcement also remain open; complete-word
 `ContentAccepts` padding invariance does not close either item. The original length-gated

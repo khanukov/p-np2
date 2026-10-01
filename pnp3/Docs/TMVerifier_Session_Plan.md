@@ -1,6 +1,39 @@
 # Plan: closing the TM verifier for canonical asymptotic GapPartialMCSP
 
-**GN-E2-5c values induction and first-request tail (2026-10-01,
+**GN-E2-5d first-request launch and successful interception (2026-10-01,
+Infrastructure only):** from exact base
+`5aa3f945025de7cb06fe83e4330a13685e15e8d9`, the finite `requestReady` reverse
+scanner now executes the installed request back to its opening `bof` and
+enters the fixed G1 start. `gnCS_encodeGN_firstLaunch_exact` assumes only the
+selected first-gate equation `hg`. `gnCS_encodeGN_firstOutputDone_exact` and
+`gnCS_encodeGN_firstReturned_exact` additionally require the actual request's
+`spec = some res`; neither result nor proof selects runtime behavior.
+The exact full-tape real-input fixtures launch at **1333**, reach output-done
+at **1562**, and intercept at **1563/head107**, with scratch cell111=true and
+GN reserved cell11=false. The independent 33/34-step kernel launch probe and
+five-step reserved-1101 rejection with stable padding pass. Canonical first
+`notGate 0` on `[true]` still launches but has undefined specification.
+
+All requested targeted Lane B builds, the focused audit and the aggregate
+`Tests.AxiomsAudit` passed. This does not include the exclusive full gate.
+
+The dependency-closed change is **789 changed Lean lines (777 added,
+12 deleted), eight modules plus lakefile.lean**, below both frozen caps.
+Only the control owner and the obsolete writer row/prose change in the
+frozen subtree. The 17 new public propositions have full-proposition wrappers;
+focused and aggregate audits each directly root all 34 owner/wrapper names
+and the revised writer pair. Existing `Classical.choice` dependencies are
+reported, not removed or used for runtime extraction.
+
+Returned-bit commit, cursor/spent advance, repeated gates, verdict, GN
+acceptance, first-arrival minimality, composed runtime adequacy,
+`ContentVerifierBridge`, and Lane B N1/N3 remain open. No pnp4 bridge or
+P-vs-NP source obligation is reduced. The user excludes the globally exclusive
+full gate, push and PR creation from this local task. Prior release reviews
+and full gates below are historical and do not certify GN-E2-5d.
+See the [frozen targets, premises and implementation evidence](GN_E2_5D_FIRST_REQUEST_LAUNCH.md).
+
+**Historical GN-E2-5c values induction and first-request tail (2026-10-01,
 Infrastructure only):** on base `b71eb6ca3ff4101d6d1596dfb4fc06ce63f845c7`,
 `GateNValuesInduction` executes every actual input value through the live
 classifier using the landed one-value theorem, then executes the existing

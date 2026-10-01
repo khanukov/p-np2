@@ -778,6 +778,9 @@ lean_lib PnP3 where
     -- GN-E2-5c (2026-10-01): values-list induction and executed first-request
     -- tail; Infrastructure, with launch/delegation/commit/runtime still open.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNValuesInduction,
+    -- GN-E2-5d: real first launch and successful interception; Infrastructure.
+    Glob.one `Complexity.TMVerifierExtensions.GateNFirstRequestLaunch,
+    Glob.one `Complexity.TMVerifierExtensions.GateNFirstRequestLaunchExamples,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -1124,6 +1127,8 @@ lean_lib PnP3 where
     -- and dependency-closed direct owner/wrapper axiom roots.
     Glob.one `Tests.TMGateNValuesInductionSurfaceTests,
     Glob.one `Tests.TMGateNValuesInductionAxioms,
+    Glob.one `Tests.TMGateNFirstRequestLaunchSurfaceTests,
+    Glob.one `Tests.TMGateNFirstRequestLaunchAxioms,
     -- GN-E2-0 (2026-09-01): definition/configuration pins and direct explicit
     -- wrappers for pure physical stages, first-request geometry, and the
     -- complete installed physical endpoint equality.

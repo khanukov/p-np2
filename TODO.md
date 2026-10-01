@@ -1,6 +1,17 @@
 # TODO / Roadmap (current)
 
-Updated: 2026-09-24
+GN-E2-5d (2026-10-01, Infrastructure) closes actual first-request launch
+under the selected-gate premise and successful first evaluation/interception
+under the additional defined-specification premise. Exact initial clocks:
+1333 launch, 1562 output-done, 1563 intercepted for capProgram. Complete
+premises and scoped validation are in
+[pnp3/Docs/GN_E2_5D_FIRST_REQUEST_LAUNCH.md](pnp3/Docs/GN_E2_5D_FIRST_REQUEST_LAUNCH.md).
+Remaining: returned-bit commit, gate advance/loop, verdict, GN acceptance,
+composed runtime adequacy, first arrival, ContentVerifierBridge, and N1/N3.
+No lower-bound source or pnp4 bridge is supplied. The historical full-gate
+snapshot below is not a GN-E2-5d full-gate result.
+
+Updated: 2026-10-01
 
 Canonical checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -17,7 +28,7 @@ Research method boundary:
 
 - Active `axiom` in `pnp3/`: `0`.
 - Active `sorry/admit` in `pnp3/`: `0`.
-- `./scripts/check.sh` passes.
+- GN-E2-5d uses targeted Lane B validation; its full gate is not run, per task.
 - Inclusion is internalized as coarse `P_subset_PpolyDAG`.
 - The simulation layer is not a fine-grained Cook-Levin or
   hardness-magnification compiler adequacy theorem.

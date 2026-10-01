@@ -12,7 +12,8 @@ slice, with targeted
 Stage (a) committed the frozen bytes, registration, surfaces and audit roots;
 stage (b) separately repinned the content-addressed manifest and checker.
 The exact-head reviews and subsequent documentation-only remediation are
-recorded below. No remote gate, attestation or P-vs-NP progress is claimed.
+recorded below. At the implementation stages recorded here, no remote gate or
+attestation was claimed. No P-vs-NP progress is claimed at any stage.
 
 ## Implemented bounded target
 
@@ -234,13 +235,15 @@ stage (b); the original two commits remain in order and are not rewritten.
 The freeze pins source bytes, not the entire semantic/toolchain dependency
 closure. This remediation does not extend the bounded mathematical result.
 
-The user excludes every Lean/lake/check build and full gate in this session
-because an exclusive full gate is active elsewhere. Validation here is limited
-to read-only consistency checks: comment-only Lean comparison, declaration and
-audit inventory, links, whitespace, ancestry and frozen content/pins. No result
-from the concurrent gate or fresh review of the correction is claimed. The
-final-head full gate, freeze-policy validation, independent review, remote
-gates, owner's full-SHA `/tmverifier-unfreeze` attestation, label and
-history-preserving merge remain owed before merge. No push or PR is authorized.
-The committed correction and its checks are recorded in
-`/root/reports/gn-e25b-review-fixes-codex-final.txt`.
+The documentation correction was followed by a history-preserving integration
+merge. At release head `e65231fc1be4c12d9338b39dd67e8d8e9a6b8571`, the targeted
+Lane B build passed, exact-head remote CI completed `scripts/check.sh`, and
+exact-head Codex and Fable 5.1 reviews approved. PR #1806 carries the `Infrastructure` and
+`tmverifier-unfreeze` labels, the owner's exact-SHA attestation, and a successful
+freeze-policy run. The first two policy attempts raced the attestation and failed
+as expected; the subsequent exact-head policy run passed. Qodo's later finding
+that the repository did not record those release events is addressed by this
+dated correction. Fresh exact-head reviews, local gates, remote checks and
+agentic-review coverage of the correction remain required before the
+history-preserving merge. The bounded theorem result and all open obligations
+are unchanged.

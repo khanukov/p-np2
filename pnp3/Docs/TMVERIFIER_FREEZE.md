@@ -17,20 +17,25 @@ bytes; stage (b), `df7699642bf22673cfee7f3ebe6c37e36128360a`, repinned tree
 changed no frozen byte. Fable 5.1 and Codex both approved that exact stage-(b)
 head; Fable listed seven documentation notes. Neither review covers this later
 correction.
-This documentation-only follow-up preserves both stages, frozen bytes and pins.
-No Lean/lake/check build or full gate is run in this follow-up while the
-exclusive full gate is active elsewhere; no result from that run is claimed.
-Remote gates, final-head review, owner attestation, label and merge requirements
-remain unclaimed. Full-list execution and nonempty request completion remain
-open. **Lane B owns the deferred N1/N3 follow-up**, explicitly still open in the
+The documentation-only follow-up preserved both stages, frozen bytes and pins.
+At integration release head `e65231fc1be4c12d9338b39dd67e8d8e9a6b8571`,
+the targeted Lane B build passed, exact-head remote CI completed `scripts/check.sh`,
+and exact-head Codex and Fable 5.1 reviews approved. PR #1806 carries the `Infrastructure` and
+`tmverifier-unfreeze` labels, the owner's full-SHA attestation, and a successful
+freeze-policy run. Qodo's later documentation finding is corrected by this dated
+release record; fresh checks and reviews of that correction remain required before
+merge. Full-list execution and nonempty request completion remain open.
+**Lane B owns the deferred N1/N3 follow-up**, explicitly still open in the
 [carry-forward register](GN_E2_5B_VALUES_COPY.md#carry-forward-ownership).
 Historical GN-E2-5a records below retain their dated scope.
 
 **Current authoritative frozen tree:** `e4fa8f333a055e8bbce4c258af7f84719426416a`.
 **Current provenance commit (`FROZEN_COMMIT`):** `b16d816e011560e86ea81ffa1a08da20e18cd2d2`.
 **Stage-(a) whole repository tree:** `7ef7a45e0c53bbd1d24c615a9a523d7615810b25`.
-The provenance names the stage-(a) snapshot; the reviews apply to stage (b)
-as recorded above, and no owner attestation is claimed. The inherited GN-E2-5a preamble below is
+The provenance names the stage-(a) snapshot; the stage-(b) reviews and the later
+integration-head reviews apply only to their named heads as recorded above. The
+owner's PR #1806 attestation names `e65231fc1be4c12d9338b39dd67e8d8e9a6b8571`.
+The inherited GN-E2-5a preamble below is
 historical; its old pins and review outcomes do not apply to GN-E2-5b.
 
 **Historical owner-docstring correction (2026-09-29, Infrastructure only):** Qodo's

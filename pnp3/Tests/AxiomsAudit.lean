@@ -80,6 +80,8 @@ import Complexity.TMVerifier.TuringToolkit.GateNBodyDriver
 import Tests.TMGateNBodyDriverSurfaceTests
 import Complexity.TMVerifier.TuringToolkit.GateNValuesRewind
 import Tests.TMGateNValuesRewindSurfaceTests
+import Complexity.TMVerifier.TuringToolkit.GateNValuesWriter
+import Tests.TMGateNValuesWriterSurfaceTests
 import Complexity.TMVerifier.TuringToolkit.GateNRelocationExamples
 import Complexity.Uniform.V1.Examples
 import Complexity.DagGadgets
@@ -3410,6 +3412,48 @@ end UniformV1AxiomAudit
 #print axioms Pnp3.Tests.TMGateNValuesRewindSurface.check_gnValuesEntryConfig_structure
 #print axioms Pnp3.Tests.TMGateNValuesRewindSurface.check_gnValuesEntrySteps_le_gnClock
 #print axioms Pnp3.Tests.TMGateNValuesRewindSurface.check_literal_oneConstFalse_valuesEntry
+
+-- GN-E2-5a (2026-09-28).  Infrastructure only.  The finite values/tail control
+-- is installed in the machine owner; what this slice *executes* is the tail
+-- phase: four classification rows, the forward seek to the scratch frontier,
+-- the four-row turn, and eight fixed write rows installing the first request's
+-- `output false`/`finish` tail, ending in the dormant `requestReady` arrival.
+-- The real-input capstone carries exactly two premises, the selected first gate
+-- and `r.inputs = []`; the data classification, the four `back` rows and the
+-- carried-`data` dispatch are installed and pinned but dormant, and the
+-- per-value copy round, its induction and the nonempty capstone are GN-E2-5b's.
+-- No rewind to the scratch `bof`, launch, delegation, commit, next-gate loop,
+-- total installer clock, verdict, acceptance, or executed pure evaluator.
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_values_rows
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_values_reserved
+#print axioms Internal.PsubsetPpoly.TM.gnTransition_dataExit
+#print axioms Internal.PsubsetPpoly.TM.gnValuesTailSteps_provenance
+#print axioms Internal.PsubsetPpoly.TM.gnFirstRequestReady_room
+#print axioms Internal.PsubsetPpoly.TM.gnCS_valuesTail_exact
+#print axioms Internal.PsubsetPpoly.TM.gnFirstRequestReadyConfig_structure
+#print axioms Internal.PsubsetPpoly.TM.gnCS_encodeGN_firstRequestReady_exact
+#print axioms Internal.PsubsetPpoly.TM.gnFirstRequestReadySteps_le_gnClock
+#print axioms Internal.PsubsetPpoly.TM.gnCS_valuesEntry_reserved1101_reject_four
+#print axioms Internal.PsubsetPpoly.TM.gnCS_valuesEntry_reserved1101_reject_stable
+#print axioms Internal.PsubsetPpoly.TM.GNValuesWriterProbes.oneConstFalseGate_mem
+#print axioms Internal.PsubsetPpoly.TM.GNValuesWriterProbes.oneConstFalseNoInputs
+#print axioms Internal.PsubsetPpoly.TM.GNValuesWriterProbes.literal_oneConstFalse_requestReady
+
+-- GN-E2-5a named signature pins: the restated full-proposition wrappers.
+#print axioms Pnp3.Tests.TMGateNValuesWriterSurface.check_gnTransition_values_rows
+#print axioms Pnp3.Tests.TMGateNValuesWriterSurface.check_gnTransition_values_reserved
+#print axioms Pnp3.Tests.TMGateNValuesWriterSurface.check_gnTransition_dataExit
+#print axioms Pnp3.Tests.TMGateNValuesWriterSurface.check_gnValuesTailSteps_provenance
+#print axioms Pnp3.Tests.TMGateNValuesWriterSurface.check_gnFirstRequestReady_room
+#print axioms Pnp3.Tests.TMGateNValuesWriterSurface.check_gnCS_valuesTail_exact
+#print axioms Pnp3.Tests.TMGateNValuesWriterSurface.check_gnFirstRequestReadyConfig_structure
+#print axioms Pnp3.Tests.TMGateNValuesWriterSurface.check_gnCS_encodeGN_firstRequestReady_exact
+#print axioms Pnp3.Tests.TMGateNValuesWriterSurface.check_gnFirstRequestReadySteps_le_gnClock
+#print axioms Pnp3.Tests.TMGateNValuesWriterSurface.check_gnCS_valuesEntry_reserved1101_reject_four
+#print axioms Pnp3.Tests.TMGateNValuesWriterSurface.check_gnCS_valuesEntry_reserved1101_reject_stable
+#print axioms Pnp3.Tests.TMGateNValuesWriterSurface.check_oneConstFalseGate_mem
+#print axioms Pnp3.Tests.TMGateNValuesWriterSurface.check_oneConstFalseNoInputs
+#print axioms Pnp3.Tests.TMGateNValuesWriterSurface.check_literal_oneConstFalse_requestReady
 
 -- The thirteen-step rewrite cycle at the G1 control, kept only as an
 -- **arbitrary-configuration** regression: `g1_bRoundStart_unreachable` proves

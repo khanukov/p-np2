@@ -7,10 +7,12 @@ import Complexity.TMVerifier.TuringToolkit.GateNBoundaryShuttle
 
 This slice activates only the payload-preserving installer exit.  A continuing
 finite payload dispatches stationarily to an empty source probe; carried
-`finish` dispatches stationarily to the fixed `recordDone` state; every other
-payload and every non-p0 exit buffer rejects.  One proof-level list invariant
-then composes that dispatcher with exactly one existing source-restoring
-shuttle.
+`finish` dispatches stationarily to the fixed `recordDone` state; every
+remaining payload and every non-p0 exit buffer rejects.  (GN-E2-5a added one
+further route — a carried `data` frame dispatches to `valuesEntry` — and
+narrowed `GNInstallExitInvalid` by exactly that case; that route is stated and
+proved in the values writer, not here.)  One proof-level list invariant then
+composes that dispatcher with exactly one existing source-restoring shuttle.
 
 The resulting ordinary round takes `8*d+30` rows and advances from one source
 p0 to the next while restoring the source and appending `gnInstallImage` at the
@@ -30,7 +32,9 @@ open Encoding
 /-! ## Exact finite exit table -/
 
 /-- Exact exit decision: only the finite canonical continuing payloads probe,
-finish terminates, every other payload rejects, and non-p0 buffers reject. -/
+finish terminates, every payload the narrowed `GNInstallExitInvalid` still
+admits rejects, and non-p0 buffers reject.  A carried `data` frame is no longer
+one of those payloads; `gnTransition_dataExit` states its route. -/
 theorem gnTransition_install_exit_dispatch (phase : Fin 1) (scan : Bool) :
     (∀ aux, GNInstallExitContinue aux →
       gnTransition phase (gnInstallExitState aux) scan =
@@ -54,11 +58,16 @@ theorem gnTransition_install_exit_dispatch (phase : Fin 1) (scan : Bool) :
   · rfl
   constructor
   · intro aux haux
+    obtain ⟨hcont, hfin, hdata⟩ := haux
     cases aux with
     | empty => rfl
     | carried frame =>
-        cases frame <;> simp_all [GNInstallExitInvalid, GNInstallExitContinue,
-          gnInstallExitState, gnInstallExitDispatch, gnTransition]
+        cases frame with
+        | data b => exact absurd rfl (hdata b)
+        | cursor | tag | index | argSep => exact absurd trivial hcont
+        | finish => exact absurd rfl hfin
+        | output b => cases b <;> rfl
+        | blank | bof | separator | spent => rfl
   · intro buffer aux hbuffer
     cases buffer <;> simp_all [gnTransition]
 

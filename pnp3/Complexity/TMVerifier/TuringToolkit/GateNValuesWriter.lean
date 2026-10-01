@@ -559,6 +559,29 @@ private theorem gnCS_values_terminal (n head : Nat) (pre mid : List G1Frame)
   rw [hsched, runConfig_add, hclassify, runConfig_add, hscan, runConfig_add,
     hback, hwrite]
 
+/-- GN-E2-5c's public interface to the landed terminal execution. The output
+slot is physically classified, then the existing seek/back/write rows install
+the two tail frames. Both destination frames are blank in the starting tape. -/
+theorem gnCS_values_outputFalse_tail_exact (n : Nat) (pre middle : List G1Frame)
+    (hmiddle : ∀ f ∈ middle, GNInstallAdmissible f)
+    (hroom : 4 * (pre.length + middle.length + 3) < GNM.tapeLength n) :
+    TM.runConfig (M := GNM)
+        (gnCopyShuttle.cfg n (4 * pre.length) (by
+          change 4 * pre.length < GNM.tapeLength n; omega)
+          (frameListTape ((pre ++ G1Frame.output false :: middle ++
+            [G1Frame.blank, G1Frame.blank]).flatMap G1Frame.bits))
+          .valuesEntry) (4 * middle.length + 20) =
+      gnCopyShuttle.cfg n (4 * (pre.length + middle.length + 3)) hroom
+        (frameListTape ((pre ++ G1Frame.output false :: middle ++
+          [G1Frame.output false, G1Frame.finish, G1Frame.blank]).flatMap
+            G1Frame.bits)) .requestReady := by
+  have ht := gnCS_values_terminal n (4 * pre.length) pre middle rfl hmiddle hroom
+  have hb := gnValues_tape_blank n
+    (pre ++ G1Frame.output false :: middle ++ [G1Frame.blank, G1Frame.blank])
+  rw [hb]
+  simp only [gnFrameCfg, gnValuesTerminalFrames] at ht
+  simpa only [List.append_assoc, List.cons_append, List.nil_append] using ht
+
 /-! ## The real-input geometry -/
 
 private theorem gnRecordFrames_cursor_admissible {k : Nat} (g : SLGate k) :

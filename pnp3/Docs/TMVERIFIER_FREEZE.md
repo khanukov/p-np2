@@ -1,6 +1,52 @@
 # TMVerifier freeze decision
 
-**GN-E2-5b one-value Infrastructure slice (2026-10-01):** on merged base
+**GN-E2-5c values induction and first-request tail (2026-10-01,
+Infrastructure only):** on base `b71eb6ca3ff4101d6d1596dfb4fc06ce63f845c7`,
+`GateNValuesInduction` executes every actual input value through the live
+classifier using the landed one-value theorem, then executes the existing
+output-false tail writer to the exact `gnFirstRequestReadyConfig` endpoint.
+The initial theorem assumes only the selected first-gate equation. Its clock
+is `gnValuesEntrySteps + (k*(8*d+38) + (4*d+20))`, with `k = r.inputs.length`
+and `d = gnValuesTailDistance r g`. The full nonempty request now fits within
+**529 added Lean lines, six Lean files including lakefile.lean (five modules)**.
+The 136-step two-value and 1300-step encoded nonempty fixtures pass, as do the
+targeted Lane B builds and all 22 direct new audit roots. The exact frozen
+premises, surfaces, evidence and limits are in the
+[GN-E2-5c record](GN_E2_5C_VALUES_INDUCTION.md).
+
+Stage (a), `d1694e4b8c3e4838fb38d682f4c10d5ffacc6eb8`, committed the validated frozen
+bytes and registrations/surfaces/audits. Stage (b),
+`4ffd71f356e13babde80397186ee176e5455ccc5`, repinned the checker and manifest to
+stage (a)'s subtree `b2762b378800f81e6adaaa3ecbe6b277ddd59482` (120 objects), with no
+frozen-byte change. The freeze checker, negative controls and local policy
+unit tests passed. Both stages preserve the exact base in ancestry. The docs-only
+child `6c21021a1ca9685bd7fa563c7cc005bc87fd08b8` and its docs-only follow-up
+`e984d32d16fe172307127fa8c58ceaf2009e6173` corrected the GN-E2-5b/5c records
+without changing Lean, pins or frozen bytes. The integration head
+`85a8c61b6c926b4a54594a84504c28ac4e11f269` subsequently
+passed the globally exclusive 17-step full gate; exact-head Codex and Fable 5.1
+reviews both reported **APPROVE**. PR #1808 carries the `Infrastructure` and
+`tmverifier-unfreeze` labels, the owner's full-SHA attestation, and successful
+CodeQL and freeze-policy runs. The final raw CI rollup and a fresh agentic review
+of this release-record correction remain merge gates. Exact evidence and scope
+limits are recorded in the GN-E2-5c record linked above.
+Request launch, delegation, returned-bit commit, repeated gates, verdict,
+acceptance, first arrival and new-clock/runtime adequacy remain open, together
+with Lane B's N1/N3 carry-forward items. No P-vs-NP source obligation is reduced.
+
+**Current authoritative frozen tree:** `b2762b378800f81e6adaaa3ecbe6b277ddd59482`.
+**Current provenance commit (`FROZEN_COMMIT`):** `d1694e4b8c3e4838fb38d682f4c10d5ffacc6eb8`.
+**Stage-(a) whole repository tree:** `2e9f958a192376763a84e2bc9beb0633820972e9`.
+This provenance identifies the authorized implementation snapshot, not an
+independent review or remote attestation. The checker’s “reviewed provenance”
+output verifies the commit/tree identity only. The freeze pins source bytes,
+not the full semantic/toolchain dependency closure.
+
+The following GN-E2-5b and earlier records describe their dated snapshots;
+their then-open values-list/tail work is discharged only by GN-E2-5c above.
+Their reviews and gates do not transfer to this new slice.
+
+**Historical GN-E2-5b one-value Infrastructure slice (2026-10-01):** on merged base
 `b83de46cc67ecfbf52093807b66b9cd7acf04010`, the live classifier and installer
 copy one value in `8*d+37` rows through the data exit; the stationary dispatch
 returns to `valuesEntry` after `8*d+38`. The real initial capstone returns at
@@ -24,15 +70,16 @@ and exact-head Codex and Fable 5.1 reviews approved. PR #1806 carries the `Infra
 `tmverifier-unfreeze` labels, the owner's full-SHA attestation, and a successful
 freeze-policy run. Qodo's later documentation finding is corrected by this dated
 release record; fresh checks and reviews of that correction remain required before
-merge. Full-list execution and nonempty request completion remain open.
+merge. At that GN-E2-5b snapshot full-list execution and nonempty request
+completion remained open; GN-E2-5c now discharges those execution targets.
 **Lane B owns the deferred N1/N3 follow-up**, explicitly still open in the
 [carry-forward register](GN_E2_5B_VALUES_COPY.md#carry-forward-ownership).
 Historical GN-E2-5a records below retain their dated scope.
 
-**Current authoritative frozen tree:** `e4fa8f333a055e8bbce4c258af7f84719426416a`.
-**Current provenance commit (`FROZEN_COMMIT`):** `b16d816e011560e86ea81ffa1a08da20e18cd2d2`.
-**Stage-(a) whole repository tree:** `7ef7a45e0c53bbd1d24c615a9a523d7615810b25`.
-The provenance names the stage-(a) snapshot; the stage-(b) reviews and the later
+**Historical GN-E2-5b frozen tree:** `e4fa8f333a055e8bbce4c258af7f84719426416a`.
+**Historical GN-E2-5b provenance commit:** `b16d816e011560e86ea81ffa1a08da20e18cd2d2`.
+**Historical GN-E2-5b stage-(a) whole repository tree:** `7ef7a45e0c53bbd1d24c615a9a523d7615810b25`.
+That GN-E2-5b provenance names its stage-(a) snapshot; the stage-(b) reviews and the later
 integration-head reviews apply only to their named heads as recorded above. The
 owner's PR #1806 attestation names `e65231fc1be4c12d9338b39dd67e8d8e9a6b8571`.
 The inherited GN-E2-5a preamble below is
@@ -142,8 +189,8 @@ commit `7b53a08fc13517fcf8b2c73b45f6515102a13863` (2026-09-20), before
 that at tree `7ef6ac6e119f0f078f9c896f17415fa560a6edf3`, provenance commit
 `249435bfa4cb540822e47844107781042f18537f` (2026-09-19), and before that at
 commit `42c598815c8e7d27a53f26102705f84455c6979d` (2026-09-02); see the
-migration record below for those five historical unfreezes and the sixth,
-GN-E2-5b, recorded in the current header.
+migration record below for those five historical unfreezes, the sixth,
+GN-E2-5b, and the seventh, GN-E2-5c, whose pin is recorded in the current header.
 
 **Those SHAs are provenance commits, not reviewed heads.** Each one is the
 `FROZEN_COMMIT` its pin named — the commit whose subtree the pin identified — and
@@ -353,9 +400,10 @@ after, and the GN-E2-5a record's notes on the retirement are the rest.
 **Authorized one-value continuation, 2026-10-01.** The owner authorized the
 bounded GN-E2-5b slice recorded below: one physical value copy, return to the
 live classifier, residual handoffs and the real-input one-value endpoint.
-Full-list induction, nonempty request completion and later construction remain
-deferred. The [carry-forward register](GN_E2_5B_VALUES_COPY.md#carry-forward-ownership)
-assigns the still-open N1/N3 items to Lane B's deferred GN values/tail follow-up;
+At that GN-E2-5b boundary, full-list induction and nonempty request completion
+were deferred; GN-E2-5c now executes them. Later construction remains open.
+The [carry-forward register](GN_E2_5B_VALUES_COPY.md#carry-forward-ownership)
+assigns the N1/N3 items, still open after GN-E2-5c, to Lane B;
 the present documentation remediation implements neither item.
 
 ## Migration record
@@ -1840,3 +1888,46 @@ pin or manifest entry; it adds no theorem or stronger contract. Its surface
 comment qualifies the frozen literal docstring's narrated pre-state without
 editing that source. No Lean/lake/check build or full gate is run during this
 correction, and the two earlier approvals do not review its new head.
+
+
+### 2026-10-01 — GN-E2-5c values-list induction and completed first request
+
+Infrastructure only. The exact pre-implementation targets, premises and
+validation are in [GN_E2_5C_VALUES_INDUCTION.md](GN_E2_5C_VALUES_INDUCTION.md).
+The initial endpoint now covers every actual input list and assumes only the
+selected first-gate equation. The additive clock uses `8*d+38` per copied
+value and the landed `4*d+20` tail phase. No machine row changes; launch,
+delegation, returned-bit commit, repeated gates, verdict, acceptance and runtime
+adequacy remain open, along with N1/N3. Neither P-vs-NP source is reduced.
+
+Stage (a), `d1694e4b8c3e4838fb38d682f4c10d5ffacc6eb8`, is a direct child of
+`b71eb6ca3ff4101d6d1596dfb4fc06ce63f845c7`; its repository tree is
+`2e9f958a192376763a84e2bc9beb0633820972e9` and TMVerifier subtree is `b2762b378800f81e6adaaa3ecbe6b277ddd59482`.
+Stage (b), `4ffd71f356e13babde80397186ee176e5455ccc5`, records the repin as
+its direct child. Neither stage is amended or rebased. The superseded donor
+commits are unused and remain outside ancestry.
+
+The manifest remains schema 3, growing from 119 to 120 objects. Only the new
+`GateNValuesInduction.lean` blob is added and the existing writer blob changes;
+there are no removals or mode/type changes. Its new blob is
+`63f54e173803d0b7c78fce71aaca936408b91da7`, SHA-256
+`f11ae088effa48232092e1234fac21fac2ba3416975976a5cbc1bb79e79e0c5c`.
+The former frozen tree/provenance pair is retained in the GN-E2-5b historical
+record above. `spec/version_manifest.toml` is unchanged.
+
+The targeted Lane B build passed, including the focused audit and affected
+older surfaces. All 22 new direct roots emitted only the standard axiom union
+`propext`, `Classical.choice`, `Quot.sound`. The 529-line/six-Lean-file delta
+includes registrations and both audits. The checker verified 120 matching Git
+objects and stage-(a) provenance; `test_tmverifier_freeze.py` passed its manifest,
+filesystem, history, provenance, object-state, authoring and self-hosted
+controls. The local freeze-policy unit tests passed. Logs are under
+`/root/reports/gn-e25c-*.log`, named explicitly in the slice record.
+
+This paragraph records the stage-(b) evidence snapshot only: at stage (b), no
+full repository gate, independent exact-head review, remote gate or attestation,
+push, or PR was claimed. The later integration-head full gate, reviews, PR,
+owner attestation and remote evidence are recorded in the release header above
+and in the linked GN-E2-5c slice record. Local policy tests alone are not a
+remote policy approval, and no release approval is inferred from historical
+reviews.

@@ -775,6 +775,9 @@ lean_lib PnP3 where
     -- GN-E2-5b (2026-10-01): one physical value copy, return and pending-tail
     -- handoff, including the real initial endpoint; full-list completion is open.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNValuesCopy,
+    -- GN-E2-5c (2026-10-01): values-list induction and executed first-request
+    -- tail; Infrastructure, with launch/delegation/commit/runtime still open.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateNValuesInduction,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -1117,6 +1120,10 @@ lean_lib PnP3 where
     -- GN-E2-5b (2026-10-01): 44 direct owner/wrapper audit roots, also in
     -- Tests.AxiomsAudit; imports the surface module for focused validation.
     Glob.one `Tests.TMGateNValuesCopyAxioms,
+    -- GN-E2-5c (2026-10-01): full-proposition execution/clock/fixture surfaces
+    -- and dependency-closed direct owner/wrapper axiom roots.
+    Glob.one `Tests.TMGateNValuesInductionSurfaceTests,
+    Glob.one `Tests.TMGateNValuesInductionAxioms,
     -- GN-E2-0 (2026-09-01): definition/configuration pins and direct explicit
     -- wrappers for pure physical stages, first-request geometry, and the
     -- complete installed physical endpoint equality.

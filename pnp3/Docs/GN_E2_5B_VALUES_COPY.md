@@ -123,10 +123,12 @@ and the existing writer-surface docstring clarification.
 
 All implementation obligations within the bounded one-value target above are
 closed. The real initial theorem assumes only `hg` and `hvals`; there is no
-assumed execution, advice, runtime witness, or destination-value premise. The
-remaining values and scratch request tail are still pending on return.
-Full-list execution and every later obligation listed above remain open,
-including the separately tracked N1/N3 items below.
+assumed execution, advice, runtime witness, or destination-value premise. At
+this GN-E2-5b endpoint, the remaining values and scratch request tail were
+still pending on return. GN-E2-5c subsequently closed that full-list/tail
+execution boundary; every later obligation listed above remains open,
+including the separately tracked N1/N3 items below. See
+`GN_E2_5C_VALUES_INDUCTION.md`.
 
 The stage-(a) implementation snapshot passed on 2026-10-01:
 
@@ -191,20 +193,23 @@ clean-worktree result are recorded in
 ## Carry-forward ownership
 
 The earlier GN-E2-5a reviews assigned N1 and N3 to a broader planned GN-E2-5b.
-The bounded one-value implementation did not close either item. **Lane B owns
-both in the deferred GN values/tail follow-up**; any implementation requires
-a separately authorized scope and validation. This register assigns follow-up
-responsibility and records open work, without scheduling another frozen change.
+The bounded one-value implementation did not close either item. GN-E2-5c later
+closed the values-list/tail execution boundary but explicitly did not close N1
+or N3. **Lane B continues to own both after GN-E2-5c**; any implementation
+requires a separately authorized scope and validation. This register assigns
+follow-up responsibility and records open work, without scheduling another
+frozen change.
 
 | Item | Status and remaining obligation | Owner |
 | --- | --- | --- |
-| N1 | Open: add a full-proposition surface restatement of the narrowed `GNInstallExitInvalid` predicate, with matching audit coverage. The existing bare name pin and `carried (.data b)` case wrapper do not supply that general restatement. | Lane B, deferred GN values/tail follow-up |
-| N3 | Open: prove general first-arrival minimality for GN-E2-5a's `gnCS_encodeGN_firstRequestReady_exact`, excluding `requestReady` at every earlier time. The exact endpoint theorem and literal execution evidence do not establish that general claim. | Lane B, deferred GN values/tail follow-up |
+| N1 | Open after GN-E2-5c: add a full-proposition surface restatement of the narrowed `GNInstallExitInvalid` predicate, with matching audit coverage. The existing bare name pin and `carried (.data b)` case wrapper do not supply that general restatement. | Lane B |
+| N3 | Open after GN-E2-5c: prove general first-arrival minimality for GN-E2-5a's `gnCS_encodeGN_firstRequestReady_exact`, excluding `requestReady` at every earlier time. The exact endpoint theorem and literal execution evidence do not establish that general claim. | Lane B |
 
 Neither item is a premise of the one-value endpoint theorem or a result of
 this documentation correction. No completion or waiver of either is claimed.
-Full-list induction, completion of a nonempty request and a scoped clock bound
-for the new one-value endpoint also remain outside the proved contract.
+GN-E2-5c now supplies full-list induction and completion of a nonempty first
+request. A scoped `GNM.runTime` bound for that new complete clock remains
+outside the proved contract.
 
 ## Exact-head review and documentation remediation (2026-10-01)
 

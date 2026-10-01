@@ -1,6 +1,44 @@
 # Project Status (current)
 
-**GN-E2-5b one-value Infrastructure slice (2026-10-01):** on merged base
+**GN-E2-5c values induction and first-request tail (2026-10-01,
+Infrastructure only):** on base `b71eb6ca3ff4101d6d1596dfb4fc06ce63f845c7`,
+`GateNValuesInduction` executes every actual input value through the live
+classifier using the landed one-value theorem, then executes the existing
+output-false tail writer to the exact `gnFirstRequestReadyConfig` endpoint.
+The initial theorem assumes only the selected first-gate equation. Its clock
+is `gnValuesEntrySteps + (k*(8*d+38) + (4*d+20))`, with `k = r.inputs.length`
+and `d = gnValuesTailDistance r g`. The full nonempty request now fits within
+**529 added Lean lines, six Lean files including lakefile.lean (five modules)**.
+The 136-step two-value and 1300-step encoded nonempty fixtures pass, as do the
+targeted Lane B builds and all 22 direct new audit roots. The exact frozen
+premises, surfaces, evidence and limits are in the
+[GN-E2-5c record](pnp3/Docs/GN_E2_5C_VALUES_INDUCTION.md).
+
+Stage (a), `d1694e4b8c3e4838fb38d682f4c10d5ffacc6eb8`, committed the validated frozen
+bytes and registrations/surfaces/audits. Stage (b),
+`4ffd71f356e13babde80397186ee176e5455ccc5`, repinned the checker and manifest to
+stage (a)'s subtree `b2762b378800f81e6adaaa3ecbe6b277ddd59482` (120 objects), with no
+frozen-byte change. The freeze checker, negative controls and local policy
+unit tests passed. Both stages preserve the exact base in ancestry. The docs-only
+child `6c21021a1ca9685bd7fa563c7cc005bc87fd08b8` and its docs-only follow-up
+`e984d32d16fe172307127fa8c58ceaf2009e6173` corrected the GN-E2-5b/5c records
+without changing Lean, pins or frozen bytes. The integration head
+`85a8c61b6c926b4a54594a84504c28ac4e11f269` subsequently
+passed the globally exclusive 17-step full gate; exact-head Codex and Fable 5.1
+reviews both reported **APPROVE**. PR #1808 carries the `Infrastructure` and
+`tmverifier-unfreeze` labels, the owner's full-SHA attestation, and successful
+CodeQL and freeze-policy runs. The final raw CI rollup and a fresh agentic review
+of this release-record correction remain merge gates. Exact evidence and scope
+limits are recorded in the GN-E2-5c record linked above.
+Request launch, delegation, returned-bit commit, repeated gates, verdict,
+acceptance, first arrival and new-clock/runtime adequacy remain open, together
+with Lane B's N1/N3 carry-forward items. No P-vs-NP source obligation is reduced.
+
+The following GN-E2-5b and earlier records describe their dated snapshots;
+their then-open values-list/tail work is discharged only by GN-E2-5c above.
+Their reviews and gates do not transfer to this new slice.
+
+**Historical GN-E2-5b one-value Infrastructure slice (2026-10-01):** on merged base
 `b83de46cc67ecfbf52093807b66b9cd7acf04010`, the live classifier and installer
 copy one value in `8*d+37` rows through the data exit; the stationary dispatch
 returns to `valuesEntry` after `8*d+38`. The real initial capstone returns at
@@ -24,7 +62,8 @@ and exact-head Codex and Fable 5.1 reviews approved. PR #1806 carries the `Infra
 `tmverifier-unfreeze` labels, the owner's full-SHA attestation, and a successful
 freeze-policy run. Qodo's later documentation finding is corrected by this dated
 release record; fresh checks and reviews of that correction remain required before
-merge. Full-list execution and nonempty request completion remain open.
+merge. At that GN-E2-5b snapshot full-list execution and nonempty request
+completion remained open; GN-E2-5c now discharges those execution targets.
 **Lane B owns the deferred N1/N3 follow-up**, explicitly still open in the
 [carry-forward register](pnp3/Docs/GN_E2_5B_VALUES_COPY.md#carry-forward-ownership).
 Historical GN-E2-5a records below retain their dated scope.
@@ -3034,8 +3073,8 @@ reserved output slot immediately, so no theorem in this slice executes them,
 and the zero-input literal probe is a nonvacuity witness for execution, **not**
 a witness of a values copy. At the GN-E2-5a split, the per-value copy round,
 list induction and nonempty-request capstone were assigned to GN-E2-5b.
-The authorized 2026-10-01 slice proves one copy and its real-input endpoint;
-list induction and a completed nonempty request remain deferred. The older label `E2-4b` is retired
+The authorized GN-E2-5b slice proved one copy and its real-input endpoint;
+GN-E2-5c now executes the list induction and completes the nonempty request. The older label `E2-4b` is retired
 in favour of that name. The frozen `GateNValuesRewind.lean:531` owner label
 now also says `GN-E2-5b`, through the separate two-stage docstring migration
 recorded in `pnp3/Docs/TMVERIFIER_FREEZE.md`. Historical references in that
@@ -3047,7 +3086,7 @@ clock, verdict, acceptance, language-level statement, or any claim that
 **Historical engineering priority (GN-E2-5a, 2026-09-29).** The one-tape
 `pnp3/Complexity/TMVerifier/` tree was frozen at Git tree `14525256`, the
 subtree of commit `1e7fe405`. This paragraph records the GN-E2-5a snapshot;
-the current GN-E2-5b pin and validation limits are in the header and
+the current GN-E2-5c pin and validation limits are in the header and
 `pnp3/Docs/TMVERIFIER_FREEZE.md`. At that date there had been five
 unfreezes since `42c59881` (the reviewed S11 one-gate acceptance closure; the
 authorized GN-E2-3b body-driver slice, landed by PR #1777 as merge
@@ -3159,8 +3198,8 @@ said it would. These migrations, this prose correction and both integration
 merges of `main` are **Infrastructure only**: neither
 `VerifiedNPDAGLowerBoundSource` nor `SearchMCSPWeakLowerBound` is reduced.
 At that date GN-E2-5b and later construction required fresh authorization.
-The later authorization covers only the one-value slice recorded above;
-full-list completion and later gate-by-gate construction remain deferred.
+GN-E2-5b subsequently covered one value; GN-E2-5c now executes all values and
+the first-request tail. Later gate-by-gate construction remains deferred.
 Active model-repair work otherwise uses the versioned uniform complexity
 foundation outside that tree.
 
@@ -4127,19 +4166,18 @@ fixed-slice `PpolyDAG` membership:
 
 ### Canonical-track TM-verifier deliverable (frozen historical roadmap)
 
-> **Freeze note (2026-10-01).** The broader roadmap remains paused. The current
-> tree is `e4fa8f333a055e8bbce4c258af7f84719426416a`, from provenance commit
-> `b16d816e011560e86ea81ffa1a08da20e18cd2d2`, repinned by stage (b)
-> `df7699642bf22673cfee7f3ebe6c37e36128360a`. This sixth migration since
-> `42c59881` adds the authorized GN-E2-5b one-value slice to the five historical
-> migrations recorded in `TMVERIFIER_FREEZE.md`. GN-E2-5a is the merged base
-> `b83de46cc67ecfbf52093807b66b9cd7acf04010`; GN-E2-5b's bounded copy and
-> real-input endpoint are implemented, while full-list execution, nonempty
-> request completion and later gate-by-gate construction remain open. The
-> header and completion record distinguish the stage-(b) reviews from this
-> documentation correction and the still-owed final-head gates. N1/N3 remain
-> assigned to Lane B's deferred GN values/tail follow-up. Active model-repair
-> work otherwise uses the uniform complexity foundation outside TMVerifier.
+> **Freeze note (GN-E2-5c, 2026-10-01).** The broader roadmap remains paused.
+> The current tree is `b2762b378800f81e6adaaa3ecbe6b277ddd59482`, from stage-(a) provenance
+> `d1694e4b8c3e4838fb38d682f4c10d5ffacc6eb8`, repinned by its direct stage-(b) child.
+> This seventh migration since `42c59881` executes the authorized values-list
+> induction and fixed tail after GN-E2-5b, on exact main base
+> `b71eb6ca3ff4101d6d1596dfb4fc06ce63f845c7`. The nonempty first request is
+> fully installed at `requestReady`; launch, delegation, returned-bit commit,
+> looping, verdict, acceptance and new-clock/runtime adequacy remain open.
+> The header and GN-E2-5c record state the targeted build and freeze evidence;
+> no full gate or independent/remote review transfers from an older slice.
+> N1/N3 remain assigned to Lane B. Active model-repair work otherwise uses the
+> uniform complexity foundation outside TMVerifier.
 
 > **Scope note.**  After the canonical iso-strong / promise-YES
 > conclusion-side refutations recorded above, the canonical asymptotic

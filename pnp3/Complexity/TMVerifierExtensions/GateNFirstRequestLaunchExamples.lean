@@ -109,4 +109,21 @@ theorem literal_reserved_launch_reject (k : Nat) :
         .reject :=
   gnCS_requestReady_reserved1101_reject_stable 0 0 (by decide) _ rfl k
 
+/-- Kernel execution at and above the left boundary, without an opening bof. -/
+theorem literal_noBof_allBlank_launch_reject :
+    (TM.runConfig (M := GNM)
+      (gnLaunchConfig 0 0 (by decide) (fun _ => false) .requestReady) 5).state =
+        ⟨(0 : Fin 1), GNState.reject⟩ ∧
+    ((TM.runConfig (M := GNM)
+      (gnLaunchConfig 0 0 (by decide) (fun _ => false) .requestReady) 5).head : Nat) = 0 ∧
+    (TM.runConfig (M := GNM)
+      (gnLaunchConfig 0 4 (by decide) (fun _ => false) .requestReady) 5).state =
+        ⟨(0 : Fin 1), GNState.reject⟩ ∧
+    ((TM.runConfig (M := GNM)
+      (gnLaunchConfig 0 4 (by decide) (fun _ => false) .requestReady) 5).head : Nat) = 0 ∧
+    (TM.runConfig (M := GNM)
+      (gnLaunchConfig 0 0 (by decide) (fun _ => false) .requestReady) 9).state =
+        ⟨(0 : Fin 1), GNState.reject⟩ := by
+  decide +kernel
+
 end Pnp3.Internal.PsubsetPpoly.TM.GNFirstRequestLaunchProbes

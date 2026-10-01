@@ -1,44 +1,52 @@
 # Plan: closing the TM verifier for canonical asymptotic GapPartialMCSP
 
-**GN-E2-5d first-request launch and successful interception (2026-10-01,
-Infrastructure only):** from exact base
-`5aa3f945025de7cb06fe83e4330a13685e15e8d9`, the finite `requestReady` reverse
-scanner now executes the installed request back to its opening `bof` and
-enters the fixed G1 start. `gnCS_encodeGN_firstLaunch_exact` assumes only the
-selected first-gate equation `hg`. `gnCS_encodeGN_firstOutputDone_exact` and
-`gnCS_encodeGN_firstReturned_exact` additionally require the actual request's
-`spec = some res`; neither result nor proof selects runtime behavior.
-The exact full-tape real-input fixtures launch at **1333**, reach output-done
-at **1562**, and intercept at **1563/head107**, with scratch cell111=true and
-GN reserved cell11=false. The independent 33/34-step kernel launch probe and
-five-step reserved-1101 rejection with stable padding pass. Canonical first
-`notGate 0` on `[true]` still launches but has undefined specification.
+**GN-E2-5d / PR #1810 (2026-10-01, Infrastructure only):** the finite
+`requestReady` launch executes the installed request back to its opening `bof`
+and enters the fixed G1 start. `gnCS_encodeGN_firstLaunch_exact` assumes only
+`hg`; output-done and first return additionally require `spec = some res`.
+The full-tape real-input fixtures launch at **1333**, reach output-done at
+**1562**, and intercept at **1563/head107**. Scratch cell111=true and GN
+reserved cell11=false. Canonical first `notGate 0` on `[true]` still launches
+with undefined specification; a first returned bit is not the program verdict.
 
-All requested targeted Lane B builds, the focused audit and the aggregate
-`Tests.AxiomsAudit` passed. This does not include the exclusive full gate.
+At exact integration head `58c334417d29086245c488bf980d2154194f1b8f`,
+the targeted Lane B implementation/surface/axiom build passed, Codex and
+Fable 5.1 both returned **APPROVE**, and the globally exclusive
+`pnp2-full-check /root/pnp2-lane-b-gn-e25d` completed all **17 steps**.
+Freeze checker, negative controls and policy tests passed there too.
+[PR #1810](https://github.com/khanukov/p-np2/pull/1810) records that release;
+the exact-head reports and full-gate log are linked in the
+[GN-E2-5d evidence record](GN_E2_5D_FIRST_REQUEST_LAUNCH.md).
 
-The dependency-closed change is **789 changed Lean lines (777 added,
-12 deleted), eight modules plus lakefile.lean**, below both frozen caps.
-Only the control owner and the obsolete writer row/prose change in the
-frozen subtree. The 17 new public propositions have full-proposition wrappers;
-focused and aggregate audits each directly root all 34 owner/wrapper names
-and the revised writer pair. Existing `Classical.choice` dependencies are
-reported, not removed or used for runtime extraction.
+The Qodo correction fixes three findings: launch now rejects blank frames,
+the two stale writer comments describe the active launch, and these records
+include the completed integration-head validation. The generic scan requires
+no internal `bof` **or blank**; concrete request bodies discharge both premises.
+`gnCS_requestReady_allBlank_reject_exact` proves genuine rejection after
+`5+k` steps from every legal head on a no-bof all-blank tape, at head `h-4`
+with the entire tape unchanged, including clamping at zero. An independent
+kernel fixture checks heads zero and four and stable rejection. The new
+endpoint and fixture have named full-proposition surfaces and direct roots in
+both audits (40 focused roots total). The canonical launch/return propositions
+retain their existing premises. The current PR scope against `origin/main`
+is **893 additions + 17 deletions = 910 changed Lean LOC**, across **eight
+modules plus lakefile.lean**, below both caps.
+
+This correction uses a new ordered stage-(a) implementation commit and an
+immediate stage-(b) content-addressed repin, preserving the original
+`f07c4439` → `2644c724` migration, docs child `80a2680b`, and integration head
+in ancestry. Only the authorized control owner and writer change in the
+120-object frozen subtree. Stage (b) changes no Lean or frozen byte.
+Corrected-head validation is targeted Lane B plus freeze/negative/policy tests;
+the earlier APPROVE verdicts and 17-step gate apply only to `58c33441`.
+Fresh full-gate/review results, remote CI and owner attestation at a future
+release head are not claimed. This correction is committed locally, with no push.
 
 Returned-bit commit, cursor/spent advance, repeated gates, verdict, GN
 acceptance, first-arrival minimality, composed runtime adequacy,
-`ContentVerifierBridge`, and Lane B N1/N3 remain open. No pnp4 bridge or
-P-vs-NP source obligation is reduced. The user excludes the globally exclusive
-full gate, push and PR creation from this local task. Prior release reviews
-and full gates below are historical and do not certify GN-E2-5d.
-See the [frozen targets, premises and implementation evidence](GN_E2_5D_FIRST_REQUEST_LAUNCH.md).
-
-Stage (a), `f07c4439c3f04a5455b624403be8efcfb16be29e`, commits the validated implementation with the old
-pin intentionally failing on exactly two frozen files. Its direct child is the
-stage-(b) content-address repin to subtree `bf871e090bf1ca564293502e4ff09c1c5f8ca9a0` (120 objects), with no
-Lean or frozen-byte change. The repinned checker, freeze negative controls and
-local policy tests pass. Both GN-E2-5c stages and the exact base remain ancestors.
-The local work is complete; no push, PR or full exclusive gate was performed.
+`ContentVerifierBridge`, and Lane B N1/N3 remain open. No pnp4 bridge,
+`SearchMCSPWeakLowerBound` or `VerifiedNPDAGLowerBoundSource` is supplied;
+no P-vs-NP mainline progress is claimed.
 
 **Historical GN-E2-5c values induction and first-request tail (2026-10-01,
 Infrastructure only):** on base `b71eb6ca3ff4101d6d1596dfb4fc06ce63f845c7`,

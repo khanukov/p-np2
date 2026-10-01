@@ -9,6 +9,8 @@ open GNFirstRequestLaunchProbes
 #synth Fintype GNState
 #synth DecidableEq GNState
 #check GNState.launch
+#check gnLaunchAdvance
+#check gnLaunchComplete
 #check gnLaunchControl
 #check gnLaunchStopState
 #check gnLaunchScanner
@@ -41,16 +43,20 @@ theorem check_gnTransition_launch_decision (phase : Fin 1) :
       gnTransition phase (.launch (.r0 b1 b2 b3)) scan =
         (0, .delegated G1M.start, scan, .stay)) ∧
     (∀ (f : G1Frame) (b1 b2 b3 scan : Bool),
-      decodeG1Frame? [scan, b1, b2, b3] = some f → f ≠ G1Frame.bof →
+      decodeG1Frame? [scan, b1, b2, b3] = some f → f ≠ G1Frame.bof → f ≠ G1Frame.blank →
       gnTransition phase (.launch (.r0 b1 b2 b3)) scan =
         (0, .launch .r3, scan, .left)) ∧
+    (∀ b1 b2 b3 scan : Bool,
+      decodeG1Frame? [scan, b1, b2, b3] = some G1Frame.blank →
+      gnTransition phase (.launch (.r0 b1 b2 b3)) scan =
+        (0, .reject, scan, .stay)) ∧
     (∀ b1 b2 b3 scan : Bool, decodeG1Frame? [scan, b1, b2, b3] = none →
       gnTransition phase (.launch (.r0 b1 b2 b3)) scan =
         (0, .reject, scan, .stay)) := by
   exact Pnp3.Internal.PsubsetPpoly.TM.gnTransition_launch_decision phase
 
 theorem check_gnCS_launch_onList_exact (n : Nat) (pre body post : List G1Frame)
-    (hbody : ∀ f ∈ body, f ≠ G1Frame.bof)
+    (hbody : ∀ f ∈ body, f ≠ G1Frame.bof ∧ f ≠ G1Frame.blank)
     (hroom : 4 * (pre.length + body.length + 1) < GNM.tapeLength n) :
     TM.runConfig (M := GNM)
       (gnLaunchConfig n (4 * (pre.length + body.length + 1)) hroom
@@ -78,6 +84,13 @@ theorem check_gnCS_requestReady_reserved1101_reject_stable (n base : Nat)
       (gnLaunchConfig n (base+4) hroom tape .requestReady) (5+k) =
       gnLaunchConfig n base (by omega) tape .reject := by
   exact Pnp3.Internal.PsubsetPpoly.TM.gnCS_requestReady_reserved1101_reject_stable n base hroom tape hbits k
+
+theorem check_gnCS_requestReady_allBlank_reject_exact (n h : Nat)
+    (hh : h < GNM.tapeLength n) (k : Nat) :
+    TM.runConfig (M := GNM)
+      (gnLaunchConfig n h hh (fun _ => false) .requestReady) (5+k) =
+      gnLaunchConfig n (h-4) (by omega) (fun _ => false) .reject := by
+  exact Pnp3.Internal.PsubsetPpoly.TM.gnCS_requestReady_allBlank_reject_exact n h hh k
 
 theorem check_gnFirstRequestReady_geometry {r : GNProgram} {g : SLGate r.inputs.length}
     (hg : r.program.gates[0]? = some g) :
@@ -200,5 +213,21 @@ theorem check_literal_reserved_launch_reject (k : Nat) :
       gnLaunchConfig 0 0 (by decide) (frameListTape [true, true, false, true])
         .reject := by
   exact Pnp3.Internal.PsubsetPpoly.TM.GNFirstRequestLaunchProbes.literal_reserved_launch_reject k
+
+theorem check_literal_noBof_allBlank_launch_reject :
+    (TM.runConfig (M := GNM)
+      (gnLaunchConfig 0 0 (by decide) (fun _ => false) .requestReady) 5).state =
+        ⟨(0 : Fin 1), GNState.reject⟩ ∧
+    ((TM.runConfig (M := GNM)
+      (gnLaunchConfig 0 0 (by decide) (fun _ => false) .requestReady) 5).head : Nat) = 0 ∧
+    (TM.runConfig (M := GNM)
+      (gnLaunchConfig 0 4 (by decide) (fun _ => false) .requestReady) 5).state =
+        ⟨(0 : Fin 1), GNState.reject⟩ ∧
+    ((TM.runConfig (M := GNM)
+      (gnLaunchConfig 0 4 (by decide) (fun _ => false) .requestReady) 5).head : Nat) = 0 ∧
+    (TM.runConfig (M := GNM)
+      (gnLaunchConfig 0 0 (by decide) (fun _ => false) .requestReady) 9).state =
+        ⟨(0 : Fin 1), GNState.reject⟩ := by
+  exact Pnp3.Internal.PsubsetPpoly.TM.GNFirstRequestLaunchProbes.literal_noBof_allBlank_launch_reject
 
 end Pnp3.Tests.TMGateNFirstRequestLaunchSurface

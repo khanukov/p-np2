@@ -1,9 +1,10 @@
 # GN-E2-5d: frozen target and premise record
 
-Frozen before Lean edits, 2026-10-01. Classification: **Infrastructure**.
+Original target frozen before Lean edits, 2026-10-01. Classification: **Infrastructure**.
 Exact base: `5aa3f945025de7cb06fe83e4330a13685e15e8d9`.
-Authorization: this isolated implementation, two ordered commits, no push/PR,
-no full exclusive gate. No superseded GN-E2-4b1 donor commits.
+Original implementation authorization: two ordered commits, no push/PR or
+full exclusive gate during that implementation. The later release and current
+Qodo correction are recorded below. No superseded GN-E2-4b1 donor commits.
 
 ## Data, premises, endpoints
 
@@ -19,15 +20,16 @@ Canonicality, source execution/safety and delegation must be derived from the
 existing `gnFirstRequest_canonical`, `g1CS_gate_done_trace_safe`, and
 `gn_g1_gate_done_delegates` chain.
 
-Freeze these public proposition targets (all receive named full-proposition
-`check_<name>` wrappers and direct owner/wrapper roots in both audits):
+The public proposition targets below include the Qodo no-blank strengthening
+of the generic frame contract. All have named full-proposition `check_<name>`
+wrappers and direct owner/wrapper roots in both audits:
 
 - `gnTransition_launch_rows`, `gnTransition_launch_decision`: finite reverse
   buffer rows; entry preserves bit and moves left; decoded `bof` stays at fixed
-  `gnEmbed G1M.start`, other decoded frames continue left, malformed windows
+  `gnEmbed G1M.start`, blank rejects, other decoded frames continue left, malformed windows
   and unused forward buffer states reject. No request/result controls a row.
 - `gnCS_launch_onList_exact`: arbitrary `n pre body post`, essential premises
-  `∀ f ∈ body, f ≠ .bof` and
+  `∀ f ∈ body, f ≠ .bof ∧ f ≠ .blank` and
   `4*(pre.length+body.length+1) < GNM.tapeLength n`; exact run from
   `requestReady` at `4*(pre.length+body.length+1)` on
   `(pre ++ .bof :: body ++ post).flatMap G1Frame.bits`, in `4*body.length+5`
@@ -76,7 +78,7 @@ and both direct audit roots.
 
 At most **1500 changed Lean LOC (additions + deletions, including tests,
 audits, comments, registrations), at most 10 modules**, measured against the
-exact base. Intended nine Lean files: owner, writer, one downstream proof
+`origin/main` for the PR and this correction. Intended nine Lean files: owner, writer, one downstream proof
 module `TMVerifierExtensions/GateNFirstRequestLaunch`, one examples module,
 existing writer surface, new surface, focused audit, aggregate audit, lakefile.
 Only frozen edits: finite launch control/requestReady row in
@@ -87,7 +89,7 @@ encodings and generic scanner kernels.
 
 ## Scope and validation
 
-An internal `bof` stops early; generic no-internal-bof is essential. Reserved
+An internal `bof` stops early; a blank rejects. Both generic exclusions are essential. Reserved
 1101 rejection covers that inspected window, not every corruption. `hg` alone
 proves launch, not return: first not/and/or references have no prior results.
 Canonicality does not imply defined semantics. First returned true differs
@@ -97,24 +99,18 @@ runtime adequacy, ContentVerifierBridge and Lane B N1/N3 remain open. There is
 no pnp4 bridge or P-vs-NP mainline claim, and no equivalence is inferred from a
 one-directional implication.
 
-The frozen writer still contains two slice-local comments describing
-`requestReady` as dormant. Those comments narrate the GN-E2-5c endpoint, not the
-composed GN-E2-5d control: the authorized owner row now leaves `requestReady`,
-and the launch theorems below execute that transition. Updating the historical
-comments themselves would require another frozen-byte migration, so this record
-qualifies them while preserving the reviewed stage-(a) bytes.
-
 Stage (a) commits dependency-closed validated bytes/tests/audits/docs with old
 pin intentionally failing. Stage (b), a separate child without frozen-byte
 changes, pins stage (a)'s exact SHA/subtree and regenerates schema-3 manifest.
 Preserve ancestry, no squash/amend. Run changed/new and relevant dependency
 targets only through `pnp2-lake lane-b`; record cache provenance, targeted
 outputs, freeze failure then success, negative controls and policy tests.
-The globally exclusive full gate is explicitly excluded by this task.
+The original implementation excluded the globally exclusive full gate;
+the later integration-head run is recorded below.
 If composition cannot fit/prove, retain the complete genuine launch slice and
 record its precise blocker; never replace execution by configuration wrappers.
 
-## Implemented evidence (after the target freeze)
+## Original implementation evidence (before the Qodo correction)
 
 The successful composition fits: no fallback endpoint or additional premise
 was needed. The owner adds `GNState.launch` and `gnLaunchControl`; the proof
@@ -157,7 +153,7 @@ closure locally; all Lean invocations use `pnp2-lake lane-b` (two threads,
 CPUs 2-3). The successful focused log is
 `/root/reports/gn-e25d-logs/build-launch-5.log`. The complete targeted validation
 log is `/root/reports/gn-e25d-logs/targeted-final.log`; this is not the exclusive
-repository gate. No full gate is run, as explicitly instructed.
+repository gate. No full gate was run during that original implementation.
 
 Before stage (a), `check_tmverifier_freeze.py` exits 1 naming exactly the two
 authorized changed frozen blobs. The negative-control suite's baseline also
@@ -180,18 +176,19 @@ All 36 direct focused roots also passed in the aggregate audit. Explicit scope
 and surface checks passed, as did `git diff --check`. The frozen subtree has
 120 files: 118 unchanged and only the two authorized blob changes.
 
-## Final commit and freeze evidence
+## Original commit and freeze evidence
 
 Stage (a), `f07c4439c3f04a5455b624403be8efcfb16be29e`, commits the validated implementation with the old
 pin intentionally failing on exactly two frozen files. Its direct child is the
 stage-(b) content-address repin to subtree `bf871e090bf1ca564293502e4ff09c1c5f8ca9a0` (120 objects), with no
 Lean or frozen-byte change. The repinned checker, freeze negative controls and
 local policy tests pass. Both GN-E2-5c stages and the exact base remain ancestors.
-The local work is complete; no push, PR or full exclusive gate was performed.
+At that stage-(b) snapshot no push, PR or full gate had been performed.
+PR #1810 and the later integration-head validation are recorded below.
 
 Stage (a) is a direct child of the exact base. The stage-(b) commit is a
-separate immediate child; its exact SHA is included in the external completion
-report so this committed record does not try to name its own hash. Schema 3
+separate immediate child `2644c72452a5b327355a0a87ca8292e74a1f81ac`.
+The docs-only child `80a2680b` and integration merge `58c33441` preserve both stages. Schema 3
 and all 120 manifest paths/modes are retained; exactly the owner and writer
 entries receive new blob/hash values. No other frozen bytes change in either
 stage, and stage (b) changes no Lean byte at all.
@@ -206,3 +203,72 @@ blanket paths, rename, attestation and API completeness. Logs are
 `/root/reports/gn-e25d-logs/stage-b-freeze-check.log`,
 `stage-b-freeze-negative-controls.log`, and `stage-b-policy.log` in that directory.
 The completed implementation reduces no mathematical source obligation.
+
+## PR #1810 integration evidence and Qodo correction (2026-10-01)
+
+At exact head `58c334417d29086245c488bf980d2154194f1b8f`, the targeted Lane B
+implementation/surface/axiom build passed, followed by Codex **APPROVE** and
+Fable 5.1 **APPROVE**. The review reports are
+`/root/reports/gn-e25d-58c3344-exact-codex.txt` and
+`/root/reports/gn-e25d-58c3344-exact-fable51.txt`. The targeted exact-head build
+is attested in the review input and
+[PR #1810](https://github.com/khanukov/p-np2/pull/1810); the older
+`targeted-final.log` above is stage-(a) evidence only.
+The globally exclusive `pnp2-full-check /root/pnp2-lane-b-gn-e25d` then passed
+all 17 steps; `/tmp/pnp2-full-check-gn-e25d-58c3344.log` records the matching
+`bf871e090bf1` freeze preflight and ends `[check] All checks passed.`
+Freeze checker, negative controls and policy tests also passed at that head.
+
+Qodo subsequently identified three legitimate findings on PR #1810: a blank
+no-bof launch can loop at head zero; two writer comments still call
+`requestReady` dormant; and the committed status records omit the completed
+release validation. This correction addresses all three. Only the authorized
+control owner and writer frozen blobs change. `gnLaunchAdvance` rejects blank;
+`gnLaunchComplete` keeps malformed decoding fail-closed. The earlier rewind
+control is unchanged. The generic launch premise now excludes both internal
+bof and blank; `request_body_no_bof_blank` derives both from every concrete
+request encoding. Real-input launch and successful return keep their signatures
+and clocks. Both writer comments now say their theorem ends at `requestReady`
+and GN-E2-5d executes the subsequent launch.
+
+New full-proposition targets:
+
+- `gnCS_requestReady_allBlank_reject_exact n h hh k`: for arbitrary input size
+  and legal head, `TM.runConfig` on the constant-false tape in `requestReady`
+  after `5+k` steps equals the complete reject configuration at `h-4` with the
+  same tape. Natural subtraction includes the left clamp at head zero.
+- `literal_noBof_allBlank_launch_reject`: independent `decide +kernel`
+  execution checks rejection and head zero after five steps from heads zero
+  and four, and rejection after nine steps from head zero.
+
+Each has a named full-proposition surface and direct owner/wrapper
+`#print axioms` in the focused and aggregate audits. There are now 19 new
+public propositions and 40 focused direct roots including the writer pair.
+The correction is Infrastructure: returned-bit commit, cursor/spent advance,
+iteration, verdict, acceptance, first arrival, composed runtime adequacy,
+ContentVerifierBridge and N1/N3 remain open, with no mathematical source
+reduction or pnp4 bridge. No universal malformed-input validation is claimed.
+
+The new stage (a) includes all Lean/frozen bytes, surfaces, audits and related
+docs, leaving the old checker/manifest untouched and intentionally failing on
+exactly the two authorized blobs. Its immediate stage-(b) child changes no
+Lean/frozen byte and repins both constants and schema-3 manifest to stage (a)'s
+commit/subtree. Preserve all existing ancestry; no squash, amend or push.
+Post-repin validation uses `pnp2-lake lane-b` for affected implementation,
+examples, surfaces and both audits, then checker/negative/policy tests.
+Logs are kept in `/root/reports/gn-e25d-qodo-logs/`. The stage-(b) migration
+record below identifies the committed bytes. The historical reviews and full
+gate certify only `58c33441`; this correction does not claim a fresh full gate,
+independent review, remote CI or owner attestation. Those remain release gates.
+
+Precommit structural checks passed: against `origin/main` at
+`36e907c493fad8ac54556401e92ff1fa39554268`, scope is **893 added + 17 deleted =
+910 changed Lean LOC**, **eight modules plus lakefile.lean**. All 19 public
+propositions have named full-proposition wrappers and direct roots in both
+audits; the focused audit has 40 roots, all reporting only `propext`,
+`Classical.choice`, `Quot.sound`. The forbidden-token scan, authorized two-file
+frozen-scope check and `git diff --check` passed. The precommit old checker
+exits 1 naming exactly the control owner and writer. These facts are recorded in
+`stage-a-scope.log`, `build-focused-4.log` and `precommit-old-freeze.log` in the
+Qodo logs directory. The committed stage-(a) freeze failure is checked again
+before its immediate repin child.

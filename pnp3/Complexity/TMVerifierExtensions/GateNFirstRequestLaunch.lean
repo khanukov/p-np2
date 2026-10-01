@@ -26,20 +26,26 @@ theorem gnTransition_launch_decision (phase : Fin 1) :
       gnTransition phase (.launch (.r0 b1 b2 b3)) scan =
         (0, .delegated G1M.start, scan, .stay)) ∧
     (∀ (f : G1Frame) (b1 b2 b3 scan : Bool),
-      decodeG1Frame? [scan, b1, b2, b3] = some f → f ≠ G1Frame.bof →
+      decodeG1Frame? [scan, b1, b2, b3] = some f → f ≠ G1Frame.bof → f ≠ G1Frame.blank →
       gnTransition phase (.launch (.r0 b1 b2 b3)) scan =
         (0, .launch .r3, scan, .left)) ∧
+    (∀ b1 b2 b3 scan : Bool,
+      decodeG1Frame? [scan, b1, b2, b3] = some G1Frame.blank →
+      gnTransition phase (.launch (.r0 b1 b2 b3)) scan =
+        (0, .reject, scan, .stay)) ∧
     (∀ b1 b2 b3 scan : Bool, decodeG1Frame? [scan, b1, b2, b3] = none →
       gnTransition phase (.launch (.r0 b1 b2 b3)) scan =
         (0, .reject, scan, .stay)) := by
-  refine ⟨?_, ?_, ?_⟩
+  refine ⟨?_, ?_, ?_, ?_⟩
   · intro b1 b2 b3 scan h
-    simp [gnTransition, gnLaunchControl, gnRewindComplete, h, gnRewindAdvance]
-  · intro f b1 b2 b3 scan h hn
-    cases f <;> simp_all [gnTransition, gnLaunchControl, gnRewindComplete,
-      gnRewindAdvance]
+    simp [gnTransition, gnLaunchControl, gnLaunchComplete, h, gnLaunchAdvance, gnRewindAdvance]
+  · intro f b1 b2 b3 scan h hn hb
+    cases f <;> simp_all [gnTransition, gnLaunchControl, gnLaunchComplete,
+      gnLaunchAdvance, gnRewindAdvance]
   · intro b1 b2 b3 scan h
-    simp [gnTransition, gnLaunchControl, gnRewindComplete, h]
+    simp [gnTransition, gnLaunchControl, gnLaunchComplete, h, gnLaunchAdvance]
+  · intro b1 b2 b3 scan h
+    simp [gnTransition, gnLaunchControl, gnLaunchComplete, h]
 
 def gnLaunchStopState : GNRewindMode → GNState
   | .anchor => .delegated G1M.start
@@ -51,8 +57,8 @@ def gnLaunchScanner : ReverseFrameScanner GNState G1Frame GNRewindMode Unit wher
   phase := gnCS.startPhase
   codec := g1FrameCodec
   Stop := GNRewindMode.Stop
-  revAdvance := gnRewindAdvance
-  revComplete := gnRewindComplete
+  revAdvance := gnLaunchAdvance
+  revComplete := gnLaunchComplete
   Reverse := GNRewindMode.Reverse
   rst3 := fun _ _ => .launch .r3
   rst2 := fun _ _ b3 => .launch (.r2 b3)
@@ -61,7 +67,7 @@ def gnLaunchScanner : ReverseFrameScanner GNState G1Frame GNRewindMode Unit wher
   stopState := fun m _ => gnLaunchStopState m
   revComplete_decode := by
     intro m f b0 b1 b2 b3 h
-    simp only [gnRewindComplete]
+    simp only [gnLaunchComplete]
     rw [show decodeG1Frame? [b0, b1, b2, b3] = some f from h]
   rstep_p3 := by intros; rfl
   rstep_p2 := by intros; rfl
@@ -70,14 +76,14 @@ def gnLaunchScanner : ReverseFrameScanner GNState G1Frame GNRewindMode Unit wher
     intro m hm _ b1 b2 b3 scan hnext
     obtain rfl := hm.eq
     cases scan <;> cases b1 <;> cases b2 <;> cases b3 <;>
-      simp_all [gnCS, gnTransition, gnLaunchControl, gnRewindComplete,
-        gnRewindAdvance, GNRewindMode.Stop, decodeG1Frame?]
+      simp_all [gnCS, gnTransition, gnLaunchControl, gnLaunchComplete,
+        gnLaunchAdvance, gnRewindAdvance, GNRewindMode.Stop, decodeG1Frame?]
   rstep_p0_stop := by
     intro m hm _ b1 b2 b3 scan hstop
     obtain rfl := hm.eq
     cases scan <;> cases b1 <;> cases b2 <;> cases b3 <;>
-      simp_all [gnCS, gnTransition, gnLaunchControl, gnRewindComplete,
-        gnRewindAdvance, GNRewindMode.Stop, gnLaunchStopState, decodeG1Frame?]
+      simp_all [gnCS, gnTransition, gnLaunchControl, gnLaunchComplete,
+        gnLaunchAdvance, gnRewindAdvance, GNRewindMode.Stop, gnLaunchStopState, decodeG1Frame?]
 
 /-- Explicit complete configuration, sharing the existing phase geometry. -/
 abbrev gnLaunchConfig (n h : Nat) (hh : h < GNM.tapeLength n)
@@ -91,10 +97,10 @@ private theorem launch_entry (n h : Nat) (hh : h < GNM.tapeLength n)
   rw [runConfig_one]
   exact Phased.holdLeft gnCS gnCS.startPhase n h hh hp tape _ _ (fun _ => rfl)
 
-/-- The no-internal-bof and room hypotheses are essential; the prefix is
+/-- The no-internal-bof/blank and room hypotheses are essential; the prefix is
 arbitrary and may itself contain bof frames. All bits are preserved. -/
 theorem gnCS_launch_onList_exact (n : Nat) (pre body post : List G1Frame)
-    (hbody : ∀ f ∈ body, f ≠ G1Frame.bof)
+    (hbody : ∀ f ∈ body, f ≠ G1Frame.bof ∧ f ≠ G1Frame.blank)
     (hroom : 4 * (pre.length + body.length + 1) < GNM.tapeLength n) :
     TM.runConfig (M := GNM)
       (gnLaunchConfig n (4 * (pre.length + body.length + 1)) hroom
@@ -109,9 +115,10 @@ theorem gnCS_launch_onList_exact (n : Nat) (pre body post : List G1Frame)
       trivial (fun h => h) body ?_
     intro f hf
     cases f with
-    | bof => exact absurd rfl (hbody _ hf)
+    | bof => exact absurd rfl (hbody _ hf).1
     | data b | output b => cases b <;> rfl
-    | blank | tag | index | separator | cursor | finish | argSep | spent => rfl
+    | blank => exact absurd rfl (hbody _ hf).2
+    | tag | index | separator | cursor | finish | argSep | spent => rfl
   have hs := gnLaunchScanner.revScanFrames n pre .bof body post .scan () hp.1
     (by change 4 * (pre.length + body.length) + 4 < GNM.tapeLength n; omega)
   rw [hp.2] at hs
@@ -144,12 +151,12 @@ theorem gnCS_requestReady_reserved1101_reject_five (n base : Nat)
   have hc : tape ⟨base, by omega⟩ = true ∧ tape ⟨base+1, by omega⟩ = true ∧
       tape ⟨base+2, by omega⟩ = false ∧ tape ⟨base+3, by omega⟩ = true := by
     simpa only [physicalBitsAt, List.cons.injEq, and_true] using hbits
-  have hd : gnRewindComplete .scan (tape ⟨base, by omega⟩)
+  have hd : gnLaunchComplete .scan (tape ⟨base, by omega⟩)
       (tape ⟨base+1, by omega⟩) (tape ⟨base+2, by omega⟩)
       (tape ⟨base+3, by omega⟩) = .reject := by
     rw [hc.1, hc.2.1, hc.2.2.1, hc.2.2.2]; rfl
   have hs := gnLaunchScanner.revWindowStop n base hroom tape .scan () trivial
-    (by change GNRewindMode.Stop (gnRewindComplete .scan _ _ _ _); rw [hd]; trivial)
+    (by change GNRewindMode.Stop (gnLaunchComplete .scan _ _ _ _); rw [hd]; trivial)
   rw [show (5 : Nat) = 1+4 from rfl, runConfig_add,
     launch_entry n _ hroom (by omega)]
   simpa [gnLaunchScanner, gnLaunchStopState, hd] using hs
@@ -162,6 +169,47 @@ theorem gnCS_requestReady_reserved1101_reject_stable (n base : Nat)
       (gnLaunchConfig n (base+4) hroom tape .requestReady) (5+k) =
       gnLaunchConfig n base (by omega) tape .reject := by
   rw [runConfig_add, gnCS_requestReady_reserved1101_reject_five n base hroom tape hbits]
+  exact gnCS_reject_stable _ rfl k
+
+private theorem launch_blank_left (n h : Nat) (hh : h < GNM.tapeLength n)
+    (q q' : GNState) (hr : gnTransition 0 q false = (0, q', false, .left)) :
+    TM.stepConfig (M := GNM) (gnLaunchConfig n h hh (fun _ => false) q) =
+      gnLaunchConfig n (h-1) (by omega) (fun _ => false) q' := by
+  cases h with
+  | zero =>
+    exact ConstStatePhasedProgram.stepConfig_eq_of_transition_left_clamped gnCS
+      (gnLaunchConfig n 0 hh (fun _ => false) q) hr rfl _ rfl rfl
+      (fun _ => by simp [gnLaunchConfig, Phased.alignedAt])
+  | succ h =>
+    have hs := Phased.stepLeft gnCS gnCS.startPhase n (h+1) hh (by omega)
+      (fun _ => false) q q' false hr
+    rw [FrameScan.writeCell_self (h+1) hh (fun _ => false)] at hs
+    exact hs
+
+/-- A no-bof all-blank tape rejects after five genuine rows from every legal
+head, including the left clamp at zero; the full tape and reject sink persist. -/
+theorem gnCS_requestReady_allBlank_reject_exact (n h : Nat)
+    (hh : h < GNM.tapeLength n) (k : Nat) :
+    TM.runConfig (M := GNM)
+      (gnLaunchConfig n h hh (fun _ => false) .requestReady) (5+k) =
+      gnLaunchConfig n (h-4) (by omega) (fun _ => false) .reject := by
+  have he : TM.runConfig (M := GNM)
+      (gnLaunchConfig n h hh (fun _ => false) .requestReady) 5 =
+      gnLaunchConfig n (h-4) (by omega) (fun _ => false) .reject := by
+    simp only [runConfig_succ, runConfig_zero]
+    rw [launch_blank_left n h hh .requestReady (.launch .r3) rfl,
+      launch_blank_left n (h-1) _ (.launch .r3) (.launch (.r2 false)) rfl,
+      launch_blank_left n (h-1-1) _ (.launch (.r2 false))
+        (.launch (.r1 false false)) rfl,
+      launch_blank_left n (h-1-1-1) _ (.launch (.r1 false false))
+        (.launch (.r0 false false false)) rfl]
+    have hs := Phased.stepStay gnCS gnCS.startPhase n (h-1-1-1-1)
+      (by change h-1-1-1-1 < GNM.tapeLength n; omega)
+      (fun _ => false) (.launch (.r0 false false false)) .reject false rfl
+    rw [FrameScan.writeCell_self (h-1-1-1-1)
+      (by change h-1-1-1-1 < GNM.tapeLength n; omega) (fun _ => false)] at hs
+    simpa only [Nat.sub_sub] using hs
+  rw [runConfig_add, he]
   exact gnCS_reject_stable _ rfl k
 
 private theorem first_lengths (r : GNProgram) (g : SLGate r.inputs.length) :
@@ -218,11 +266,10 @@ private theorem request_frames (q : G1Request) :
     encodeG1Frames q = .bof :: requestBody q := by
   simp [encodeG1Frames, requestBody, List.append_assoc]
 
-private theorem request_body_no_bof (q : G1Request) :
-    ∀ f ∈ requestBody q, f ≠ G1Frame.bof := by
-  intro f hf he
-  subst f
-  simp [requestBody] at hf
+private theorem request_body_no_bof_blank (q : G1Request) :
+    ∀ f ∈ requestBody q, f ≠ G1Frame.bof ∧ f ≠ G1Frame.blank := by
+  intro f hf
+  constructor <;> intro he <;> subst f <;> simp [requestBody] at hf
 
 /-- Real ready endpoint to the exact dependent installed G1 start. -/
 theorem gnCS_requestReady_launch_exact {r : GNProgram} {g : SLGate r.inputs.length}
@@ -239,7 +286,7 @@ theorem gnCS_requestReady_launch_exact {r : GNProgram} {g : SLGate r.inputs.leng
       (requestBody (gnFirstRequest r g)).length + 1) <
       GNM.tapeLength (encodeGN r).length := by omega
   have hs := gnCS_launch_onList_exact (encodeGN r).length (encodeGNFrames r)
-    (requestBody (gnFirstRequest r g)) [] (request_body_no_bof _) room
+    (requestBody (gnFirstRequest r g)) [] (request_body_no_bof_blank _) room
   have ht : ((encodeGNFrames r ++ G1Frame.bof :: requestBody (gnFirstRequest r g) ++
       []).flatMap G1Frame.bits) = encodeGN r ++ encodeG1 (gnFirstRequest r g) := by
     rw [List.append_nil, ← request_frames]

@@ -3423,7 +3423,7 @@ end UniformV1AxiomAudit
 -- is installed in the machine owner; what this slice *executes* is the tail
 -- phase: four classification rows, the forward seek to the scratch frontier,
 -- the four-row turn, and eight fixed write rows installing the first request's
--- `output false`/`finish` tail, ending in the dormant `requestReady` arrival.
+-- `output false`/`finish` tail, ending at `requestReady`, from which GN-E2-5d launches.
 -- The real-input capstone carries exactly two premises, the selected first gate
 -- and `r.inputs = []`; the data classification, the four `back` rows and the
 -- carried-`data` dispatch are installed and pinned but dormant, and the
@@ -6670,6 +6670,10 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.TMGateNValuesInductionSurface.check_literal_reserved_reject_stable
 
 /-! GN-E2-5d real first-request launch and successful interception; Infrastructure. -/
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_requestReady_allBlank_reject_exact
+#print axioms Pnp3.Tests.TMGateNFirstRequestLaunchSurface.check_gnCS_requestReady_allBlank_reject_exact
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNFirstRequestLaunchProbes.literal_noBof_allBlank_launch_reject
+#print axioms Pnp3.Tests.TMGateNFirstRequestLaunchSurface.check_literal_noBof_allBlank_launch_reject
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.gnTransition_launch_rows
 #print axioms Pnp3.Tests.TMGateNFirstRequestLaunchSurface.check_gnTransition_launch_rows
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.gnTransition_launch_decision

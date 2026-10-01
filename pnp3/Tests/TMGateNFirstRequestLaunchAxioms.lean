@@ -2,6 +2,10 @@ import Tests.TMGateNFirstRequestLaunchSurfaceTests
 import Tests.TMGateNValuesWriterSurfaceTests
 
 /-! Direct owner and surface audit roots, including the revised writer row. -/
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_requestReady_allBlank_reject_exact
+#print axioms Pnp3.Tests.TMGateNFirstRequestLaunchSurface.check_gnCS_requestReady_allBlank_reject_exact
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNFirstRequestLaunchProbes.literal_noBof_allBlank_launch_reject
+#print axioms Pnp3.Tests.TMGateNFirstRequestLaunchSurface.check_literal_noBof_allBlank_launch_reject
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.gnTransition_launch_rows
 #print axioms Pnp3.Tests.TMGateNFirstRequestLaunchSurface.check_gnTransition_launch_rows
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.gnTransition_launch_decision

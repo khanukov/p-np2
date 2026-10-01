@@ -300,8 +300,18 @@ def gnRewindControl (buffer : GNInstallBuffer) (scan : Bool) :
   | .p2 _ _ => (.rewind (.p3 false false false), scan, .right)
   | .p3 _ _ _ => (.valuesEntry, scan, .right)
 
+/-- Supported request bodies contain no blank: fail closed before left clamping. -/
+def gnLaunchAdvance : GNRewindMode → G1Frame → GNRewindMode
+  | _, .blank => .reject
+  | m, f => gnRewindAdvance m f
+
+def gnLaunchComplete (mode : GNRewindMode) (b0 b1 b2 b3 : Bool) : GNRewindMode :=
+  match decodeG1Frame? [b0, b1, b2, b3] with
+  | some frame => gnLaunchAdvance mode frame
+  | none => .reject
+
 /-- Finite first-request launch: reverse-read complete frames, stop on `bof`
-in the fixed G1 start, and reject every undecodable or unused buffer case. -/
+in the fixed G1 start, and reject blank, undecodable or unused buffer cases. -/
 def gnLaunchControl (buffer : GNInstallBuffer) (scan : Bool) :
     GNState × Bool × Move :=
   match buffer with
@@ -309,7 +319,7 @@ def gnLaunchControl (buffer : GNInstallBuffer) (scan : Bool) :
   | .r2 b3 => (.launch (.r1 scan b3), scan, .left)
   | .r1 b2 b3 => (.launch (.r0 scan b2 b3), scan, .left)
   | .r0 b1 b2 b3 =>
-      let next := gnRewindComplete .scan scan b1 b2 b3
+      let next := gnLaunchComplete .scan scan b1 b2 b3
       if next = .anchor then (.delegated G1M.start, scan, .stay)
       else if next = .reject then (.reject, scan, .stay)
       else (.launch .r3, scan, .left)

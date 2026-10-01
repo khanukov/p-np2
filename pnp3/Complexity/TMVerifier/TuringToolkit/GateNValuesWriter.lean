@@ -261,7 +261,7 @@ private def gnValuesOutputWriter : FrameWriter GNState G1Frame Unit where
   wstep_p3 := by intro _ _; rfl
 
 /-- The request's closing `finish`, as a four-row frame writer.  Its exit is
-the dormant `requestReady` arrival. -/
+the `requestReady` endpoint; the GN-E2-5d launch leaves it. -/
 private def gnValuesFinishWriter : FrameWriter GNState G1Frame Unit where
   program := gnCS
   phase := gnCS.startPhase
@@ -816,9 +816,9 @@ theorem gnCS_valuesTail_exact {r : GNProgram} {g : SLGate r.inputs.length}
 `GNM.initialConfig (gnPoint (encodeGN r))` and using the actually selected
 first gate `g`, an input-free program's machine runs exactly
 `gnFirstRequestReadySteps r g` rows of genuine `TM.runConfig (M := GNM)`
-execution and stops in the exact first-request endpoint.  Execution stops
-there: `requestReady` is dormant, and launch, delegation, commit and looping
-all remain later obligations, as does the nonempty-value capstone. -/
+execution to the exact first-request endpoint. This writer theorem ends at
+`requestReady`; GN-E2-5d launches and delegates from it. Commit and looping
+remain open; GN-E2-5c supplies the nonempty-value capstone. -/
 theorem gnCS_encodeGN_firstRequestReady_exact {r : GNProgram}
     {g : SLGate r.inputs.length} (hg : r.program.gates[0]? = some g)
     (hinputs : r.inputs = []) :

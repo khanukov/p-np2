@@ -21,10 +21,13 @@ stage (a)'s subtree `b2762b378800f81e6adaaa3ecbe6b277ddd59482` (120 objects), wi
 frozen-byte change. The freeze checker, negative controls and local policy
 unit tests passed. Both stages preserve the exact base in ancestry. The docs-only
 child `6c21021a1ca9685bd7fa563c7cc005bc87fd08b8` then corrected the GN-E2-5b/5c
-records without changing Lean, pins or frozen bytes. The prior Codex and Fable 5.1
-**APPROVE** reviews covered stage (b), not that child or this later correction;
-review evidence and exact-head limits are recorded in the GN-E2-5c record linked above.
-No full repository gate, remote attestation, push or PR is claimed.
+records without changing Lean, pins or frozen bytes. The integration head `85a8c61b6c926b4a54594a84504c28ac4e11f269` subsequently
+passed the globally exclusive 17-step full gate; exact-head Codex and Fable 5.1
+reviews both reported **APPROVE**. PR #1808 carries the `Infrastructure` and
+`tmverifier-unfreeze` labels, the owner's full-SHA attestation, and successful
+CodeQL and freeze-policy runs. The final raw CI rollup and a fresh agentic review
+of this release-record correction remain merge gates. Exact evidence and scope
+limits are recorded in the GN-E2-5c record linked above.
 Request launch, delegation, returned-bit commit, repeated gates, verdict,
 acceptance, first arrival and new-clock/runtime adequacy remain open, together
 with Lane B's N1/N3 carry-forward items. No P-vs-NP source obligation is reduced.

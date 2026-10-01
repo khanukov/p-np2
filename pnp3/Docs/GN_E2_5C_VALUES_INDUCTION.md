@@ -245,18 +245,29 @@ and reports **APPROVE** with nonblocking notes. This subsequent documentation
 correction addresses only its N-1 through N-3; no cited review covers this
 correction's eventual commit SHA.
 
-No full repository `./scripts/check.sh`, aggregate audit build, remote gate,
-owner attestation, push or PR is claimed by this lane.
-Before release, the final branch head still owes all of the following:
+The integration head `85a8c61b6c926b4a54594a84504c28ac4e11f269` passed one
+globally exclusive full `./scripts/check.sh` run (17/17, including the aggregate
+audit build); `/root/reports/gn-e25c-85a-full-check-correct.log` has SHA-256
+`eda1aef1ba8a54b6a8a5dd1f2de7ab6618429ad1e4f07c91423977d329328081`.
+Independent exact-head Codex and Fable 5.1 reviews in
+`/root/reports/gn-e25c-85a-exact-codex.txt` and
+`/root/reports/gn-e25c-85a-exact-fable51.json` both report **APPROVE**. PR #1808
+was opened as Infrastructure and received `/agentic_review` coverage of that
+SHA. It carries the `tmverifier-unfreeze` label and the repository owner's
+full-SHA authorization; CodeQL and all three freeze-policy runs completed
+successfully at that head. The later Qodo finding correctly identified that the
+pre-release wording above had not been updated when those gates completed; this
+release-record correction removes that contradiction without changing Lean,
+the checker/manifest pins, or any frozen byte.
 
-- one globally exclusive full `./scripts/check.sh` run;
+Before merge, the corrected final branch head still owes all of the following:
+
 - fresh exact-head Codex theorem review and Fable 5.1 documentation/surface
-  audit after any remediation commit;
-- an Infrastructure PR and `/agentic_review` coverage of its exact final SHA;
-- raw-green CI, CodeQL and freeze-policy rollups with no queued or in-progress
-  duplicate run;
-- the `tmverifier-unfreeze` label and repository-owner comment whose complete
-  body is `/tmverifier-unfreeze <exact final full SHA>`; and
+  audit of this documentation correction;
+- fresh `/agentic_review` coverage and a raw-green CI, CodeQL and freeze-policy
+  rollup with no queued or in-progress duplicate run;
+- an updated repository-owner `/tmverifier-unfreeze <exact final full SHA>`
+  comment if the correction creates a new PR head; and
 - an ancestry-preserving merge (not squash), followed by verification that
   stage (a) `d1694e4b8c3e4838fb38d682f4c10d5ffacc6eb8` and stage (b)
   `4ffd71f356e13babde80397186ee176e5455ccc5` remain ancestors of `main`.

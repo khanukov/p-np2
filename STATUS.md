@@ -1,6 +1,32 @@
 # Project Status (current)
 
-**GN-E2-5b one-value Infrastructure slice (2026-10-01):** on merged base
+**GN-E2-5c values induction and first-request tail (2026-10-01,
+Infrastructure only):** on base `b71eb6ca3ff4101d6d1596dfb4fc06ce63f845c7`,
+`GateNValuesInduction` executes every actual input value through the live
+classifier using the landed one-value theorem, then executes the existing
+output-false tail writer to the exact `gnFirstRequestReadyConfig` endpoint.
+The initial theorem assumes only the selected first-gate equation. Its clock
+is `gnValuesEntrySteps + (k*(8*d+38) + (4*d+20))`, with `k = r.inputs.length`
+and `d = gnValuesTailDistance r g`. The full nonempty request now fits within
+**529 added Lean lines, six Lean files including lakefile.lean (five modules)**.
+The 136-step two-value and 1300-step encoded nonempty fixtures pass, as do the
+targeted Lane B builds and all 22 direct new audit roots. The exact frozen
+premises, surfaces, evidence and limits are in the
+[GN-E2-5c record](pnp3/Docs/GN_E2_5C_VALUES_INDUCTION.md).
+
+Stage (a) records the validated frozen bytes and registrations/surfaces/audits;
+the checker and manifest still carry GN-E2-5b's pin at this intermediate stage.
+Stage (b)'s repin and focused freeze checks are pending. No full repository
+gate, independent review, remote attestation, push or PR is claimed here.
+Request launch, delegation, returned-bit commit, repeated gates, verdict,
+acceptance, first arrival and new-clock/runtime adequacy remain open, together
+with Lane B's N1/N3 carry-forward items. No P-vs-NP source obligation is reduced.
+
+The following GN-E2-5b and earlier records describe their dated snapshots;
+their then-open values-list/tail work is discharged only by GN-E2-5c above.
+Their reviews and gates do not transfer to this new slice.
+
+**Historical GN-E2-5b one-value Infrastructure slice (2026-10-01):** on merged base
 `b83de46cc67ecfbf52093807b66b9cd7acf04010`, the live classifier and installer
 copy one value in `8*d+37` rows through the data exit; the stationary dispatch
 returns to `valuesEntry` after `8*d+38`. The real initial capstone returns at

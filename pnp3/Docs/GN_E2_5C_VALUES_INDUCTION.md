@@ -245,7 +245,7 @@ and reports **APPROVE** with nonblocking notes. Its direct docs-only follow-up
 `e984d32d16fe172307127fa8c58ceaf2009e6173` addressed those notes without
 changing Lean, pins or frozen bytes; exact-head Codex and Fable 5.1 reports
 `/root/reports/gn-e25c-e984-exact-codex.txt` and
-`/root/reports/gn-e25c-e984-exact-fable51.json` both report **APPROVE**.
+`/root/reports/gn-e25c-e984-exact-fable51-final.json` both report **APPROVE**.
 
 The integration head `85a8c61b6c926b4a54594a84504c28ac4e11f269` passed one
 globally exclusive full `./scripts/check.sh` run (17/17, including the aggregate

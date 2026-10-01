@@ -1752,7 +1752,54 @@ clock takes two length arguments, the composed clock is quadratic in `a`, and it
 that the cubic budget still dominates it. G3l is Infrastructure only and builds **no pnp4 bridge**
 either: no G3l bridge module exists, this bridge still starts at G3e's composite, and no
 `ContentVerifierBridge`, raw-input acceptance, advice-freedom claim or P-vs-NP mainline progress
-follows from it. Part A G3o (pnp3 only) now executes **H3**, separator-hole into unchanged G3n,
+follows from it.
+
+**Part A G3p — Infrastructure: executed cursor → unchanged G3o handoff H2.**
+`FixedPairSeparatorCursorHoleTagRemovalShiftAlignmentCountdown` composes the
+unchanged five-state `FixedPairSeparatorCursor` with G3o using `UniformTM.seq`:
+**201 states, 603 rows**, start 0, accept 199, reject 200, tail entry 5.
+**Sixteen of seventeen handoffs are executed; only H1 remains proof-level.**
+The phase-local entry has head zero and the complete sentinelized pair tape;
+it is not raw `initialConfig`. At strict first entry `T = 2*a+2`, H2 writes
+back the nonblank lookahead bit unchanged and moves left to head `2*a`,
+retaining the full `sentinelTape`. Both Boolean lookahead rows are live.
+H3 follows one step later, erases the separator, and stays. H2 is clamp-free
+on valid pairs, including empty pairs and `B=0`; the inherited removal origin
+clamp remains at `T+(1+(Removal.clock a-2))`. The H3/H4/H5/H6/H7 controls are
+8/17/24/50/54 at their inherited times plus T; H6 retains head zero and the
+whole `alignedTape`. Every later G3o full configuration is transported.
+
+`separator_cursor_countdown_drained` preserves exactly the eight inherited
+premises: matching tag, gamma width, dispatcher strict first terminal,
+width at least two, fence bound, allocation room, register-bit identification,
+and zero high bits. The theorem-derived finite witness uses
+`a=8, m=9, B=22, zeros=4, C=18, q=qHasOne, borrow=0, v=F=24` and reaches
+**2991 = 18+2973 steps, accept 199, head 23**, with the complete
+`loopTape 22 tag physWord 4 0 24` and persistence thereafter. Its 49-cell
+layout has drained register cells 18–22, blank 23, marks 24–47, blank 48.
+This witnesses the eight execution premises, not `ContentAccepts` nonvacuity,
+runtime decoding of 24, or first arrival of composed accept. In particular,
+2991 exceeds B=22: B allocates tape, not time.
+
+Three blank source rows reject with unchanged head/tape. Malformed
+sentinelized raw-word rejection requires **positive padding B>0**; that
+restriction is not imposed on valid-pair or inherited rejection theorems.
+Independent finite probes expose the B=0 malformed counterexample and the
+valid empty pair's raw-entry rejection versus successful phase-local H2.
+Both inherited rejection branches preserve their full endpoints and all
+later persistence at the original deadlines, without a converse or
+first-rejection claim.
+
+H1, raw-input front-chain execution, runtime fence/cap and budget domination,
+full parser/GN bridge, runtime selection of C/q/v, advice freedom, language
+acceptance, `TM.runConfig` conversion, and `ContentVerifierBridge` remain open.
+No pnp4 bridge advances: the accepted-content composite bridge still starts
+at G3e. Neither `SearchMCSPWeakLowerBound` nor
+`VerifiedNPDAGLowerBoundSource` is reduced. This is not P-vs-NP mainline progress.
+
+The following G3o record is historical (fifteen executed, two remaining at that stage).
+
+Part A G3o (pnp3 only) executed **H3**, separator-hole into unchanged G3n,
 using `FixedPairSeparatorHoleTagRemovalShiftAlignmentCountdown`: **fifteen of
 seventeen** executed handoffs, with **two** remaining (H1–H2). Its closed
 196-state, 588-row `UniformTM` has an unconditional strict one-step
@@ -1767,7 +1814,9 @@ composite bridge still starts at G3e. No raw-input execution, later parser
 field, `TM.runConfig` conversion, runtime fence or budget domination, runtime
 selection of `C/q/v`, advice-freedom claim, language acceptance, verifier bridge,
 or P-vs-NP mainline progress follows. Neither `SearchMCSPWeakLowerBound` nor
-`VerifiedNPDAGLowerBoundSource` is reduced. The following G3m counts describe its earlier boundary. Part A G3m (pnp3 only) has since executed **H5** as well — the fixed 7-state,
+`VerifiedNPDAGLowerBoundSource` is reduced.
+
+The following G3m counts describe its earlier boundary. Part A G3m (pnp3 only) has since executed **H5** as well — the fixed 7-state,
 21-row structural one-cell origin shift prefixed to that G3l composite as one closed 184-state,
 552-row table, again with no new row and no `mergeAccept`, switching at the shift phase's own strict
 first arrival `4a + 3m + 5`, which was already landed in the shape `seq` consumes and

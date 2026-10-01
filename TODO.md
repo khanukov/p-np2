@@ -320,18 +320,64 @@ composed accept is still the countdown's phase-local `qDone`, G3m's two inherite
 forward-direction only with the mismatched one timed only at the gate's length-only deadline, and G3m
 likewise constructs no `ContentVerifierBridge` or other pnp4 bridge, no fence, no raw-input acceptance
 and no advice-freedom claim, so it too is no P-vs-NP mainline progress.
-Part A G3o now executes **H3**, separator-hole into unchanged G3n, in a
+**Part A G3p — Infrastructure: executed cursor → unchanged G3o handoff H2.**
+`FixedPairSeparatorCursorHoleTagRemovalShiftAlignmentCountdown` composes the
+unchanged five-state `FixedPairSeparatorCursor` with G3o using `UniformTM.seq`:
+**201 states, 603 rows**, start 0, accept 199, reject 200, tail entry 5.
+**Sixteen of seventeen handoffs are executed; only H1 remains proof-level.**
+The phase-local entry has head zero and the complete sentinelized pair tape;
+it is not raw `initialConfig`. At strict first entry `T = 2*a+2`, H2 writes
+back the nonblank lookahead bit unchanged and moves left to head `2*a`,
+retaining the full `sentinelTape`. Both Boolean lookahead rows are live.
+H3 follows one step later, erases the separator, and stays. H2 is clamp-free
+on valid pairs, including empty pairs and `B=0`; the inherited removal origin
+clamp remains at `T+(1+(Removal.clock a-2))`. The H3/H4/H5/H6/H7 controls are
+8/17/24/50/54 at their inherited times plus T; H6 retains head zero and the
+whole `alignedTape`. Every later G3o full configuration is transported.
+
+`separator_cursor_countdown_drained` preserves exactly the eight inherited
+premises: matching tag, gamma width, dispatcher strict first terminal,
+width at least two, fence bound, allocation room, register-bit identification,
+and zero high bits. The theorem-derived finite witness uses
+`a=8, m=9, B=22, zeros=4, C=18, q=qHasOne, borrow=0, v=F=24` and reaches
+**2991 = 18+2973 steps, accept 199, head 23**, with the complete
+`loopTape 22 tag physWord 4 0 24` and persistence thereafter. Its 49-cell
+layout has drained register cells 18–22, blank 23, marks 24–47, blank 48.
+This witnesses the eight execution premises, not `ContentAccepts` nonvacuity,
+runtime decoding of 24, or first arrival of composed accept. In particular,
+2991 exceeds B=22: B allocates tape, not time.
+
+Three blank source rows reject with unchanged head/tape. Malformed
+sentinelized raw-word rejection requires **positive padding B>0**; that
+restriction is not imposed on valid-pair or inherited rejection theorems.
+Independent finite probes expose the B=0 malformed counterexample and the
+valid empty pair's raw-entry rejection versus successful phase-local H2.
+Both inherited rejection branches preserve their full endpoints and all
+later persistence at the original deadlines, without a converse or
+first-rejection claim.
+
+H1, raw-input front-chain execution, runtime fence/cap and budget domination,
+full parser/GN bridge, runtime selection of C/q/v, advice freedom, language
+acceptance, `TM.runConfig` conversion, and `ContentVerifierBridge` remain open.
+No pnp4 bridge advances: the accepted-content composite bridge still starts
+at G3e. Neither `SearchMCSPWeakLowerBound` nor
+`VerifiedNPDAGLowerBoundSource` is reduced. This is not P-vs-NP mainline progress.
+
+The following G3o record is historical (fifteen executed, two remaining at that stage).
+
+Part A G3o executed **H3**, separator-hole into unchanged G3n, in a
 196-state, 588-row `UniformTM`: **fifteen** executed handoffs, **two** remaining
 (H1–H2). The unconditional strict whole-configuration handoff costs one step;
 the drain retains exactly eight G3n premises. Its theorem-derived 2973-step
 fixture uses hand-supplied `v=24`, accept 194, head 23 and the complete drained
 tape with persistence, witnessing execution premises only. H4–H7 have controls
 12/19/45/49 at the inherited times plus one. Rejections remain forward guarantees.
-Still open: executing H1–H2 to connect raw input, later parser fields, model
+At that stage, still open: executing H1–H2 to connect raw input, later parser fields, model
 conversion, runtime fence, budget domination, and a verifier bridge. No first
 arrival of composed accept, language acceptance or runtime selection of `C/q/v`
 is proved. The pnp4 accepted-content bridge still starts at G3e; neither
 mainline lower-bound source obligation is reduced.
+
 This is Infrastructure only. Wrapper-level `L'`
 padding invariance and formal runtime/advice enforcement also remain open; complete-word
 `ContentAccepts` padding invariance does not close either item. The original length-gated

@@ -139,6 +139,51 @@ Against that new base, GN-E2-5a still changes **1497 Lean lines across 8 files**
 did not establish a full-check or review gate result. GN-E2-5b was still paused
 at that integration; the authorized one-value result is recorded above.
 
+**Part A G3p — Infrastructure: executed cursor → unchanged G3o handoff H2.**
+`FixedPairSeparatorCursorHoleTagRemovalShiftAlignmentCountdown` composes the
+unchanged five-state `FixedPairSeparatorCursor` with G3o using `UniformTM.seq`:
+**201 states, 603 rows**, start 0, accept 199, reject 200, tail entry 5.
+**Sixteen of seventeen handoffs are executed; only H1 remains proof-level.**
+The phase-local entry has head zero and the complete sentinelized pair tape;
+it is not raw `initialConfig`. At strict first entry `T = 2*a+2`, H2 writes
+back the nonblank lookahead bit unchanged and moves left to head `2*a`,
+retaining the full `sentinelTape`. Both Boolean lookahead rows are live.
+H3 follows one step later, erases the separator, and stays. H2 is clamp-free
+on valid pairs, including empty pairs and `B=0`; the inherited removal origin
+clamp remains at `T+(1+(Removal.clock a-2))`. The H3/H4/H5/H6/H7 controls are
+8/17/24/50/54 at their inherited times plus T; H6 retains head zero and the
+whole `alignedTape`. Every later G3o full configuration is transported.
+
+`separator_cursor_countdown_drained` preserves exactly the eight inherited
+premises: matching tag, gamma width, dispatcher strict first terminal,
+width at least two, fence bound, allocation room, register-bit identification,
+and zero high bits. The theorem-derived finite witness uses
+`a=8, m=9, B=22, zeros=4, C=18, q=qHasOne, borrow=0, v=F=24` and reaches
+**2991 = 18+2973 steps, accept 199, head 23**, with the complete
+`loopTape 22 tag physWord 4 0 24` and persistence thereafter. Its 49-cell
+layout has drained register cells 18–22, blank 23, marks 24–47, blank 48.
+This witnesses the eight execution premises, not `ContentAccepts` nonvacuity,
+runtime decoding of 24, or first arrival of composed accept. In particular,
+2991 exceeds B=22: B allocates tape, not time.
+
+Three blank source rows reject with unchanged head/tape. Malformed
+sentinelized raw-word rejection requires **positive padding B>0**; that
+restriction is not imposed on valid-pair or inherited rejection theorems.
+Independent finite probes expose the B=0 malformed counterexample and the
+valid empty pair's raw-entry rejection versus successful phase-local H2.
+Both inherited rejection branches preserve their full endpoints and all
+later persistence at the original deadlines, without a converse or
+first-rejection claim.
+
+H1, raw-input front-chain execution, runtime fence/cap and budget domination,
+full parser/GN bridge, runtime selection of C/q/v, advice freedom, language
+acceptance, `TM.runConfig` conversion, and `ContentVerifierBridge` remain open.
+No pnp4 bridge advances: the accepted-content composite bridge still starts
+at G3e. Neither `SearchMCSPWeakLowerBound` nor
+`VerifiedNPDAGLowerBoundSource` is reduced. This is not P-vs-NP mainline progress.
+
+The following G3o record is historical (fifteen executed, two remaining).
+
 **Part A G3o — Infrastructure: executed separator-hole → unchanged G3n handoff H3.**
 `Complexity.Uniform.V1.FixedPairSeparatorHoleTagRemovalShiftAlignmentCountdown`
 sequences the unchanged three-state hole machine into unchanged G3n with
@@ -190,7 +235,7 @@ at G3e. Neither `SearchMCSPWeakLowerBound` nor
 `VerifiedNPDAGLowerBoundSource` is reduced; this is not P-vs-NP mainline progress.
 
 The following G3n and G3m records describe their historical fourteen/three and
-thirteen/four boundaries; G3o above is the current fifteen/two boundary.
+thirteen/four boundaries; G3p above is the current sixteen/one boundary.
 
 **Historical Part A G3n — Infrastructure: executed tag-removal → unchanged G3m handoff H4.**
 `Complexity.Uniform.V1.FixedPairTagRemovalShiftAlignmentCountdown` composes the existing
@@ -383,8 +428,9 @@ FixedPairContentMarkerEraseTagGateGammaTerminatorAnchorPayloadDispatcherScratchB
 with accept `175` and reject `176`. Write `N = a+m` and `d = borrow x w zeros`. **Twelve** of the
 seventeen handoffs were performed by a finite table when this slice landed and **five** remained
 proof-level retags; G3m above executed H5, taking the counts to thirteen and four;
-G3n subsequently executed H4, taking them to fourteen and three; G3o now executes
-H3, taking them to fifteen and two.
+G3n subsequently executed H4, taking them to fourteen and three; G3o then executed
+H3, taking them to fifteen and two; G3p above now executes H2, taking them to sixteen
+and one.
 
 * **H6 is executed by three live routed rows, not one.** Over all twenty-six alignment states and
   all three symbols, with the accept's own absorbing three excluded, a target of the phase's accept

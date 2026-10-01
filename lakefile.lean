@@ -358,6 +358,7 @@ lean_lib PnP3 where
     Glob.one `Complexity.Uniform.V1.FixedPairOriginShiftAlignmentCountdown,
     Glob.one `Complexity.Uniform.V1.FixedPairTagRemovalShiftAlignmentCountdown,
     Glob.one `Complexity.Uniform.V1.FixedPairSeparatorHoleTagRemovalShiftAlignmentCountdown,
+    Glob.one `Complexity.Uniform.V1.FixedPairSeparatorCursorHoleTagRemovalShiftAlignmentCountdown,
     -- Generic bounded cross-budget simulation for one fixed UniformTM.
     Glob.one `Complexity.Uniform.V1.BudgetTransport,
     -- Routed fixed-parser/verifier constructor and parser-prefix handoff.
@@ -995,6 +996,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedPairOriginShiftAlignmentCountdownSurfaceTests,
     Glob.one `Tests.UniformV1FixedPairTagRemovalShiftAlignmentCountdownSurfaceTests,
     Glob.one `Tests.UniformV1FixedPairSeparatorHoleTagRemovalShiftAlignmentCountdownSurfaceTests,
+    Glob.one `Tests.UniformV1FixedPairSeparatorCursorHoleTagRemovalShiftAlignmentCountdownSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,

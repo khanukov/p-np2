@@ -177,13 +177,44 @@ unchanged target text written before Lean editing, and is not evidence of a
 separate pre-implementation commit. The exact five target propositions and
 premises above were not weakened during proof elaboration.
 
-Stage (a) commits the validated frozen bytes, registrations, surfaces, audit
-roots and this record, while retaining the GN-E2-5b checker/manifest pins.
-Stage (b) must next repin the checker to stage (a), author its manifest from
-that committed Git tree and run the focused freeze checks, changing no frozen
-source byte. Neither stage is to be amended or rebased. At this stage-(a)
-snapshot those freeze checks are pending; the old pin deliberately does not
-validate the new frozen bytes.
+Stage (a), `d1694e4b8c3e4838fb38d682f4c10d5ffacc6eb8`, committed the validated frozen
+bytes, registrations, surfaces, audit roots and this record. It is a direct
+child of the exact base; its whole repository tree is `2e9f958a192376763a84e2bc9beb0633820972e9`
+and its TMVerifier subtree is `b2762b378800f81e6adaaa3ecbe6b277ddd59482`. Stage (a) retained
+GN-E2-5b's checker/manifest pins. This stage (b) repins only after those bytes
+were committed, authors the manifest from that Git tree, and changes no frozen
+source byte. The two commits remain in order without amendment or rebase.
+The stage-(b) commit ID is recorded in the external final report, avoiding a
+self-referential commit ID in this file.
+
+The previous tree was `e4fa8f333a055e8bbce4c258af7f84719426416a`, provenance
+`b16d816e011560e86ea81ffa1a08da20e18cd2d2`. Schema 3 is retained and the
+manifest grows from 119 to 120 objects: one new induction blob and one changed
+writer blob, no removal or mode/type change. The induction blob is
+`63f54e173803d0b7c78fce71aaca936408b91da7`, SHA-256
+`f11ae088effa48232092e1234fac21fac2ba3416975976a5cbc1bb79e79e0c5c`.
+`spec/version_manifest.toml` and the finite machine owner remain unchanged.
+
+Stage (b)'s focused freeze validation passed:
+
+```text
+python3 scripts/check_tmverifier_freeze.py --write-manifest
+python3 scripts/check_tmverifier_freeze.py
+python3 scripts/test_tmverifier_freeze.py
+node scripts/test_tmverifier_freeze_policy.js
+```
+
+Logs respectively: `/root/reports/gn-e25c-freeze-manifest.log`,
+`/root/reports/gn-e25c-freeze-check.log`,
+`/root/reports/gn-e25c-freeze-tests.log`, and
+`/root/reports/gn-e25c-freeze-policy-tests.log`. All exit 0. The checker reports
+120 matching objects and verified provenance. The Python negative controls
+cover manifest trust/schema, filesystem changes, rewritten history, provenance,
+object state, authoring, tracing and self-hosted verification. Policy unit tests
+cover blanket paths, rename, attestation and API completeness; they do not
+constitute remote policy approval. The checker's phrase “reviewed provenance”
+identifies the commit/tree pair, not an independent review of this slice.
+The freeze pins source bytes rather than the semantic/toolchain closure.
 
 No full repository `./scripts/check.sh`, aggregate audit build, independent
 review, remote gate, owner attestation, push or PR is claimed by this lane.

@@ -14,10 +14,12 @@ targeted Lane B builds and all 22 direct new audit roots. The exact frozen
 premises, surfaces, evidence and limits are in the
 [GN-E2-5c record](GN_E2_5C_VALUES_INDUCTION.md).
 
-Stage (a) records the validated frozen bytes and registrations/surfaces/audits;
-the checker and manifest still carry GN-E2-5b's pin at this intermediate stage.
-Stage (b)'s repin and focused freeze checks are pending. No full repository
-gate, independent review, remote attestation, push or PR is claimed here.
+Stage (a), `d1694e4b8c3e4838fb38d682f4c10d5ffacc6eb8`, committed the validated frozen
+bytes and registrations/surfaces/audits. This stage (b) repins the checker and
+manifest to its subtree `b2762b378800f81e6adaaa3ecbe6b277ddd59482` (120 objects), with no
+frozen-byte change. The freeze checker, negative controls and local policy
+unit tests passed. Both stages preserve the exact base in ancestry. No full
+repository gate, independent review, remote attestation, push or PR is claimed.
 Request launch, delegation, returned-bit commit, repeated gates, verdict,
 acceptance, first arrival and new-clock/runtime adequacy remain open, together
 with Lane B's N1/N3 carry-forward items. No P-vs-NP source obligation is reduced.
@@ -50,7 +52,8 @@ and exact-head Codex and Fable 5.1 reviews approved. PR #1806 carries the `Infra
 `tmverifier-unfreeze` labels, the owner's full-SHA attestation, and a successful
 freeze-policy run. Qodo's later documentation finding is corrected by this dated
 release record; fresh checks and reviews of that correction remain required before
-merge. Full-list execution and nonempty request completion remain open.
+merge. At that GN-E2-5b snapshot full-list execution and nonempty request
+completion remained open; GN-E2-5c now discharges those execution targets.
 **Lane B owns the deferred N1/N3 follow-up**, explicitly still open in the
 [carry-forward register](GN_E2_5B_VALUES_COPY.md#carry-forward-ownership).
 Historical GN-E2-5a records below retain their dated scope.
@@ -220,8 +223,9 @@ No remote label or attestation is issued by this local correction.
 > sentences are left in place because they were accurate when written, and this
 > paragraph records that redirection. GN-E2-5b and every later stage needed
 > fresh authorization at that date. The 2026-10-01 authorization covers one
-> copy and its real-input endpoint; full-list execution and nonempty request
-> completion remain open, as do Lane B's N1/N3 follow-up obligations above.
+> copy and its real-input endpoint. The separately authorized GN-E2-5c now
+> executes all values and the first-request tail. Lane B's N1/N3 and the later
+> construction obligations remain open.
 
 **Repository:** `/home/user/p-np2/pnp3`
 **Baseline branch:** `claude/audit-hnpbridge-interface-FnO1v` (already
@@ -4828,8 +4832,9 @@ values/tail control and proves the tail phase, with the real-input capstone
 scoped by `r.inputs = []`. At this split, GN-E2-5b was assigned the per-value
 copy round, list induction and nonempty-request capstone. Its later authorized
 scope proves one copy and a real-input endpoint with the tail pending;
-list induction and a completed nonempty request remain deferred. The one-value
-implementation uses the installed control unchanged.
+list induction and a completed nonempty request were deferred at that boundary.
+GN-E2-5c now executes both using the installed control unchanged; later runtime
+and launch/delegation/commit obligations remain open.
 
 The rescope hit its target: against this slice's own base `13f36c1d`, stage (a)
 changes **1497 Lean lines (1467 added, 30 deleted) across 8 `.lean` modules**,

@@ -25,7 +25,8 @@ no internal `bof` **or blank**; concrete request bodies discharge both premises.
 `gnCS_requestReady_allBlank_reject_exact` proves genuine rejection after
 `5+k` steps from every legal head on a no-bof all-blank tape, at head `h-4`
 with the entire tape unchanged, including clamping at zero. An independent
-kernel fixture checks heads zero and four and stable rejection. The new
+kernel fixture checks heads zero and four plus a nine-step persistence instance;
+the generic theorem proves stable rejection for every extra step. The new
 endpoint and fixture have named full-proposition surfaces and direct roots in
 both audits (40 focused roots total). The canonical launch/return propositions
 retain their existing premises. The current PR scope against `origin/main`
@@ -82,9 +83,9 @@ Request launch, delegation, returned-bit commit, repeated gates, verdict,
 acceptance, first arrival and new-clock/runtime adequacy remain open, together
 with Lane B's N1/N3 carry-forward items. No P-vs-NP source obligation is reduced.
 
-**Current authoritative frozen tree:** `bf871e090bf1ca564293502e4ff09c1c5f8ca9a0`.
-**Current provenance commit (`FROZEN_COMMIT`):** `f07c4439c3f04a5455b624403be8efcfb16be29e`.
-**Stage-(a) whole repository tree:** `754cc5ce57827bacf71e92515fb00ecd808fda06`.
+**Current authoritative frozen tree:** `455c53bd237af6319c1cadb744cc2575081a13e2`.
+**Current provenance commit (`FROZEN_COMMIT`):** `09d043bd242a81458fbe68caf26e4aadbf4b4ac3`.
+**Stage-(a) whole repository tree:** `2217c7cb3afe9f8c6b800e1a2b60f33412a5c95e`.
 This provenance identifies the authorized implementation snapshot, not an
 independent review or remote attestation. The checker’s “reviewed provenance”
 output verifies the commit/tree identity only. The freeze pins source bytes,

@@ -25,7 +25,8 @@ no internal `bof` **or blank**; concrete request bodies discharge both premises.
 `gnCS_requestReady_allBlank_reject_exact` proves genuine rejection after
 `5+k` steps from every legal head on a no-bof all-blank tape, at head `h-4`
 with the entire tape unchanged, including clamping at zero. An independent
-kernel fixture checks heads zero and four and stable rejection. The new
+kernel fixture checks heads zero and four plus a nine-step persistence instance;
+the generic theorem proves stable rejection for every extra step. The new
 endpoint and fixture have named full-proposition surfaces and direct roots in
 both audits (40 focused roots total). The canonical launch/return propositions
 retain their existing premises. The current PR scope against `origin/main`

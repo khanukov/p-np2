@@ -57,9 +57,11 @@ shuttle, seek the scratch frontier, and write the request's fixed
 dispatcher therefore no longer rejects a carried `data` frame, and
 `GNInstallExitInvalid` is narrowed to match.  Every added payload stays finite:
 no values mode or buffer holds a natural number, width, index, request, list,
-gate, clock counter or proof.  `requestReady` is a dormant absorbing arrival
-exactly as `valuesEntry` was; no launch, delegation, commit, next-gate loop,
-verdict or acceptance is added here.
+gate, clock counter or proof. GN-E2-5d activates `requestReady` with a finite
+read-only reverse `launch` pass, stopping on the scratch request's opening
+`bof` in the fixed delegated G1 start. Downstream execution composes this
+with successful evaluation and interception; commit, next-gate loop, verdict
+and acceptance remain open.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -210,6 +212,7 @@ inductive GNState where
   | valuesEntry
   | values (mode : GNValuesMode) (buffer : GNInstallBuffer)
   | requestReady
+  | launch (buffer : GNInstallBuffer)
   | idle
   | accept
   | reject
@@ -296,6 +299,31 @@ def gnRewindControl (buffer : GNInstallBuffer) (scan : Bool) :
   | .p1 _ => (.rewind (.p2 false false), scan, .right)
   | .p2 _ _ => (.rewind (.p3 false false false), scan, .right)
   | .p3 _ _ _ => (.valuesEntry, scan, .right)
+
+/-- Supported request bodies contain no blank: fail closed before left clamping. -/
+def gnLaunchAdvance : GNRewindMode → G1Frame → GNRewindMode
+  | _, .blank => .reject
+  | m, f => gnRewindAdvance m f
+
+def gnLaunchComplete (mode : GNRewindMode) (b0 b1 b2 b3 : Bool) : GNRewindMode :=
+  match decodeG1Frame? [b0, b1, b2, b3] with
+  | some frame => gnLaunchAdvance mode frame
+  | none => .reject
+
+/-- Finite first-request launch: reverse-read complete frames, stop on `bof`
+in the fixed G1 start, and reject blank, undecodable or unused buffer cases. -/
+def gnLaunchControl (buffer : GNInstallBuffer) (scan : Bool) :
+    GNState × Bool × Move :=
+  match buffer with
+  | .r3 => (.launch (.r2 scan), scan, .left)
+  | .r2 b3 => (.launch (.r1 scan b3), scan, .left)
+  | .r1 b2 b3 => (.launch (.r0 scan b2 b3), scan, .left)
+  | .r0 b1 b2 b3 =>
+      let next := gnLaunchComplete .scan scan b1 b2 b3
+      if next = .anchor then (.delegated G1M.start, scan, .stay)
+      else if next = .reject then (.reject, scan, .stay)
+      else (.launch .r3, scan, .left)
+  | _ => (.reject, scan, .stay)
 
 /-! ## Finite values/tail control -/
 
@@ -403,6 +431,8 @@ def gnReturnedState : Bool → GNState
   | false => .returnedFalse
   | true => .returnedTrue
 
+-- Keep the enlarged finite table as one unfolding equation for elaboration.
+set_option backward.eqns.nonrecursive false in
 /-- The exact outer transition table.  Equality tests intercept only the two
 complete canonical `g1DoneQ` values. -/
 def gnTransition (_phase : Fin 1) (s : GNState) (scan : Bool) :
@@ -544,7 +574,8 @@ def gnTransition (_phase : Fin 1) (s : GNState) (scan : Bool) :
   | .rewind buffer => (0, gnRewindControl buffer scan)
   | .valuesEntry => (0, .values .probe (.p1 scan), scan, .right)
   | .values mode buffer => (0, gnValuesStep mode buffer scan)
-  | .requestReady => (0, .requestReady, scan, .stay)
+  | .requestReady => (0, .launch .r3, scan, .left)
+  | .launch buffer => (0, gnLaunchControl buffer scan)
   | .idle => (0, .idle, scan, .stay)
   | .accept => (0, .accept, scan, .stay)
   | .reject => (0, .reject, scan, .stay)

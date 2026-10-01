@@ -84,6 +84,7 @@ import Complexity.TMVerifier.TuringToolkit.GateNValuesWriter
 import Tests.TMGateNValuesWriterSurfaceTests
 import Tests.TMGateNValuesCopySurfaceTests
 import Tests.TMGateNValuesInductionSurfaceTests
+import Tests.TMGateNFirstRequestLaunchSurfaceTests
 import Complexity.TMVerifier.TuringToolkit.GateNRelocationExamples
 import Complexity.Uniform.V1.Examples
 import Complexity.DagGadgets
@@ -3422,7 +3423,7 @@ end UniformV1AxiomAudit
 -- is installed in the machine owner; what this slice *executes* is the tail
 -- phase: four classification rows, the forward seek to the scratch frontier,
 -- the four-row turn, and eight fixed write rows installing the first request's
--- `output false`/`finish` tail, ending in the dormant `requestReady` arrival.
+-- `output false`/`finish` tail, ending at `requestReady`, from which GN-E2-5d launches.
 -- The real-input capstone carries exactly two premises, the selected first gate
 -- and `r.inputs = []`; the data classification, the four `back` rows and the
 -- carried-`data` dispatch are installed and pinned but dormant, and the
@@ -6667,3 +6668,45 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.TMGateNValuesInductionSurface.check_literal_cap_valuesRequestReady
 #print axioms Pnp3.Internal.PsubsetPpoly.TM.GNValuesInductionProbes.literal_reserved_reject_stable
 #print axioms Pnp3.Tests.TMGateNValuesInductionSurface.check_literal_reserved_reject_stable
+
+/-! GN-E2-5d real first-request launch and successful interception; Infrastructure. -/
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_requestReady_allBlank_reject_exact
+#print axioms Pnp3.Tests.TMGateNFirstRequestLaunchSurface.check_gnCS_requestReady_allBlank_reject_exact
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNFirstRequestLaunchProbes.literal_noBof_allBlank_launch_reject
+#print axioms Pnp3.Tests.TMGateNFirstRequestLaunchSurface.check_literal_noBof_allBlank_launch_reject
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnTransition_launch_rows
+#print axioms Pnp3.Tests.TMGateNFirstRequestLaunchSurface.check_gnTransition_launch_rows
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnTransition_launch_decision
+#print axioms Pnp3.Tests.TMGateNFirstRequestLaunchSurface.check_gnTransition_launch_decision
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_launch_onList_exact
+#print axioms Pnp3.Tests.TMGateNFirstRequestLaunchSurface.check_gnCS_launch_onList_exact
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_requestReady_reserved1101_reject_five
+#print axioms Pnp3.Tests.TMGateNFirstRequestLaunchSurface.check_gnCS_requestReady_reserved1101_reject_five
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_requestReady_reserved1101_reject_stable
+#print axioms Pnp3.Tests.TMGateNFirstRequestLaunchSurface.check_gnCS_requestReady_reserved1101_reject_stable
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnFirstRequestReady_geometry
+#print axioms Pnp3.Tests.TMGateNFirstRequestLaunchSurface.check_gnFirstRequestReady_geometry
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnFirstLaunchSteps_provenance
+#print axioms Pnp3.Tests.TMGateNFirstRequestLaunchSurface.check_gnFirstLaunchSteps_provenance
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_requestReady_launch_exact
+#print axioms Pnp3.Tests.TMGateNFirstRequestLaunchSurface.check_gnCS_requestReady_launch_exact
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_encodeGN_firstLaunch_exact
+#print axioms Pnp3.Tests.TMGateNFirstRequestLaunchSurface.check_gnCS_encodeGN_firstLaunch_exact
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_encodeGN_firstOutputDone_exact
+#print axioms Pnp3.Tests.TMGateNFirstRequestLaunchSurface.check_gnCS_encodeGN_firstOutputDone_exact
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_encodeGN_firstReturned_exact
+#print axioms Pnp3.Tests.TMGateNFirstRequestLaunchSurface.check_gnCS_encodeGN_firstReturned_exact
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnFirstReturned_structure
+#print axioms Pnp3.Tests.TMGateNFirstRequestLaunchSurface.check_gnFirstReturned_structure
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNFirstRequestLaunchProbes.literal_cap_firstLaunch
+#print axioms Pnp3.Tests.TMGateNFirstRequestLaunchSurface.check_literal_cap_firstLaunch
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNFirstRequestLaunchProbes.literal_cap_firstReturned
+#print axioms Pnp3.Tests.TMGateNFirstRequestLaunchSurface.check_literal_cap_firstReturned
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNFirstRequestLaunchProbes.literal_cap_launch_executable
+#print axioms Pnp3.Tests.TMGateNFirstRequestLaunchSurface.check_literal_cap_launch_executable
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNFirstRequestLaunchProbes.literal_first_not_is_undefined
+#print axioms Pnp3.Tests.TMGateNFirstRequestLaunchSurface.check_literal_first_not_is_undefined
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNFirstRequestLaunchProbes.literal_reserved_launch_reject
+#print axioms Pnp3.Tests.TMGateNFirstRequestLaunchSurface.check_literal_reserved_launch_reject
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnTransition_values_rows
+#print axioms Pnp3.Tests.TMGateNValuesWriterSurface.check_gnTransition_values_rows

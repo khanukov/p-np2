@@ -73,7 +73,7 @@ theorem check_gnTransition_values_rows (phase : Fin 1) (mode : GNValuesMode)
         (0, .values .probe (.p1 scan), scan, .right) ∧
       gnTransition phase (.values mode buffer) scan =
         (0, gnValuesStep mode buffer scan) ∧
-      gnTransition phase .requestReady scan = (0, .requestReady, scan, .stay) ∧
+      gnTransition phase .requestReady scan = (0, .launch .r3, scan, .left) ∧
       gnValuesStep .back .p0 scan = (.install .probe .p0 .empty, scan, .left) ∧
       gnValuesStep .tailBack .p0 scan =
         (.values .writeOutput .p0, scan, .left) ∧

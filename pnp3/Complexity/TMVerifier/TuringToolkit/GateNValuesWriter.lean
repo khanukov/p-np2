@@ -40,11 +40,11 @@ capstone were deferred by this module. GN-E2-5b's `GateNValuesCopy` now
 composes one copy round and a residual-list/tail handoff; full-list execution
 and completion of a nonempty request remain deferred.
 
-**Explicitly not here, and claimed nowhere.**  `requestReady` is a dormant
-absorbing arrival: there is no rewind to the scratch `bof`, no launch, no
-delegation of the installed request to the G1 control, no commit of a returned
-bit, no cursor/spent advance, no next-gate loop, no total installer clock, no
-verdict and no acceptance.  In particular the pure evaluator `evalGNProgram`
+**Scope beyond this module.** `requestReady` was a dormant arrival at GN-E2-5a.
+GN-E2-5d now activates it with a read-only reverse launch to the scratch `bof`
+and proves successful first-request delegation downstream. This writer still
+ends at `requestReady`; returned-bit commit, cursor/spent advance, next-gate
+loop, total clock adequacy, verdict and acceptance remain open.  In particular the pure evaluator `evalGNProgram`
 is **not** executed by this machine and no statement here says it is: at this
 endpoint the machine has relocated the selected record's frames and written
 two fixed frames, and the semantic conjuncts of
@@ -65,7 +65,7 @@ open Encoding
 
 /-- The complete values/tail row set.  The activated `valuesEntry` entry read
 buffers the scanned cell and steps right; every `values` row is exactly the
-finite `gnValuesStep` decision; `requestReady` is a dormant self-loop.  The
+finite `gnValuesStep` decision; `requestReady` enters the GN-E2-5d launch.  The
 last four conjuncts spell out the rows a reader most needs to see: the `back`
 walk's handoff to the existing installer probe, the `tailBack` walk's handoff
 to the writer, and the first and last of the eight write/right tail rows. -/
@@ -75,7 +75,7 @@ theorem gnTransition_values_rows (phase : Fin 1) (mode : GNValuesMode)
         (0, .values .probe (.p1 scan), scan, .right) ∧
       gnTransition phase (.values mode buffer) scan =
         (0, gnValuesStep mode buffer scan) ∧
-      gnTransition phase .requestReady scan = (0, .requestReady, scan, .stay) ∧
+      gnTransition phase .requestReady scan = (0, .launch .r3, scan, .left) ∧
       gnValuesStep .back .p0 scan = (.install .probe .p0 .empty, scan, .left) ∧
       gnValuesStep .tailBack .p0 scan =
         (.values .writeOutput .p0, scan, .left) ∧
@@ -261,7 +261,7 @@ private def gnValuesOutputWriter : FrameWriter GNState G1Frame Unit where
   wstep_p3 := by intro _ _; rfl
 
 /-- The request's closing `finish`, as a four-row frame writer.  Its exit is
-the dormant `requestReady` arrival. -/
+the `requestReady` endpoint; the GN-E2-5d launch leaves it. -/
 private def gnValuesFinishWriter : FrameWriter GNState G1Frame Unit where
   program := gnCS
   phase := gnCS.startPhase
@@ -816,9 +816,9 @@ theorem gnCS_valuesTail_exact {r : GNProgram} {g : SLGate r.inputs.length}
 `GNM.initialConfig (gnPoint (encodeGN r))` and using the actually selected
 first gate `g`, an input-free program's machine runs exactly
 `gnFirstRequestReadySteps r g` rows of genuine `TM.runConfig (M := GNM)`
-execution and stops in the exact first-request endpoint.  Execution stops
-there: `requestReady` is dormant, and launch, delegation, commit and looping
-all remain later obligations, as does the nonempty-value capstone. -/
+execution to the exact first-request endpoint. This writer theorem ends at
+`requestReady`; GN-E2-5d launches and delegates from it. Commit and looping
+remain open; GN-E2-5c supplies the nonempty-value capstone. -/
 theorem gnCS_encodeGN_firstRequestReady_exact {r : GNProgram}
     {g : SLGate r.inputs.length} (hg : r.program.gates[0]? = some g)
     (hinputs : r.inputs = []) :

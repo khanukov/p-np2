@@ -20,8 +20,10 @@ bytes and registrations/surfaces/audits. Stage (b),
 stage (a)'s subtree `b2762b378800f81e6adaaa3ecbe6b277ddd59482` (120 objects), with no
 frozen-byte change. The freeze checker, negative controls and local policy
 unit tests passed. Both stages preserve the exact base in ancestry. The docs-only
-child `6c21021a1ca9685bd7fa563c7cc005bc87fd08b8` then corrected the GN-E2-5b/5c
-records without changing Lean, pins or frozen bytes. The integration head `85a8c61b6c926b4a54594a84504c28ac4e11f269` subsequently
+child `6c21021a1ca9685bd7fa563c7cc005bc87fd08b8` and its docs-only follow-up
+`e984d32d16fe172307127fa8c58ceaf2009e6173` corrected the GN-E2-5b/5c records
+without changing Lean, pins or frozen bytes. The integration head
+`85a8c61b6c926b4a54594a84504c28ac4e11f269` subsequently
 passed the globally exclusive 17-step full gate; exact-head Codex and Fable 5.1
 reviews both reported **APPROVE**. PR #1808 carries the `Infrastructure` and
 `tmverifier-unfreeze` labels, the owner's full-SHA attestation, and successful

@@ -20,8 +20,10 @@ bytes and registrations/surfaces/audits. Stage (b),
 stage (a)'s subtree `b2762b378800f81e6adaaa3ecbe6b277ddd59482` (120 objects), with no
 frozen-byte change. The freeze checker, negative controls and local policy
 unit tests passed. Both stages preserve the exact base in ancestry. The docs-only
-child `6c21021a1ca9685bd7fa563c7cc005bc87fd08b8` then corrected the GN-E2-5b/5c
-records without changing Lean, pins or frozen bytes. The integration head `85a8c61b6c926b4a54594a84504c28ac4e11f269` subsequently
+child `6c21021a1ca9685bd7fa563c7cc005bc87fd08b8` and its docs-only follow-up
+`e984d32d16fe172307127fa8c58ceaf2009e6173` corrected the GN-E2-5b/5c records
+without changing Lean, pins or frozen bytes. The integration head
+`85a8c61b6c926b4a54594a84504c28ac4e11f269` subsequently
 passed the globally exclusive 17-step full gate; exact-head Codex and Fable 5.1
 reviews both reported **APPROVE**. PR #1808 carries the `Infrastructure` and
 `tmverifier-unfreeze` labels, the owner's full-SHA attestation, and successful
@@ -1901,10 +1903,9 @@ adequacy remain open, along with N1/N3. Neither P-vs-NP source is reduced.
 Stage (a), `d1694e4b8c3e4838fb38d682f4c10d5ffacc6eb8`, is a direct child of
 `b71eb6ca3ff4101d6d1596dfb4fc06ce63f845c7`; its repository tree is
 `2e9f958a192376763a84e2bc9beb0633820972e9` and TMVerifier subtree is `b2762b378800f81e6adaaa3ecbe6b277ddd59482`.
-This stage-(b) record and repin are committed as its direct child. The final
-stage-(b) commit ID is recorded externally in `/root/reports/gn-e25c-writer-final.txt`.
-Neither stage is amended or rebased. The superseded donor commits are unused
-and remain outside ancestry.
+Stage (b), `4ffd71f356e13babde80397186ee176e5455ccc5`, records the repin as
+its direct child. Neither stage is amended or rebased. The superseded donor
+commits are unused and remain outside ancestry.
 
 The manifest remains schema 3, growing from 119 to 120 objects. Only the new
 `GateNValuesInduction.lean` blob is added and the existing writer blob changes;
@@ -1921,7 +1922,12 @@ includes registrations and both audits. The checker verified 120 matching Git
 objects and stage-(a) provenance; `test_tmverifier_freeze.py` passed its manifest,
 filesystem, history, provenance, object-state, authoring and self-hosted
 controls. The local freeze-policy unit tests passed. Logs are under
-`/root/reports/gn-e25c-*.log`, named explicitly in the slice record. No full
-repository gate, aggregate audit build, independent review, remote gate or
-attestation, push or PR is claimed. Local policy tests are not a remote policy
-approval. No release approval is inferred from historical reviews.
+`/root/reports/gn-e25c-*.log`, named explicitly in the slice record.
+
+This paragraph records the stage-(b) evidence snapshot only: at stage (b), no
+full repository gate, independent exact-head review, remote gate or attestation,
+push, or PR was claimed. The later integration-head full gate, reviews, PR,
+owner attestation and remote evidence are recorded in the release header above
+and in the linked GN-E2-5c slice record. Local policy tests alone are not a
+remote policy approval, and no release approval is inferred from historical
+reviews.

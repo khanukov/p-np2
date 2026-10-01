@@ -241,9 +241,11 @@ prior review notes in the GN-E2-5b and GN-E2-5c records; it changed no Lean,
 checker/manifest pin or frozen byte. Those two reviews cover stage (b), not
 that docs-only child. The later Fable 5.1 report
 `/root/reports/gn-e25c-6c21021-final-fable51.json` reviews exactly that child
-and reports **APPROVE** with nonblocking notes. This subsequent documentation
-correction addresses only its N-1 through N-3; no cited review covers this
-correction's eventual commit SHA.
+and reports **APPROVE** with nonblocking notes. Its direct docs-only follow-up
+`e984d32d16fe172307127fa8c58ceaf2009e6173` addressed those notes without
+changing Lean, pins or frozen bytes; exact-head Codex and Fable 5.1 reports
+`/root/reports/gn-e25c-e984-exact-codex.txt` and
+`/root/reports/gn-e25c-e984-exact-fable51.json` both report **APPROVE**.
 
 The integration head `85a8c61b6c926b4a54594a84504c28ac4e11f269` passed one
 globally exclusive full `./scripts/check.sh` run (17/17, including the aggregate
@@ -267,7 +269,7 @@ Before merge, the corrected final branch head still owes all of the following:
 - fresh `/agentic_review` coverage and a raw-green CI, CodeQL and freeze-policy
   rollup with no queued or in-progress duplicate run;
 - an updated repository-owner `/tmverifier-unfreeze <exact final full SHA>`
-  comment if the correction creates a new PR head; and
+  comment for the corrected PR head; and
 - an ancestry-preserving merge (not squash), followed by verification that
   stage (a) `d1694e4b8c3e4838fb38d682f4c10d5ffacc6eb8` and stage (b)
   `4ffd71f356e13babde80397186ee176e5455ccc5` remain ancestors of `main`.

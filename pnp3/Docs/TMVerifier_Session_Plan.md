@@ -15,11 +15,16 @@ premises, surfaces, evidence and limits are in the
 [GN-E2-5c record](GN_E2_5C_VALUES_INDUCTION.md).
 
 Stage (a), `d1694e4b8c3e4838fb38d682f4c10d5ffacc6eb8`, committed the validated frozen
-bytes and registrations/surfaces/audits. This stage (b) repins the checker and
-manifest to its subtree `b2762b378800f81e6adaaa3ecbe6b277ddd59482` (120 objects), with no
+bytes and registrations/surfaces/audits. Stage (b),
+`4ffd71f356e13babde80397186ee176e5455ccc5`, repinned the checker and manifest to
+stage (a)'s subtree `b2762b378800f81e6adaaa3ecbe6b277ddd59482` (120 objects), with no
 frozen-byte change. The freeze checker, negative controls and local policy
-unit tests passed. Both stages preserve the exact base in ancestry. No full
-repository gate, independent review, remote attestation, push or PR is claimed.
+unit tests passed. Both stages preserve the exact base in ancestry. The docs-only
+child `6c21021a1ca9685bd7fa563c7cc005bc87fd08b8` then corrected the GN-E2-5b/5c
+records without changing Lean, pins or frozen bytes. The prior Codex and Fable 5.1
+**APPROVE** reviews covered stage (b), not that child or this later correction;
+review evidence and exact-head limits are recorded in the GN-E2-5c record linked above.
+No full repository gate, remote attestation, push or PR is claimed.
 Request launch, delegation, returned-bit commit, repeated gates, verdict,
 acceptance, first arrival and new-clock/runtime adequacy remain open, together
 with Lane B's N1/N3 carry-forward items. No P-vs-NP source obligation is reduced.

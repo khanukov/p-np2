@@ -195,11 +195,12 @@ Stage (a), `d1694e4b8c3e4838fb38d682f4c10d5ffacc6eb8`, committed the validated f
 bytes, registrations, surfaces, audit roots and this record. It is a direct
 child of the exact base; its whole repository tree is `2e9f958a192376763a84e2bc9beb0633820972e9`
 and its TMVerifier subtree is `b2762b378800f81e6adaaa3ecbe6b277ddd59482`. Stage (a) retained
-GN-E2-5b's checker/manifest pins. This stage (b) repins only after those bytes
-were committed, authors the manifest from that Git tree, and changes no frozen
+GN-E2-5b's checker/manifest pins. Stage (b),
+`4ffd71f356e13babde80397186ee176e5455ccc5`, repinned only after those bytes
+were committed, authored the manifest from that Git tree, and changed no frozen
 source byte. The two commits remain in order without amendment or rebase.
-The stage-(b) commit ID is recorded in the external final report, avoiding a
-self-referential commit ID in this file.
+At stage (b), its own commit ID was recorded only in the external final report;
+the release checklist below now names it explicitly.
 
 The previous tree was `e4fa8f333a055e8bbce4c258af7f84719426416a`, provenance
 `b16d816e011560e86ea81ffa1a08da20e18cd2d2`. Schema 3 is retained and the
@@ -230,8 +231,22 @@ constitute remote policy approval. The checker's phrase â€œreviewed provenanceâ€
 identifies the commit/tree pair, not an independent review of this slice.
 The freeze pins source bytes rather than the semantic/toolchain closure.
 
-No full repository `./scripts/check.sh`, aggregate audit build, independent
-review, remote gate, owner attestation, push or PR is claimed by this lane.
+Documentation and review history (2026-10-01): Codex and Fable 5.1 both
+reported **APPROVE** for the exact stage-(b) head
+`4ffd71f356e13babde80397186ee176e5455ccc5`, in
+`/root/reports/gn-e25c-4ffd-exact-codex.txt` and
+`/root/reports/gn-e25c-4ffd-exact-fable51.txt`. Neither review re-elaborated Lean.
+The direct docs-only child `6c21021a1ca9685bd7fa563c7cc005bc87fd08b8` addressed
+prior review notes in the GN-E2-5b and GN-E2-5c records; it changed no Lean,
+checker/manifest pin or frozen byte. Those two reviews cover stage (b), not
+that docs-only child. The later Fable 5.1 report
+`/root/reports/gn-e25c-6c21021-final-fable51.json` reviews exactly that child
+and reports **APPROVE** with nonblocking notes. This subsequent documentation
+correction addresses only its N-1 through N-3; no cited review covers this
+correction's eventual commit SHA.
+
+No full repository `./scripts/check.sh`, aggregate audit build, remote gate,
+owner attestation, push or PR is claimed by this lane.
 Before release, the final branch head still owes all of the following:
 
 - one globally exclusive full `./scripts/check.sh` run;
@@ -250,5 +265,5 @@ This Infrastructure execution result reduces neither lower-bound source
 obligation. N1 and N3 remain open and owned by Lane B. First arrival for the
 new endpoint and a bound of its full new clock by `GNM.runTime` are also open,
 as are every launch/delegation/commit/loop/verdict/acceptance/runtime obligation
-listed above. Final commit IDs and clean-worktree checks will be written to
-`/root/reports/gn-e25c-writer-final.txt` after both stages.
+listed above. The implementation-stage commit IDs and clean-worktree checks in
+`/root/reports/gn-e25c-writer-final.txt` describe stage (b), before the docs-only child.

@@ -352,6 +352,21 @@ No pnp4 bridge advances: the accepted-content composite bridge still starts
 at G3e. Neither `SearchMCSPWeakLowerBound` nor
 `VerifiedNPDAGLowerBoundSource` is reduced. This is not P-vs-NP mainline progress.
 
+The following G3o record is historical (fifteen executed, two remaining at that stage).
+
+Part A G3o executed **H3**, separator-hole into unchanged G3n, in a
+196-state, 588-row `UniformTM`: **fifteen** executed handoffs, **two** remaining
+(H1–H2). The unconditional strict whole-configuration handoff costs one step;
+the drain retains exactly eight G3n premises. Its theorem-derived 2973-step
+fixture uses hand-supplied `v=24`, accept 194, head 23 and the complete drained
+tape with persistence, witnessing execution premises only. H4–H7 have controls
+12/19/45/49 at the inherited times plus one. Rejections remain forward guarantees.
+At that stage, still open: executing H1–H2 to connect raw input, later parser fields, model
+conversion, runtime fence, budget domination, and a verifier bridge. No first
+arrival of composed accept, language acceptance or runtime selection of `C/q/v`
+is proved. The pnp4 accepted-content bridge still starts at G3e; neither
+mainline lower-bound source obligation is reduced.
+
 This is Infrastructure only. Wrapper-level `L'`
 padding invariance and formal runtime/advice enforcement also remain open; complete-word
 `ContentAccepts` padding invariance does not close either item. The original length-gated

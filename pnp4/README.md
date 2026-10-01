@@ -869,6 +869,25 @@ No pnp4 bridge advances: the accepted-content composite bridge still starts
 at G3e. Neither `SearchMCSPWeakLowerBound` nor
 `VerifiedNPDAGLowerBoundSource` is reduced. This is not P-vs-NP mainline progress.
 
+The following G3o record is historical (fifteen executed, two remaining at that stage).
+
+Part A G3o (pnp3 only) executed **H3**, separator-hole into unchanged G3n,
+using `FixedPairSeparatorHoleTagRemovalShiftAlignmentCountdown`: **fifteen of
+seventeen** executed handoffs, with **two** remaining (H1–H2). Its closed
+196-state, 588-row `UniformTM` has an unconditional strict one-step
+whole-configuration handoff. H4–H7 inherit their exact endpoints at times plus
+one, with controls 12/19/45/49. The exact drain retains the eight G3n premises;
+the theorem-derived **2973-step** fixture has accept 194, head 23, complete
+`loopTape 22 tag physWord 4 0 24`, and persistence. Its hand-supplied `v=24`
+witnesses execution premises, not `ContentAccepts` nonvacuity or first arrival
+of composed accept. Rejection transport is forward-only. This is
+**Infrastructure only** and builds **no pnp4 bridge**: the accepted-content
+composite bridge still starts at G3e. No raw-input execution, later parser
+field, `TM.runConfig` conversion, runtime fence or budget domination, runtime
+selection of `C/q/v`, advice-freedom claim, language acceptance, verifier bridge,
+or P-vs-NP mainline progress follows. Neither `SearchMCSPWeakLowerBound` nor
+`VerifiedNPDAGLowerBoundSource` is reduced.
+
 The following G3m counts describe its earlier boundary. Part A G3m (pnp3 only) has since executed **H5** as well — the fixed 7-state, 21-row structural
 one-cell origin shift prefixed to that G3l composite as one closed 184-state, 552-row table, again
 with no new row and no `mergeAccept`, switching at the shift phase's own strict first arrival

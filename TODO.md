@@ -1,6 +1,26 @@
 # TODO / Roadmap (current)
 
-Updated: 2026-09-24
+GN-E2-5d (2026-10-01, Infrastructure) closes actual first-request launch
+under the selected-gate premise and successful first evaluation/interception
+under the additional defined-specification premise. Exact initial clocks:
+1333 launch, 1562 output-done, 1563 intercepted for capProgram. Complete
+premises and scoped validation are in
+[pnp3/Docs/GN_E2_5D_FIRST_REQUEST_LAUNCH.md](pnp3/Docs/GN_E2_5D_FIRST_REQUEST_LAUNCH.md).
+Remaining: returned-bit commit, gate advance/loop, verdict, GN acceptance,
+composed runtime adequacy, first arrival, ContentVerifierBridge, and N1/N3.
+No lower-bound source or pnp4 bridge is supplied.
+PR #1810 at exact head `58c334417d29086245c488bf980d2154194f1b8f` passed the
+targeted Lane B build, Codex and Fable 5.1 **APPROVE** reviews, and all 17 steps
+of the globally exclusive full gate. Qodo's blank/no-bof launch loop, two stale
+writer comments and stale validation records are being fixed by a new ordered
+stage-(a)/(b) migration. The new all-blank exact-run endpoint includes head zero,
+full tape preservation, stable rejection, named surface and direct audit roots.
+Canonical launch/return premises are unchanged. Revalidate the correction with
+targeted Lane B and freeze/negative/policy tests; fresh full gate, reviews,
+remote CI and owner attestation remain release-head obligations. Earlier
+results do not certify a later head. No push is authorized in this correction.
+
+Updated: 2026-10-01
 
 Canonical checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -17,7 +37,8 @@ Research method boundary:
 
 - Active `axiom` in `pnp3/`: `0`.
 - Active `sorry/admit` in `pnp3/`: `0`.
-- `./scripts/check.sh` passes.
+- GN-E2-5d full gate: all 17 steps passed at `58c33441` (PR #1810).
+  The Qodo correction has separate targeted validation; no latest-head full gate is claimed.
 - Inclusion is internalized as coarse `P_subset_PpolyDAG`.
 - The simulation layer is not a fine-grained Cook-Levin or
   hardness-magnification compiler adequacy theorem.
@@ -417,6 +438,21 @@ acceptance, `TM.runConfig` conversion, and `ContentVerifierBridge` remain open.
 No pnp4 bridge advances: the accepted-content composite bridge still starts
 at G3e. Neither `SearchMCSPWeakLowerBound` nor
 `VerifiedNPDAGLowerBoundSource` is reduced. This is not P-vs-NP mainline progress.
+
+The following G3o record is historical (fifteen executed, two remaining at that stage).
+
+Part A G3o executed **H3**, separator-hole into unchanged G3n, in a
+196-state, 588-row `UniformTM`: **fifteen** executed handoffs, **two** remaining
+(H1–H2). The unconditional strict whole-configuration handoff costs one step;
+the drain retains exactly eight G3n premises. Its theorem-derived 2973-step
+fixture uses hand-supplied `v=24`, accept 194, head 23 and the complete drained
+tape with persistence, witnessing execution premises only. H4–H7 have controls
+12/19/45/49 at the inherited times plus one. Rejections remain forward guarantees.
+At that stage, still open: executing H1–H2 to connect raw input, later parser fields, model
+conversion, runtime fence, budget domination, and a verifier bridge. No first
+arrival of composed accept, language acceptance or runtime selection of `C/q/v`
+is proved. The pnp4 accepted-content bridge still starts at G3e; neither
+mainline lower-bound source obligation is reduced.
 
 This is Infrastructure only. Wrapper-level `L'`
 padding invariance and formal runtime/advice enforcement also remain open; complete-word

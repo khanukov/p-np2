@@ -100,6 +100,20 @@ execution clock is not a first-arrival or public-runtime adequacy theorem.
 The landed writer overwrites its two destination frames; generic theorems
 here specify both as blank, and do not claim arbitrary corruption rejection.
 
+Historical narration in `GateNValuesWriter.lean`, `GateNValuesRewind.lean`,
+the GN-E2-5b registration comment in `lakefile.lean`, and the original
+GN-E2-5b record describes what remained open at those earlier endpoints. It
+does not override this module's subsequently proved list/tail execution. The
+GN-E2-5b record now links here explicitly. Those frozen/source comments are
+left byte-identical rather than starting an additional freeze migration solely
+for retrospective prose.
+
+The broader design discussion also suggested N1, clock-coincidence lemmas, and
+a `gnValuesRequestReadySteps ≤ GNM.runTime` theorem. They were not part of the
+five frozen targets and are intentionally re-scoped to later Lane B work; N1
+and the complete-clock runtime bound remain listed below rather than being
+implied by this slice.
+
 ## Implementation and validation record
 
 All five frozen targets are implemented with exactly the premises above;
@@ -218,6 +232,20 @@ The freeze pins source bytes rather than the semantic/toolchain closure.
 
 No full repository `./scripts/check.sh`, aggregate audit build, independent
 review, remote gate, owner attestation, push or PR is claimed by this lane.
+Before release, the final branch head still owes all of the following:
+
+- one globally exclusive full `./scripts/check.sh` run;
+- fresh exact-head Codex theorem review and Fable 5.1 documentation/surface
+  audit after any remediation commit;
+- an Infrastructure PR and `/agentic_review` coverage of its exact final SHA;
+- raw-green CI, CodeQL and freeze-policy rollups with no queued or in-progress
+  duplicate run;
+- the `tmverifier-unfreeze` label and repository-owner comment whose complete
+  body is `/tmverifier-unfreeze <exact final full SHA>`; and
+- an ancestry-preserving merge (not squash), followed by verification that
+  stage (a) `d1694e4b8c3e4838fb38d682f4c10d5ffacc6eb8` and stage (b)
+  `4ffd71f356e13babde80397186ee176e5455ccc5` remain ancestors of `main`.
+
 This Infrastructure execution result reduces neither lower-bound source
 obligation. N1 and N3 remain open and owned by Lane B. First arrival for the
 new endpoint and a bound of its full new clock by `GNM.runTime` are also open,

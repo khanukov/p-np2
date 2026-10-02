@@ -310,7 +310,7 @@ at G3e. Neither `SearchMCSPWeakLowerBound` nor
 `VerifiedNPDAGLowerBoundSource` is reduced; this is not P-vs-NP mainline progress.
 
 The following G3n and G3m records describe their historical fourteen/three and
-thirteen/four boundaries; G3p above is the current sixteen/one boundary.
+thirteen/four boundaries; G3q above is the current seventeen/none boundary.
 
 **Historical Part A G3n — Infrastructure: executed tag-removal → unchanged G3m handoff H4.**
 `Complexity.Uniform.V1.FixedPairTagRemovalShiftAlignmentCountdown` composes the existing
@@ -505,7 +505,7 @@ seventeen handoffs were performed by a finite table when this slice landed and *
 proof-level retags; G3m above executed H5, taking the counts to thirteen and four;
 G3n subsequently executed H4, taking them to fourteen and three; G3o then executed
 H3, taking them to fifteen and two; G3p above now executes H2, taking them to sixteen
-and one.
+and one; G3q above now executes H1, taking them to seventeen and none.
 
 * **H6 is executed by three live routed rows, not one.** Over all twenty-six alignment states and
   all three symbols, with the accept's own absorbing three excluded, a target of the phase's accept

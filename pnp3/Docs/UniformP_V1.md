@@ -3097,7 +3097,8 @@ through H7. Empty pairs are included (their raw encoding has length one).
 `FixedRawLengthFenceOverflowWitness` supplies the separate closed witness
 `x=1`, `w=011001000000111111`, raw `011011001000000111111`, with
 `a=1,m=18,N=19,R=21,B=45`: 67 allocated cells, false fence at 65, width 5.
-The actual copied register is 63; H17 has decremented it to 62.
+The decremented register is 62; therefore the pre-H17 copied value is 63
+(an arithmetic inference from the borrow-free decrement).
 `overflow_values` proves the matching tag, gamma width, original dispatcher's
 strict first terminal at C=21 in `qHasOne`, borrow zero and the actual digit
 identities. This is not identification with a returned `contentInput?` object.
@@ -3180,6 +3181,14 @@ G3q's actual s-step run from state 0, head zero and the installed fenced tape,
 embedded at offset 48. At s=0 the composite is in state 48, neither verdict.
 The raw `[true,false,true]` witness has R=3, B=256, time 59 and marker 11;
 the full tape contains only cells 0=true, 1=false, 2=true and 11=false.
+
+Review hypothesis freeze: `install_exact`, `install_trace`, `installed_cells`
+and `fence_handoff_exact` require exactly `2*R+2 ≤ B`; the raw capstones
+supply that inequality using `allocation R` and take no propositional premise.
+Their execution is V1 `UniformTM.run`, not legacy `TM.runConfig`. The suffix
+time `s` is arbitrary, with no suffix verdict or runtime bound asserted.
+G3q's eight drain premises recorded below still concern its unfenced entry;
+none supplies the missing fenced-entry preservation theorem.
 
 At G3r the following obligations were open; G3s above narrows the first and the prefix resources:
 

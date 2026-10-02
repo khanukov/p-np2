@@ -19,8 +19,8 @@ word, in the maximal `data` run after the leading `bof`.  This slice activates
 the finite `gnRewindControl` row set.  No mode, buffer or payload of the new
 rows contains a natural number, index, width, base, request, list, or any other
 runtime geometry, and nothing is request-dependent: the pass is the same eight
-rows for every program.  `valuesEntry` is a dormant absorbing arrival, exactly
-as `recordDone` was before this slice.
+rows for every program.  `valuesEntry` was a dormant absorbing arrival when
+this slice landed; GN-E2-5a has since activated it into the values/tail pass.
 
 **What the pass does.**  Three leftward buffering rows and a frame-position-0
 decision read the word right to left, four rows per frame, writing back every
@@ -34,10 +34,10 @@ is written: this slice moves the head and nothing else.  There is no values
 writer, no `[output false, finish]` tail writer, no completed request word, no
 launch, delegation, commit, next-gate loop, total installer clock, verdict, or
 acceptance.  In particular the pure evaluator `evalGNProgram` is **not**
-executed by this machine, and no statement here says it is.  The one-frame exit
-dispatcher `gnInstallExitDispatch` is deliberately left byte-identical, so the
-installer shuttle still rejects a carried `data` frame; extending it is the next
-slice's obligation, not this one's.
+executed by this machine, and no statement here says it is.  When this slice
+landed the exit dispatcher `gnInstallExitDispatch` was byte-identical, so the
+installer shuttle still rejected a carried `data` frame; GN-E2-5a owns and has
+since made that extension, in its own module.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -49,7 +49,8 @@ open Encoding
 
 /-- Every fixed row of the pass, in execution order: the activated `recordDone`
 entry, the three leftward buffering rows, the four rightward standing rows, and
-the dormant `valuesEntry` arrival.  The frame-position-0 decision is separate
+the `valuesEntry` arrival, which since GN-E2-5a buffers the scanned cell and
+steps right instead of self-looping.  The frame-position-0 decision is separate
 because it reads the tape. -/
 theorem gnTransition_rewind_rows (phase : Fin 1) (b0 b1 b2 b3 scan : Bool) :
     gnTransition phase .recordDone scan = (0, .rewind .r3, scan, .left) ∧
@@ -67,7 +68,8 @@ theorem gnTransition_rewind_rows (phase : Fin 1) (b0 b1 b2 b3 scan : Bool) :
         (0, .rewind (.p3 false false false), scan, .right) ∧
       gnTransition phase (.rewind (.p3 b0 b1 b2)) scan =
         (0, .valuesEntry, scan, .right) ∧
-      gnTransition phase .valuesEntry scan = (0, .valuesEntry, scan, .stay) :=
+      gnTransition phase .valuesEntry scan =
+        (0, .values .probe (.p1 scan), scan, .right) :=
   ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
 /-- The complete frame-position-0 decision: the leading `bof` anchors the pass
@@ -494,8 +496,8 @@ def gnValuesEntrySteps (r : GNProgram) (g : SLGate r.inputs.length) : Nat :=
       (r.inputs.length + r.program.gates.length + 1 +
         gnRecordSize (gnGateFields g))
 
-/-- Exact real-input values boundary.  Only the head differs from
-`gnFirstRecordDoneConfig`; the physical tape is the same term. -/
+/-- Exact real-input values boundary.  The state and the head both differ from
+`gnFirstRecordDoneConfig`'s; the physical tape is literally the same term. -/
 def gnValuesEntryConfig (r : GNProgram) (g : SLGate r.inputs.length)
     (hg : r.program.gates[0]? = some g) :
     Configuration (M := GNM) (encodeGN r).length where
@@ -526,7 +528,7 @@ private theorem gnFirstRecordDone_eq_rewindConfig {r : GNProgram}
 first gate `g`, the machine runs exactly `gnValuesEntrySteps r g` rows of
 genuine `TM.runConfig (M := GNM)` execution and stops in the exact values
 boundary.  Nothing has been written since `recordDone`; what remains is the
-values copy itself, which E2-4b owns. -/
+values copy itself, which GN-E2-5b owns. -/
 theorem gnCS_encodeGN_valuesEntry_exact {r : GNProgram}
     {g : SLGate r.inputs.length} (hg : r.program.gates[0]? = some g) :
     TM.runConfig (M := GNM) (GNM.initialConfig (gnPoint (encodeGN r)))
@@ -550,15 +552,16 @@ theorem gnCS_encodeGN_valuesEntry_exact {r : GNProgram}
 /-- Complete exact projections of the real-input values boundary.  The first
 three conjuncts pin state, head and the full physical tape; the fourth says the
 tape is *the same term* as the `recordDone` endpoint's, so the pass wrote
-nothing; the fifth identifies head `4` as p0 of the first frame after the
-leading `bof`, where the current-value `data` run
-`gnCurrentValues r [] = r.inputs` begins; the sixth records what still has to be
+nothing; the fifth is a **pure list identity** on the encoder's prefix, which by
+itself states no tape read, about the current-value `data` run
+`gnCurrentValues r [] = r.inputs`; the sixth records what still has to be
 written, namely that the installed scratch image followed by exactly that
 current-value run is `g1PrefixFrames (gnFirstRequest r g)`.
 
-The sixth conjunct is a statement about the **pure** request determined by `g`.
-Nothing here says the machine has copied a value or evaluated anything: at this
-endpoint it has only relocated the record's frames and moved its head. -/
+The last two conjuncts are statements about the **pure** request determined by
+`g`.  Nothing here says the machine has copied a value or evaluated anything:
+at this endpoint it has only relocated the record's frames and moved its
+head. -/
 theorem gnValuesEntryConfig_structure {r : GNProgram}
     {g : SLGate r.inputs.length} (hg : r.program.gates[0]? = some g) :
     (gnValuesEntryConfig r g hg).state =

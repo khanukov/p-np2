@@ -826,6 +826,91 @@ the composed clock is quadratic in `a` and it is **not** proved that the cubic b
 dominates it. G3l is Infrastructure only and builds **no pnp4 bridge** either, on the same terms as
 G3k.
 
+**Part A G3s — Infrastructure: generic fenced H1–H7 and one raw overflow rejection.**
+The machine is unchanged: `FixedRawLengthFence.prefixed`, **256 states / 768 rows**,
+start 0, accept 254, reject 255. No transition or runtime interpreter is added.
+The generic and concrete results have different scopes.
+
+`UniformTM.run_update_of_unvisited` proves locality for one unscanned tape cell.
+`FixedRawLengthFenceContent` discharges its avoidance premise using all seven
+existing phase footprints: every head through H7 is at most `R+1`, below the
+installed fence `P=3*R+2`, where `R=pairLength a m=2*a+1+m`.
+For arbitrary dependent words x/w and **every** `2*R+2 ≤ B`,
+`raw_fenced_content_exact` starts from literal raw `initialConfig` and reaches
+state 109, head `a+m`, the entire `fencedContentTape B x w`, at
+`installClock R + contentClock a m`, with
+`contentClock a m = 11*a*a+10*a*m+36*a+13*m+23`.
+The tape has x followed by w, blanks elsewhere, and the installed false fence.
+`raw_fenced_content_trace` preserves that fence and excludes both verdicts
+through H7. Empty pairs are included (their raw encoding has length one).
+`content_prefix_resources` discharges room and this prefix clock at the existing
+`allocation R=16*(R+1)^2`; it is not a whole-machine resource theorem.
+
+`FixedRawLengthFenceOverflowWitness` supplies the separate closed witness
+`x=1`, `w=011001000000111111`, raw `011011001000000111111`, with
+`a=1,m=18,N=19,R=21,B=45`: 67 allocated cells, false fence at 65, width 5.
+The decremented register is 62; therefore the pre-H17 copied value is 63
+(an arithmetic inference from the borrow-free decrement).
+`overflow_values` proves the matching tag, gamma width, original dispatcher's
+strict first terminal at C=21 in `qHasOne`, borrow zero and the actual digit
+identities. This is not identification with a returned `contentInput?` object.
+H11 executes the existing merged dispatcher, retaining its actual routing.
+
+Installation ends at 1517; H1–H7 end at
+1560/1564/1565/1573/1636/1979/2001. The concrete fenced H8–H17 boundaries are
+2065/2071/2086/2107/2129/2166/2197/2209/2314/2335.
+`overflow_h17_exact` proves state 245, head 25, whole `overflowTape 62 0`.
+Countdown enters `qLoop` at 2337, completes 38 rounds at 4389 with register 24,
+then decrements to **23** before scanning the fence. `overflow_prereject_exact`
+proves state 251, head 65, whole `overflowTape 23 38` at 4442.
+`overflow_reject_row` is the existing false-symbol write/stay row to reject 255;
+`overflow_reject_exact s` proves the complete literal rejecting configuration
+from raw `initialConfig` at **4443+s**, with persistence by `run_reject`.
+`overflow_fence_trace` keeps the false fence and head at most 65 throughout
+1517–4443. The final tape has tag cells 0–7, false zeros 8–12, blanks 13–17,
+true terminator 18, blank 19, register `010111` at 20–25, blank 26,
+exactly 38 true marks 27–64, false fence 65 and blank 66.
+
+The finite proofs reduce segments of at most 64 suffix steps and 91 countdown
+steps; the 105-step payload loop is split into 31/31/31/12. Whole configurations
+are composed with `run_add` and existing `seq_run_right` embeddings, retaining
+raw-length indices throughout. No monolithic 4443-step kernel reduction is used.
+Surface probes separately check an empty raw pair, a theorem-derived mixed pair,
+and phase-local last-mark/exhaustion/overflow boundaries. Those boundary probes
+supply countdown configurations and are not additional raw-input capstones.
+The intended generic boundary is strict: `v ≤ F` fits and `F < v` overflows.
+That universal theorem is still open; the phase-local probes check its last-step
+cases only. The raw overflow witness has F=38. Since **4443>B=45**, this is exact
+execution, not `RejectsWithin ... 45`. Inherited left clamps remain; the suffix
+is not claimed clamp-free. The unfenced drain theorem is never substituted for
+a run on the installed fence.
+
+The following obligations remain open, in order:
+
+1. Generic fenced H8–H17 preservation and generic countdown success/overflow
+   from the actual predecessor configuration; G3s proves only the stated raw witness.
+2. Identify every field and dependent length of the **same** `pr` returned by
+   `contentInput? codec z`: `pr.2.tag`, `.n`, `.x`, `.i`, `.p`, `.padBits`, `.pad`,
+   with `codec := treeCircuitWitnessCodec (thresholdPoly k)` and `z := Fin.append x w`.
+   `pr.2.n = pr.1` alone does not identify the executed register.
+3. Build the dependent `GNProgram`, serialization and physical starting configuration
+   from those fields and `contentWitness codec z pr.2.n`; complete gate/witness
+   verification. Frozen GN work and GN-E2-4b donor-only status are unchanged.
+4. Connect V1 Option Bool/pair execution to legacy Boolean/`concatBitstring`
+   `TM.runConfig`, accounting for initialization, time, space and verdicts.
+5. Prove whole-machine length-only polynomial allocation and clock, domination
+   on every branch and operational advice freedom. Only the installed H1–H7 prefix
+   has the new polynomial resource guarantee.
+6. Prove the final acceptance equation for `contentSemanticAccepts`, including
+   malformed-input rejection completeness and failed witness checks; timeout is not rejection.
+
+`ContentVerifierBridge`, canonical NP witnesses, Part A completion,
+`SearchMCSPWeakLowerBound` and `VerifiedNPDAGLowerBoundSource` remain open.
+No pnp4 bridge or semantic acceptance theorem is added; its accepted-content
+bridge remains at G3e. This is Infrastructure, not P-vs-NP mainline progress.
+
+The following G3r record is historical; its then-open fence obligations are narrowed above.
+
 **Part A G3r — Infrastructure: executed raw-length false fence and exact G3q handoff.**
 `FixedRawLengthFence.machine` is a fixed **48-state / 144-row** three-symbol table,
 start 0, accept 2, reject 3. For raw length R, it reads every bit, uses an origin
@@ -849,7 +934,16 @@ embedded at offset 48. At s=0 the composite is in state 48, neither verdict.
 The raw `[true,false,true]` witness has R=3, B=256, time 59 and marker 11;
 the full tape contains only cells 0=true, 1=false, 2=true and 11=false.
 
-The following obligations remain open, in order:
+Review hypothesis freeze: `install_exact`, `install_trace`, `installed_cells`
+and `fence_handoff_exact` require exactly `2*R+2 ≤ B`; the raw capstones
+supply that inequality using `allocation R` and take no propositional premise.
+Their execution is V1 `UniformTM.run`, not legacy `TM.runConfig`. The suffix
+time `s` is arbitrary, with no suffix verdict or runtime bound asserted.
+G3q's eight drain premises recorded below still concern its unfenced entry;
+none supplies the missing fenced-entry preservation theorem.
+
+At G3r the following obligations were open; G3s above narrows the first and the prefix resources:
+
 1. Preserve the fence through H1–H17 and prove fenced countdown success and
    literal overflow rejection from the actual predecessor configuration.
    The existing G3q whole-tape drain theorem ends in an unfenced `loopTape`
@@ -984,6 +1078,25 @@ acceptance, `TM.runConfig` conversion, and `ContentVerifierBridge` remain open.
 No pnp4 bridge advances: the accepted-content composite bridge still starts
 at G3e. Neither `SearchMCSPWeakLowerBound` nor
 `VerifiedNPDAGLowerBoundSource` is reduced. This is not P-vs-NP mainline progress.
+
+The following G3o record is historical (fifteen executed, two remaining at that stage).
+
+Part A G3o (pnp3 only) executed **H3**, separator-hole into unchanged G3n,
+using `FixedPairSeparatorHoleTagRemovalShiftAlignmentCountdown`: **fifteen of
+seventeen** executed handoffs, with **two** remaining (H1–H2). Its closed
+196-state, 588-row `UniformTM` has an unconditional strict one-step
+whole-configuration handoff. H4–H7 inherit their exact endpoints at times plus
+one, with controls 12/19/45/49. The exact drain retains the eight G3n premises;
+the theorem-derived **2973-step** fixture has accept 194, head 23, complete
+`loopTape 22 tag physWord 4 0 24`, and persistence. Its hand-supplied `v=24`
+witnesses execution premises, not `ContentAccepts` nonvacuity or first arrival
+of composed accept. Rejection transport is forward-only. This is
+**Infrastructure only** and builds **no pnp4 bridge**: the accepted-content
+composite bridge still starts at G3e. No raw-input execution, later parser
+field, `TM.runConfig` conversion, runtime fence or budget domination, runtime
+selection of `C/q/v`, advice-freedom claim, language acceptance, verifier bridge,
+or P-vs-NP mainline progress follows. Neither `SearchMCSPWeakLowerBound` nor
+`VerifiedNPDAGLowerBoundSource` is reduced.
 
 The following G3m counts describe its earlier boundary. Part A G3m (pnp3 only) has since executed **H5** as well — the fixed 7-state, 21-row structural
 one-cell origin shift prefixed to that G3l composite as one closed 184-state, 552-row table, again

@@ -48,9 +48,20 @@ switch; repeated body driving remains a later obligation.  GN-E2-4a activates
 `recordDone` into a read-only right-to-left `rewind` pass that stops at the
 leading `bof` and stands on the first current-value frame in the new fixed
 `valuesEntry` state.  `rewind` carries only the existing finite four-position
-buffer, writes back every cell it scans, and rejects every undecodable window;
-`valuesEntry` is a dormant arrival exactly as `recordDone` was.  No value is
-copied and no tail is written here.
+buffer, writes back every cell it scans, and rejects every undecodable window.
+GN-E2-5a activates `valuesEntry` in turn, as the first read of the finite
+values/tail control `GNValuesMode`/`gnValuesStep`: its rows classify the frame
+under the head, route a decoded `data` frame back into the existing installer
+shuttle, seek the scratch frontier, and write the request's fixed
+`output false`/`finish` tail before the new `requestReady` arrival.  The exit
+dispatcher therefore no longer rejects a carried `data` frame, and
+`GNInstallExitInvalid` is narrowed to match.  Every added payload stays finite:
+no values mode or buffer holds a natural number, width, index, request, list,
+gate, clock counter or proof. GN-E2-5d activates `requestReady` with a finite
+read-only reverse `launch` pass, stopping on the scratch request's opening
+`bof` in the fixed delegated G1 start. Downstream execution composes this
+with successful evaluation and interception; commit, next-gate loop, verdict
+and acceptance remain open.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -103,6 +114,17 @@ inductive GNInstallBuffer where
 inductive GNInstallAux where
   | empty
   | carried (frame : G1Frame)
+  deriving Fintype, DecidableEq, Repr
+
+/-- Finite modes of the first-request values/tail writer.  `probe` classifies
+the frame the pass stands on, `back` returns to its first cell and hands it to
+the existing installer probe, `seekTail` walks right to the scratch frontier,
+`tailBack` returns to it, and the two writer modes install the request's fixed
+`output false`/`finish` tail.  `reject` is the structural sink mode, as in
+`GNInstallMode` and `GNRewindMode`.  No mode carries a natural number, width,
+index, request, list, gate, clock counter or proof. -/
+inductive GNValuesMode where
+  | probe | back | seekTail | tailBack | writeOutput | writeFinish | reject
   deriving Fintype, DecidableEq, Repr
 
 /-- Total projection used by dormant rows; live probe completion always
@@ -188,6 +210,9 @@ inductive GNState where
   | recordDone
   | rewind (buffer : GNInstallBuffer)
   | valuesEntry
+  | values (mode : GNValuesMode) (buffer : GNInstallBuffer)
+  | requestReady
+  | launch (buffer : GNInstallBuffer)
   | idle
   | accept
   | reject
@@ -207,9 +232,15 @@ def GNInstallExitContinue : GNInstallAux → Prop
   | .carried .argSep => True
   | _ => False
 
-/-- Every exit payload other than a continuing payload or terminal finish. -/
+/-- Every exit payload other than a continuing payload, the terminal finish, or
+a copied current value.  GN-E2-5 narrowed this predicate: a carried `data`
+frame is no longer invalid, because the values pass now routes it back to
+`valuesEntry` instead of rejecting.  The exclusion is a separate conjunct
+rather than a new `GNInstallExitContinue` case, because "continuing" means
+specifically the one-step dispatch back to the installer probe. -/
 def GNInstallExitInvalid (aux : GNInstallAux) : Prop :=
-  ¬ GNInstallExitContinue aux ∧ aux ≠ .carried .finish
+  ¬ GNInstallExitContinue aux ∧ aux ≠ .carried .finish ∧
+    ∀ b, aux ≠ .carried (.data b)
 
 /-- Finite payload-only exit decision. -/
 def gnInstallExitDispatch : GNInstallAux → GNState
@@ -219,6 +250,7 @@ def gnInstallExitDispatch : GNInstallAux → GNState
   | .carried .index => .install .probe .p0 .empty
   | .carried .argSep => .install .probe .p0 .empty
   | .carried .finish => .recordDone
+  | .carried (.data _) => .valuesEntry
   | _ => .reject
 
 /-- Installer rejection is the already-existing stable outer reject sink. -/
@@ -268,6 +300,125 @@ def gnRewindControl (buffer : GNInstallBuffer) (scan : Bool) :
   | .p2 _ _ => (.rewind (.p3 false false false), scan, .right)
   | .p3 _ _ _ => (.valuesEntry, scan, .right)
 
+/-- Supported request bodies contain no blank: fail closed before left clamping. -/
+def gnLaunchAdvance : GNRewindMode → G1Frame → GNRewindMode
+  | _, .blank => .reject
+  | m, f => gnRewindAdvance m f
+
+def gnLaunchComplete (mode : GNRewindMode) (b0 b1 b2 b3 : Bool) : GNRewindMode :=
+  match decodeG1Frame? [b0, b1, b2, b3] with
+  | some frame => gnLaunchAdvance mode frame
+  | none => .reject
+
+/-- Finite first-request launch: reverse-read complete frames, stop on `bof`
+in the fixed G1 start, and reject blank, undecodable or unused buffer cases. -/
+def gnLaunchControl (buffer : GNInstallBuffer) (scan : Bool) :
+    GNState × Bool × Move :=
+  match buffer with
+  | .r3 => (.launch (.r2 scan), scan, .left)
+  | .r2 b3 => (.launch (.r1 scan b3), scan, .left)
+  | .r1 b2 b3 => (.launch (.r0 scan b2 b3), scan, .left)
+  | .r0 b1 b2 b3 =>
+      let next := gnLaunchComplete .scan scan b1 b2 b3
+      if next = .anchor then (.delegated G1M.start, scan, .stay)
+      else if next = .reject then (.reject, scan, .stay)
+      else (.launch .r3, scan, .left)
+  | _ => (.reject, scan, .stay)
+
+/-! ## Finite values/tail control -/
+
+/-- Values rejection is the already-existing stable outer reject sink. -/
+def gnValuesControl (mode : GNValuesMode) (buffer : GNInstallBuffer) : GNState :=
+  match mode with
+  | .reject => .reject
+  | _ => .values mode buffer
+
+/-- Entry buffer of each values mode: the two backward walks are entered one
+cell past the frame they return to, so they start at `p3` and step left four
+times; every other mode is entered on a frame's first cell. -/
+def gnValuesEnter : GNValuesMode → GNInstallBuffer
+  | .back => .p3 false false false
+  | .tailBack => .p3 false false false
+  | _ => .p0
+
+/-- Frame-level tail-seek decision: the first blank is the scratch frontier and
+the installer's temporary marker rejects.  Every other decodable frame is
+passed over deliberately, because the original word and the scratch header both
+contain them and stopping on one would select the wrong boundary. -/
+def gnValuesAdvance : GNValuesMode → G1Frame → GNValuesMode
+  | .seekTail, .blank => .tailBack
+  | .seekTail, .output true => .reject
+  | .seekTail, _ => .seekTail
+  | _, _ => .reject
+
+/-- Bit-level tail-seek decision used verbatim by the machine table; every
+undecodable window rejects. -/
+def gnValuesComplete (mode : GNValuesMode) (b0 b1 b2 b3 : Bool) : GNValuesMode :=
+  match decodeG1Frame? [b0, b1, b2, b3] with
+  | some frame => gnValuesAdvance mode frame
+  | none => .reject
+
+/-- Frame-level classification of the frame the values pass stands on: a
+current value is handed to the existing installer shuttle through the four
+`back` rows, the first reserved output slot ends the value run and starts the
+tail seek, and every other decodable frame fails closed. -/
+def gnValuesClassify : G1Frame → GNState
+  | .data _ => .values .back (.p3 false false false)
+  | .output false => .values .seekTail .p0
+  | _ => .reject
+
+/-- Bit-level form of the classification, as the machine table computes it. -/
+def gnValuesClassifyBits (b0 b1 b2 b3 : Bool) : GNState :=
+  match decodeG1Frame? [b0, b1, b2, b3] with
+  | some frame => gnValuesClassify frame
+  | none => .reject
+
+/-- The complete finite values/tail row set, as one mode/buffer decision.
+Three probe rows buffer the frame under the head and the fourth classifies it;
+four `back` rows preserve the tape and hand that frame to the existing
+installer probe; four `seekTail` rows per frame walk right to the scratch
+frontier; four `tailBack` rows return to it; and eight write/right rows install
+`(G1Frame.output false).bits` then `G1Frame.finish.bits` before the dormant
+`requestReady` arrival.  Every malformed mode/buffer combination enters the
+existing stationary reject sink. -/
+def gnValuesStep (mode : GNValuesMode) (buffer : GNInstallBuffer) (scan : Bool) :
+    GNState × Bool × Move :=
+  match mode, buffer with
+  | .probe, .p0 => (.values .probe (.p1 scan), scan, .right)
+  | .probe, .p1 b0 => (.values .probe (.p2 b0 scan), scan, .right)
+  | .probe, .p2 b0 b1 => (.values .probe (.p3 b0 b1 scan), scan, .right)
+  | .probe, .p3 b0 b1 b2 =>
+      let next := gnValuesClassifyBits b0 b1 b2 scan
+      if next = .reject then (.reject, scan, .stay) else (next, scan, .right)
+  | .back, .p3 _ _ _ => (.values .back (.p2 false false), scan, .left)
+  | .back, .p2 _ _ => (.values .back (.p1 false), scan, .left)
+  | .back, .p1 _ => (.values .back .p0, scan, .left)
+  | .back, .p0 => (.install .probe .p0 .empty, scan, .left)
+  | .seekTail, .p0 => (.values .seekTail (.p1 scan), scan, .right)
+  | .seekTail, .p1 b0 => (.values .seekTail (.p2 b0 scan), scan, .right)
+  | .seekTail, .p2 b0 b1 => (.values .seekTail (.p3 b0 b1 scan), scan, .right)
+  | .seekTail, .p3 b0 b1 b2 =>
+      let next := gnValuesComplete .seekTail b0 b1 b2 scan
+      if next = .reject then (.reject, scan, .stay)
+      else (gnValuesControl next (gnValuesEnter next), scan, .right)
+  | .tailBack, .p3 _ _ _ => (.values .tailBack (.p2 false false), scan, .left)
+  | .tailBack, .p2 _ _ => (.values .tailBack (.p1 false), scan, .left)
+  | .tailBack, .p1 _ => (.values .tailBack .p0, scan, .left)
+  | .tailBack, .p0 => (.values .writeOutput .p0, scan, .left)
+  | .writeOutput, .p0 => (.values .writeOutput (.p1 false), true, .right)
+  | .writeOutput, .p1 _ =>
+      (.values .writeOutput (.p2 false false), false, .right)
+  | .writeOutput, .p2 _ _ =>
+      (.values .writeOutput (.p3 false false false), false, .right)
+  | .writeOutput, .p3 _ _ _ => (.values .writeFinish .p0, false, .right)
+  | .writeFinish, .p0 => (.values .writeFinish (.p1 false), true, .right)
+  | .writeFinish, .p1 _ =>
+      (.values .writeFinish (.p2 false false), false, .right)
+  | .writeFinish, .p2 _ _ =>
+      (.values .writeFinish (.p3 false false false), true, .right)
+  | .writeFinish, .p3 _ _ _ => (.requestReady, false, .right)
+  | _, _ => (.reject, scan, .stay)
+
 /-- Collapse the two terminal discovery modes to fixed outer states. -/
 def gnScanControl (mode : GNDiscoveryMode) (buffer : GNScanBuffer) : GNState :=
   match mode with
@@ -280,6 +431,8 @@ def gnReturnedState : Bool → GNState
   | false => .returnedFalse
   | true => .returnedTrue
 
+-- Keep the enlarged finite table as one unfolding equation for elaboration.
+set_option backward.eqns.nonrecursive false in
 /-- The exact outer transition table.  Equality tests intercept only the two
 complete canonical `g1DoneQ` values. -/
 def gnTransition (_phase : Fin 1) (s : GNState) (scan : Bool) :
@@ -419,7 +572,10 @@ def gnTransition (_phase : Fin 1) (s : GNState) (scan : Bool) :
   | .noGate => (0, .noGate, scan, .stay)
   | .recordDone => (0, .rewind .r3, scan, .left)
   | .rewind buffer => (0, gnRewindControl buffer scan)
-  | .valuesEntry => (0, .valuesEntry, scan, .stay)
+  | .valuesEntry => (0, .values .probe (.p1 scan), scan, .right)
+  | .values mode buffer => (0, gnValuesStep mode buffer scan)
+  | .requestReady => (0, .launch .r3, scan, .left)
+  | .launch buffer => (0, gnLaunchControl buffer scan)
   | .idle => (0, .idle, scan, .stay)
   | .accept => (0, .accept, scan, .stay)
   | .reject => (0, .reject, scan, .stay)

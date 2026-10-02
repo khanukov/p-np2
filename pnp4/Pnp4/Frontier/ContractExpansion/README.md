@@ -1788,7 +1788,8 @@ pending paths, including a strictly larger allocation.
 
 On the unchanged 256-state `FixedRawLengthFence.prefixed`, the actual raw H17
 predecessor now executes the full countdown. Write `L = a+m`, `R = pairLength a m`,
-`P = 3*R+2`, and `F = P-(L+3+z)`. For a matching tag, decoded width `z >= 2`,
+`P = 3*R+2`, `F = P-(L+3+z)`, and let `d` be the decrement phase's borrow bit.
+For a matching tag, decoded width `z >= 2`,
 sufficient allocation, actual dispatcher witness, and value `v` identified with
 the decremented register (including its high-bit bound):
 
@@ -1810,6 +1811,9 @@ The pnp4 theorem retains the **same** dependent `pr` from `contentInput?`, with
 exposes the zero register, separator, exact tally, low content and false fence.
 Raw executable/full-tape regressions cover `F-1`, `F`, `F+1`, and the G3s word.
 
+Countdown phase acceptance is not content-verifier correctness. Frozen
+TMVerifier paths and transition tables are unchanged.
+
 Remaining parser fields, GN program/serialization/start configuration and
 witness checks, malformed-input rejection completeness, acceptance equivalence,
 whole-verifier length-only resource domination, and operational advice freedom
@@ -1820,8 +1824,8 @@ unfinished. No `SearchMCSPWeakLowerBound`, `VerifiedNPDAGLowerBoundSource`, or
 `NP_not_subset_PpolyDAG` obligation is reduced. This is Infrastructure, not
 P-vs-NP mainline progress.
 
-The preceding G3t and following G3s records are historical. G3u closes G3t's
-generic countdown gap and G3s's first listed obligation.
+The preceding G3t and following G3s records are historical. G3t and G3u
+together close G3s's first listed obligation.
 
 **Part A G3s — Infrastructure: generic fenced H1–H7 and one raw overflow rejection.**
 The machine is unchanged: `FixedRawLengthFence.prefixed`, **256 states / 768 rows**,

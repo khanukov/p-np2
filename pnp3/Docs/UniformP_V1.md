@@ -3034,7 +3034,8 @@ P-vs-NP mainline progress.
 
 On the unchanged 256-state `FixedRawLengthFence.prefixed`, the actual raw H17
 predecessor now executes the full countdown. Write `L = a+m`, `R = pairLength a m`,
-`P = 3*R+2`, and `F = P-(L+3+z)`. For a matching tag, decoded width `z >= 2`,
+`P = 3*R+2`, `F = P-(L+3+z)`, and let `d` be the decrement phase's borrow bit.
+For a matching tag, decoded width `z >= 2`,
 sufficient allocation, actual dispatcher witness, and value `v` identified with
 the decremented register (including its high-bit bound):
 

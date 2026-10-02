@@ -1,5 +1,6 @@
 import Tests.TMGateNFixedDelegateRelocationSurfaceTests
 import Tests.TMGateNFirstCommitSurfaceTests
+import Tests.UniformV1FixedRawLengthFenceSuffixSurfaceTests
 import Tests.UniformV1FixedRawLengthFenceContentSurfaceTests
 import Tests.UniformV1FixedRawLengthFenceSurfaceTests
 import Magnification.FinalResult
@@ -6889,3 +6890,27 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.overflowX
 #print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.overflowW
 #print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.overflowTape
+
+-- G3t direct production and full-proposition surface roots.
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.h16SuffixClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.h17SuffixClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.h17RawClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.h17Deadline
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.fencedDecTape
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.fencedDecrementConfig
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.raw_fenced_h17_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.raw_fenced_h17_trace
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.raw_fenced_h17_cells
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.h17_clock_bound
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.raw_fenced_h17_allocated
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.suffix_head_bound
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceSuffixSurfaceTests.check_raw_fenced_h17_exact
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceSuffixSurfaceTests.check_raw_fenced_h17_trace
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceSuffixSurfaceTests.check_raw_fenced_h17_cells
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceSuffixSurfaceTests.check_h17_clock_bound
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceSuffixSurfaceTests.check_raw_fenced_h17_allocated
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceSuffixSurfaceTests.check_suffix_head_bound
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceSuffixSurfaceTests.check_overflow_h17_from_generic
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceSuffixSurfaceTests.check_width_two_physical_zero_payload
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceSuffixSurfaceTests.check_width_two_virtual_payload
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceSuffixSurfaceTests.check_pending_dispatcher_h17

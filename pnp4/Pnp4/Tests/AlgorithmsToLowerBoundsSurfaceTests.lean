@@ -1,3 +1,4 @@
+import Pnp4.Frontier.ContractExpansion.ContentRawFencedDecrementBridge
 import Complexity.Uniform.V1.FixedRawLengthFenceHandoff
 import Pnp4.AlgorithmsToLowerBounds.BasicCircuitClasses
 import Pnp4.AlgorithmsToLowerBounds.Growth
@@ -8065,3 +8066,33 @@ end Pnp4.Tests.G3rRawLengthFenceInfrastructure
 #print axioms Pnp4.Tests.G3rRawLengthFenceInfrastructure.check_install_trace
 #print axioms Pnp4.Tests.G3rRawLengthFenceInfrastructure.check_raw_fence_handoff_exact
 #print axioms Pnp4.Tests.G3rRawLengthFenceInfrastructure.check_resource_bounds
+
+namespace Pnp4.Tests.G3tRawFencedDecrementInfrastructure
+open AlgorithmsToLowerBounds Pnp4.Frontier.ContractExpansion Pnp3.Complexity.Uniform.V1
+open PairEncoding FixedRawLengthFence
+
+theorem check_raw_fenced_h17_parsed_target (k : Nat) {a m : Nat} (x : Bitstring a) (w : Bitstring m)
+    {pr : Sigma fun r : Nat =>
+      PrefixInput (Pnp4.Frontier.treeMCSPSearchProblem (thresholdPoly k)
+        (Pnp4.Frontier.TreeMCSPSearchWitnessEncoding.ofCodec (treeCircuitWitnessCodec (thresholdPoly k))))
+        (treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k)) r)}
+    (hpr : contentInput? (treeCircuitWitnessCodec (thresholdPoly k)) (Fin.append x w) = some pr)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true) (hn : 3 ≤ pr.2.n) :
+    let B := allocation (pairLength a m)
+    pr.2.n = pr.1 ∧
+    ∃ (zeros C : Nat) (q : Fin FixedGammaPayloadDispatcher.stateCount),
+      2 ≤ zeros ∧ FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some zeros ∧
+      contentHeader? (Fin.append x w) = some (pr.2.n, 2*zeros+1) ∧ C ≤ 2*(a+m)*(a+m) ∧
+      FixedGammaPayloadDispatcherFirstArrival.StrictFirstTerminalAt B x w C q ∧
+      let d := FixedGammaTargetRegisterDecrement.borrow x w zeros
+      let T := h17RawClock a m zeros C d
+      let e := prefixed.run T (initialConfig prefixed B (encodePair x w))
+      T ≤ h17Deadline (pairLength a m) ∧ e.state.val = 245 ∧ e.head.val = a+m+1+zeros-d ∧
+      e.tape = fencedDecTape B x w zeros ∧
+      (∀ j : Nat, j ≤ zeros → a+m+1+j < tapeLength (pairLength a m) B ∧
+        ∀ i : Fin (tapeLength (pairLength a m) B), i.val = a+m+1+j →
+          e.tape i = some (pr.2.n.testBit (zeros-j))) ∧
+      (∀ b : Nat, zeros < b → pr.2.n.testBit b = false) :=
+  raw_fenced_h17_parsed_target k x w hpr htag hn
+end Pnp4.Tests.G3tRawFencedDecrementInfrastructure
+#print axioms Pnp4.Tests.G3tRawFencedDecrementInfrastructure.check_raw_fenced_h17_parsed_target

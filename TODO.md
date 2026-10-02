@@ -330,6 +330,72 @@ composed accept is still the countdown's phase-local `qDone`, G3m's two inherite
 forward-direction only with the mismatched one timed only at the gate's length-only deadline, and G3m
 likewise constructs no `ContentVerifierBridge` or other pnp4 bridge, no fence, no raw-input acceptance
 and no advice-freedom claim, so it too is no P-vs-NP mainline progress.
+**Part A G3q — Infrastructure: executed sentinel → unchanged G3p handoff H1.**
+`FixedPairSentinelCursorHoleTagRemovalShiftAlignmentCountdown.machine` is exactly
+`FixedPairConcatSentinel.machine.seq
+FixedPairSeparatorCursorHoleTagRemovalShiftAlignmentCountdown.machine`:
+**208 states / 624 rows**, start 0, accept 206, reject 207, G3p entry 7.
+All seventeen **named operational handoffs** are now executed in this chain.
+This closes H1 execution, not the semantic verifier or either P-vs-NP source obligation.
+
+`raw_suffix` and `handoff_exact` start from literal raw `initialConfig` on every
+raw word and every allocation budget B, including zero. With raw length
+`R = pairLength a m = 2*a+1+m` and content length `L = a+m`, H1 executes at
+`S0 = 2*R+1`, strictly confined to the five sentinel work controls before S0.
+The complete successor has state 7, literal head zero and `sentinelTape`.
+Raw cell R is blank; phase-local cell R is `some true`, even at B=0.
+The three live H1 rows on arbitrary raw words are start/blank, back-false/blank,
+and back-true/blank. Only the latter two occur on encoded pairs: they restore
+the saved first **raw** bit by a write/stay transition. The three dead
+accept-source rows are not additional live handoffs. The old verdict copies
+5/6 are neither the start nor transition targets. Sentinel steps before H1
+are clamp-free; the inherited removal-origin left clamp is retained.
+
+H2 follows at `S0 + 2*a+2`, in state 12, head `2*a`, with the whole sentinel
+tape unchanged. The pre-H2 row is state 9/nonblank → state 12/same bit/left,
+from positive address `2*a+1`. H3/H4/H5/H6/H7 states are 15/24/31/57/61;
+full suffix transport preserves the physical allocation `Config 208 R B`
+through compaction and countdown. Time through H2 is `6*a+2*m+5 ≤ 3*R+2`.
+Malformed syntax rejection is proved at `3*R+3+s` for every s, retaining
+head `R+1` and the entire sentinel tape, under exactly `decodePair raw = none`
+and **B>0**. A literal B=0 counterexample prevents dropping that restriction.
+Both inherited content rejection implications persist at all later deadlines.
+
+`raw_countdown_drained` retains exactly eight G3p premises: matching tag;
+gamma width for `Fin.append x w`; dispatcher `StrictFirstTerminalAt B x w C q`;
+`2 ≤ zeros`; `v ≤ F`; `zeros+2+F ≤ a+B`; identification of every register bit
+with `decBit x w zeros (borrow x w zeros)`; and zero high bits of v.
+It executes from raw input at `S0 + G3p.cursorChainClock C a m zeros d v`,
+where `d = borrow x w zeros`, to literal accept 206, head `L+2+zeros`, the
+whole `loopTape B x w zeros 0 v`, full configuration equality and persistence.
+C/q/v/F are theorem-side run/value descriptions; no transition takes them.
+The dispatcher q retains its dispatcher-control type and strict exclusion of
+all earlier terminals; no successful-q premise is added. F is only a room
+bound, and the bit premises do not supply a length-only polynomial cap.
+The closed literal witness discharges all eight premises at
+`a=8,m=9,B=22,zeros=4,C=18,q=qHasOne,d=0,v=F=24` and runs for
+**3044 = 53+2991 steps**, accept 206, head 23, all 49 tape cells pinned.
+Its H1–H7 times are 53/71/72/178/242/1832/1852; H5 head 27, H7 head 17,
+and the removal-origin clamp occurs at 176. Register cells 18–22 are false,
+23 blank, marks 24–47 true, and 48 blank. This is execution nonvacuity,
+not `ContentAccepts` nonvacuity or first arrival of composed accept.
+
+Explicitly open: runtime-enforced fence/cap and overflow rejection; full parser
+fields, parser→GN encoding/configuration bridge, and gate/witness verification
+(the frozen GN track remains separate); identification of the executed register
+with the same authoritative dependent parser field `pr.2.n`; whole-machine
+length-only polynomial runtime, budget domination, externally fixed polynomial
+allocation, and operational advice freedom; V1 Option Bool/pair-encoded
+`UniformTM` to legacy Boolean/`concatBitstring` `TM.runConfig` conversion with
+time/space/acceptance accounting; content acceptance equivalence and rejection
+completeness (timeout/nonacceptance is not rejection); `ContentVerifierBridge`,
+canonical NP witnesses, `SearchMCSPWeakLowerBound`, and
+`VerifiedNPDAGLowerBoundSource`. Since 3044>B=22, allocation is visibly not a
+runtime deadline. The accepted-content pnp4 bridge remains at G3e; no new
+pnp4 bridge instance is supplied. This is Infrastructure, not P-vs-NP mainline progress.
+
+The following G3p record is historical (sixteen executed, H1 then remaining).
+
 **Part A G3p — Infrastructure: executed cursor → unchanged G3o handoff H2.**
 `FixedPairSeparatorCursorHoleTagRemovalShiftAlignmentCountdown` composes the
 unchanged five-state `FixedPairSeparatorCursor` with G3o using `UniformTM.seq`:

@@ -171,7 +171,8 @@ through H7. Empty pairs are included (their raw encoding has length one).
 `FixedRawLengthFenceOverflowWitness` supplies the separate closed witness
 `x=1`, `w=011001000000111111`, raw `011011001000000111111`, with
 `a=1,m=18,N=19,R=21,B=45`: 67 allocated cells, false fence at 65, width 5.
-The actual copied register is 63; H17 has decremented it to 62.
+The decremented register is 62; therefore the pre-H17 copied value is 63
+(an arithmetic inference from the borrow-free decrement).
 `overflow_values` proves the matching tag, gamma width, original dispatcher's
 strict first terminal at C=21 in `qHasOne`, borrow zero and the actual digit
 identities. This is not identification with a returned `contentInput?` object.

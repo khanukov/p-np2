@@ -3064,8 +3064,8 @@ and initialization, malformed/failed-check rejection completeness, final verifie
 acceptance equivalence, all-input resource bounds, and the V1/legacy model bridge.
 Countdown phase acceptance is not content-verifier correctness. No lower-bound
 source obligation is reduced. Frozen TMVerifier paths and transition tables are
-unchanged. Validation is targeted through `pnp2-lake lane-a`; the exclusive full
-check is deliberately omitted by the slice instruction.
+unchanged. The targeted `pnp2-lake lane-a` build and globally exclusive
+17-step `pnp2-full-check` both passed before release.
 
 The following G3t record is historical; G3u closes its generic countdown gap.
 

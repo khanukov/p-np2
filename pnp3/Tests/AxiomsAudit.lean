@@ -1,3 +1,4 @@
+import Tests.UniformV1FixedRawLengthFenceContentSurfaceTests
 import Tests.UniformV1FixedRawLengthFenceSurfaceTests
 import Magnification.FinalResult
 import Magnification.AC0AtlasBridge
@@ -6828,3 +6829,35 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.g3qEntry
 
 #print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceSurfaceTests.check_endpoint_definitions
+
+/-! G3s Infrastructure: every new public theorem and full named surface. -/
+#print axioms Pnp3.Complexity.Uniform.V1.UniformTM.run_update_of_unvisited
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.raw_fenced_content_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.raw_fenced_content_trace
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.content_prefix_resources
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.overflow_values
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.overflow_h17_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.overflow_prereject_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.overflow_reject_row
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.overflow_reject_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.overflow_fence_trace
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceContentSurfaceTests.check_run_update_of_unvisited
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceContentSurfaceTests.check_raw_fenced_content_exact
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceContentSurfaceTests.check_raw_fenced_content_trace
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceContentSurfaceTests.check_content_prefix_resources
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceContentSurfaceTests.check_overflow_values
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceContentSurfaceTests.check_overflow_h17_exact
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceContentSurfaceTests.check_overflow_prereject_exact
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceContentSurfaceTests.check_overflow_reject_row
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceContentSurfaceTests.check_overflow_reject_exact
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceContentSurfaceTests.check_overflow_fence_trace
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceContentSurfaceTests.check_allocated_content
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceContentSurfaceTests.check_empty_pair
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceContentSurfaceTests.check_mixed_pair
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceContentSurfaceTests.check_witness_layout
+#print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceContentSurfaceTests.check_countdown_boundary
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.contentClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.fencedContentTape
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.overflowX
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.overflowW
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.overflowTape

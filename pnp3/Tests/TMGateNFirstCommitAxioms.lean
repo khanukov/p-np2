@@ -1,0 +1,30 @@
+import Tests.TMGateNFirstCommitSurfaceTests
+import Tests.TMGateNFixedDelegateRelocationSurfaceTests
+
+/-! Direct theorem and full-proposition surface roots. -/
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnFirstReturnedConfig_eq_physical
+#print axioms Pnp3.Tests.TMGateNFirstCommitSurface.check_gnFirstReturnedConfig_eq_physical
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_firstReturned_commit_exact
+#print axioms Pnp3.Tests.TMGateNFirstCommitSurface.check_gnCS_firstReturned_commit_exact
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_encodeGN_firstCommit_exact
+#print axioms Pnp3.Tests.TMGateNFirstCommitSurface.check_gnCS_encodeGN_firstCommit_exact
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnFirstCommit_structure
+#print axioms Pnp3.Tests.TMGateNFirstCommitSurface.check_gnFirstCommit_structure
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnFirstCommit_scratch_preserved
+#print axioms Pnp3.Tests.TMGateNFirstCommitSurface.check_gnFirstCommit_scratch_preserved
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNFirstCommitProbes.literal_cap_commit
+#print axioms Pnp3.Tests.TMGateNFirstCommitSurface.check_literal_cap_commit
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNFirstCommitProbes.literal_single_gate_commit
+#print axioms Pnp3.Tests.TMGateNFirstCommitSurface.check_literal_single_gate_commit
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNFirstCommitProbes.literal_true_terminal_kernel
+#print axioms Pnp3.Tests.TMGateNFirstCommitSurface.check_literal_true_terminal_kernel
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNFirstCommitProbes.literal_cap_kernel
+#print axioms Pnp3.Tests.TMGateNFirstCommitSurface.check_literal_cap_kernel
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNFirstCommitProbes.literal_false_nonterminal
+#print axioms Pnp3.Tests.TMGateNFirstCommitSurface.check_literal_false_nonterminal
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNFirstCommitProbes.literal_reserved_commit
+#print axioms Pnp3.Tests.TMGateNFirstCommitSurface.check_literal_reserved_commit
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnTransition_returnedFalse
+#print axioms Pnp3.Tests.TMGateNFixedDelegateRelocationSurface.check_gnTransition_returnedFalse
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnTransition_returnedTrue
+#print axioms Pnp3.Tests.TMGateNFixedDelegateRelocationSurface.check_gnTransition_returnedTrue

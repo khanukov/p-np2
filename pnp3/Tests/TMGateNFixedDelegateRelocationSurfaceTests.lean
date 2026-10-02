@@ -104,12 +104,12 @@ theorem check_gnTransition_idle (phase : Fin 1) (scan : Bool) :
 
 theorem check_gnTransition_returnedFalse (phase : Fin 1) (scan : Bool) :
     gnTransition phase .returnedFalse scan =
-      (0, .returnedFalse, scan, .stay) :=
+      (0, .commitRead .seekCursor .r3 false, scan, .stay) :=
   gnTransition_returnedFalse phase scan
 
 theorem check_gnTransition_returnedTrue (phase : Fin 1) (scan : Bool) :
     gnTransition phase .returnedTrue scan =
-      (0, .returnedTrue, scan, .stay) :=
+      (0, .commitRead .seekCursor .r3 true, scan, .stay) :=
   gnTransition_returnedTrue phase scan
 
 theorem check_gnTransition_accept (phase : Fin 1) (scan : Bool) :

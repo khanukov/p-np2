@@ -12,8 +12,8 @@ import Complexity.TMVerifier.TuringToolkit.GateNLocateGrammar
 
 This module defines one closed finite outer control.  Its delegated states carry
 only the already-finite complete `G1M.state`; every outer state remains finite.
-There is no request, result, natural number, base, width, offset, index, or
-runtime datum in the control.  GN-E1a adds a finite lexical scan; GN-E1b
+There is no request, natural number, base, width, offset, index, or
+unbounded runtime datum in the control.  GN-E1a adds a finite lexical scan; GN-E1b
 confirms one blank frame and enters `scratchEntry`; GN-E2-1c activates that row
 with a finite reverse locator and fixed `firstRecord`/`noGate` endpoints.  The
 old `idle` state remains an inert regression sink, while the real start state
@@ -32,7 +32,7 @@ The capstone overlays exactly `[0,W+5)` into a caller-supplied ambient target
 tape, relocates the complete safe source trace, preserves every outside cell at
 every prefix, and executes one further stationary target step into the fixed
 result-indexed returned state.  It adds no exact-list parser, copier, installer,
-runtime base discovery, commit sweep, multi-gate loop, total clock-adequacy
+runtime base discovery, multi-gate loop, total clock-adequacy
 theorem, verdict, or acceptance result.  The scan is lexical only: it does not
 compare slot and record counts or enforce semantic index bounds, and it is not
 equivalent to `decodeGN?`.  The blank-padded tape cannot distinguish an exact
@@ -60,8 +60,10 @@ no values mode or buffer holds a natural number, width, index, request, list,
 gate, clock counter or proof. GN-E2-5d activates `requestReady` with a finite
 read-only reverse `launch` pass, stopping on the scratch request's opening
 `bof` in the fixed delegated G1 start. Downstream execution composes this
-with successful evaluation and interception; commit, next-gate loop, verdict
-and acceptance remain open.
+with successful evaluation and interception. GN-E2-5e activates the returned
+rows with a finite canonical first-commit sweep, latching only the returned
+Boolean. Its next-record and terminal arrivals are stable; next-gate loop,
+verdict and acceptance remain open.
 -/
 
 namespace Pnp3.Internal.PsubsetPpoly.TM
@@ -186,13 +188,31 @@ theorem gnInstallImage_laws :
   · intro frame h
     cases frame <;> simp_all [gnInstallImage, GNInstallAdmissible]
 
+/-- Finite first-return grammar; the result bit is latched separately. -/
+inductive GNCommitMode where
+  | seekCursor | seekOpening | opening | inputs | slots | cursor
+  | tag0 | tag1 | tag2 | tag3 | tag4 | tag5 | arg1 | arg2 | boundary | terminalOutput
+  deriving Fintype, DecidableEq, Repr
+
+/-- The four fixed writes of the canonical first commit. -/
+inductive GNCommitPatch where
+  | slot | spent | cursor | output
+  deriving Fintype, DecidableEq, Repr
+
 set_option synthInstance.maxSize 8192 in
 /-- Fixed GN outer control.  The delegated payload is itself a closed finite
-G1 control state; none of the constructors contains runtime geometry or data. -/
+G1 control state; none of the constructors contains runtime geometry or unbounded data. -/
 inductive GNState where
   | delegated (q : G1M.state)
   | returnedFalse
   | returnedTrue
+  | commitRead (mode : GNCommitMode) (buffer : GNInstallBuffer) (res : Bool)
+  | commitTransfer (res : Bool)
+  | commitBack (patch : GNCommitPatch) (buffer : GNScanBuffer) (res : Bool)
+  | commitWrite (patch : GNCommitPatch) (buffer : GNScanBuffer) (res : Bool)
+  | commitNextBack (buffer : GNScanBuffer)
+  | firstCommitNext
+  | firstCommitTerminal
   | scanning (scan : GNScanState)
   | wordEnd
   | blankConfirm (buffer : GNScanBuffer)
@@ -431,6 +451,90 @@ def gnReturnedState : Bool → GNState
   | false => .returnedFalse
   | true => .returnedTrue
 
+set_option backward.eqns.nonrecursive false in
+/-- Fourth-read dispatch: all unspecified frames reject. Successful probes
+stay on bit three except the terminal separator, which moves to the output. -/
+def gnCommitAdvance (m : GNCommitMode) (f : G1Frame) (res : Bool) :
+    GNState × Move :=
+  match m, f with
+  | .seekCursor, .cursor => (.commitTransfer res, .stay)
+  | .seekCursor, .bof | .seekCursor, .tag | .seekCursor, .index
+  | .seekCursor, .argSep | .seekCursor, .separator | .seekCursor, .data _
+  | .seekCursor, .output false | .seekCursor, .finish =>
+      (.commitRead .seekCursor .r3 res, .left)
+  | .seekOpening, .bof => (.commitRead .opening .p0 res, .stay)
+  | .seekOpening, .separator | .seekOpening, .output false | .seekOpening, .data _ =>
+      (.commitRead .seekOpening .r3 res, .left)
+  | .opening, .bof | .inputs, .data _ => (.commitRead .inputs .p0 res, .right)
+  | .inputs, .output false => (.commitBack .slot (.p2 false false) res, .stay)
+  | .slots, .output false => (.commitRead .slots .p0 res, .right)
+  | .slots, .separator => (.commitRead .cursor .p0 res, .right)
+  | .cursor, .cursor => (.commitBack .spent (.p2 false false) res, .stay)
+  | .tag0, .tag => (.commitRead .tag1 .p0 res, .right)
+  | .tag1, .tag => (.commitRead .tag2 .p0 res, .right)
+  | .tag2, .tag => (.commitRead .tag3 .p0 res, .right)
+  | .tag3, .tag => (.commitRead .tag4 .p0 res, .right)
+  | .tag4, .tag => (.commitRead .tag5 .p0 res, .right)
+  | .tag1, .argSep | .tag2, .argSep | .tag3, .argSep
+  | .tag4, .argSep | .tag5, .argSep => (.commitRead .arg1 .p0 res, .right)
+  | .arg1, .index => (.commitRead .arg1 .p0 res, .right)
+  | .arg1, .argSep => (.commitRead .arg2 .p0 res, .right)
+  | .arg2, .index => (.commitRead .arg2 .p0 res, .right)
+  | .arg2, .finish => (.commitRead .boundary .p0 res, .right)
+  | .boundary, .bof => (.commitBack .cursor (.p2 false false) res, .stay)
+  | .boundary, .separator => (.commitRead .terminalOutput .p0 res, .right)
+  | .terminalOutput, .output false => (.commitBack .output (.p2 false false) res, .stay)
+  | _, _ => (.reject, .stay)
+
+def gnCommitComplete (m : GNCommitMode) (b0 b1 b2 b3 res : Bool) : GNState × Move :=
+  match decodeG1Frame? [b0, b1, b2, b3] with
+  | some f => gnCommitAdvance m f res
+  | none => (.reject, .stay)
+
+/-- Both readers preserve every scanned bit. Invalid direction/buffer pairs reject. -/
+def gnCommitRead (m : GNCommitMode) (b : GNInstallBuffer) (res scan : Bool) :
+    GNState × Bool × Move :=
+  if m = .seekCursor ∨ m = .seekOpening then
+    match b with
+    | .r3 => (.commitRead m (.r2 scan) res, scan, .left)
+    | .r2 b3 => (.commitRead m (.r1 scan b3) res, scan, .left)
+    | .r1 b2 b3 => (.commitRead m (.r0 scan b2 b3) res, scan, .left)
+    | .r0 b1 b2 b3 =>
+        let out := gnCommitComplete m scan b1 b2 b3 res
+        (out.1, scan, out.2)
+    | _ => (.reject, scan, .stay)
+  else
+    match b with
+    | .p0 => (.commitRead m (.p1 scan) res, scan, .right)
+    | .p1 b0 => (.commitRead m (.p2 b0 scan) res, scan, .right)
+    | .p2 b0 b1 => (.commitRead m (.p3 b0 b1 scan) res, scan, .right)
+    | .p3 b0 b1 b2 =>
+        let out := gnCommitComplete m b0 b1 b2 scan res
+        (out.1, scan, out.2)
+    | _ => (.reject, scan, .stay)
+
+def gnCommitTarget : GNCommitPatch → Bool → G1Frame
+  | .slot, res => .data res
+  | .spent, _ => .spent
+  | .cursor, _ => .cursor
+  | .output, res => .output res
+
+def gnCommitWriteExit : GNCommitPatch → Bool → GNState
+  | .slot, res => .commitRead .slots .p0 res
+  | .spent, res => .commitRead .tag0 .p0 res
+  | .cursor, _ => .commitNextBack (.p3 false false false)
+  | .output, _ => .firstCommitTerminal
+
+/-- Four rightward writes; no extra dispatch step is hidden at the exit. -/
+def gnCommitWrite (p : GNCommitPatch) (b : GNScanBuffer) (res : Bool) :
+    GNState × Bool × Move :=
+  let bits := (gnCommitTarget p res).bits
+  match b with
+  | .p0 => (.commitWrite p (.p1 false) res, bits.getD 0 false, .right)
+  | .p1 _ => (.commitWrite p (.p2 false false) res, bits.getD 1 false, .right)
+  | .p2 _ _ => (.commitWrite p (.p3 false false false) res, bits.getD 2 false, .right)
+  | .p3 _ _ _ => (gnCommitWriteExit p res, bits.getD 3 false, .right)
+
 -- Keep the enlarged finite table as one unfolding equation for elaboration.
 set_option backward.eqns.nonrecursive false in
 /-- The exact outer transition table.  Equality tests intercept only the two
@@ -444,8 +548,21 @@ def gnTransition (_phase : Fin 1) (s : GNState) (scan : Bool) :
       else
         let out := G1M.step q scan
         (0, .delegated out.fst, out.snd.fst, out.snd.snd)
-  | .returnedFalse => (0, .returnedFalse, scan, .stay)
-  | .returnedTrue => (0, .returnedTrue, scan, .stay)
+  | .returnedFalse => (0, .commitRead .seekCursor .r3 false, scan, .stay)
+  | .returnedTrue => (0, .commitRead .seekCursor .r3 true, scan, .stay)
+  | .commitRead m b res => (0, gnCommitRead m b res scan)
+  | .commitTransfer res => (0, .commitRead .seekOpening .r3 res, scan, .left)
+  | .commitBack p (.p2 _ _) res => (0, .commitBack p (.p1 false) res, scan, .left)
+  | .commitBack p (.p1 _) res => (0, .commitBack p .p0 res, scan, .left)
+  | .commitBack p .p0 res => (0, .commitWrite p .p0 res, scan, .left)
+  | .commitBack _ _ _ => (0, .reject, scan, .stay)
+  | .commitWrite p b res => (0, gnCommitWrite p b res)
+  | .commitNextBack (.p3 _ _ _) => (0, .commitNextBack (.p2 false false), scan, .left)
+  | .commitNextBack (.p2 _ _) => (0, .commitNextBack (.p1 false), scan, .left)
+  | .commitNextBack (.p1 _) => (0, .commitNextBack .p0, scan, .left)
+  | .commitNextBack .p0 => (0, .firstCommitNext, scan, .left)
+  | .firstCommitNext => (0, .firstCommitNext, scan, .stay)
+  | .firstCommitTerminal => (0, .firstCommitTerminal, scan, .stay)
   | .scanning q =>
       match q.buffer with
       | .p0 => (0, .scanning ⟨q.mode, .p1 scan⟩, scan, .right)
@@ -614,11 +731,11 @@ def gnPoint (bits : List Bool) : Boolcube.Point bits.length := fun i => bits.get
 
 @[simp] theorem gnTransition_returnedFalse (phase : Fin 1) (scan : Bool) :
     gnTransition phase .returnedFalse scan =
-      (0, .returnedFalse, scan, .stay) := rfl
+      (0, .commitRead .seekCursor .r3 false, scan, .stay) := rfl
 
 @[simp] theorem gnTransition_returnedTrue (phase : Fin 1) (scan : Bool) :
     gnTransition phase .returnedTrue scan =
-      (0, .returnedTrue, scan, .stay) := rfl
+      (0, .commitRead .seekCursor .r3 true, scan, .stay) := rfl
 
 @[simp] theorem gnTransition_accept (phase : Fin 1) (scan : Bool) :
     gnTransition phase .accept scan = (0, .accept, scan, .stay) := rfl

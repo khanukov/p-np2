@@ -1,6 +1,54 @@
 # Project Status (current)
 
-**GN-E2-5d / PR #1810 (2026-10-01, Infrastructure only):** the finite
+**GN-E2-5e (2026-10-02, Infrastructure only): canonical first-return commit is closed.**
+`gnCS_firstReturned_commit_exact` has implicit parameters
+`{r : GNProgram} {g : SLGate r.inputs.length}` and explicit parameters
+`(hg : r.program.gates[0]? = some g) (res : Bool)`. It proves
+`TM.runConfig (M := GNM) (gnFirstReturnedConfig r g hg res)
+  (gnFirstCommitSteps r g) = gnFirstCommitConfig r g hg res`.
+`gnCS_encodeGN_firstCommit_exact` additionally assumes
+`(hs : (gnFirstRequest r g).spec = some res)` and proves the same endpoint
+from `GNM.initialConfig (gnPoint (encodeGN r))` after
+`gnFirstLaunchSteps r g + (g1GateDoneSteps (gnFirstRequest r g)+1) +
+  gnFirstCommitSteps r g`. Neither execution theorem assumes room, global
+well-formedness, an execution contract, or second-gate success.
+The separate `gnFirstReturnedConfig_eq_physical` lemma explicitly takes a
+head-bound premise `hr`; its exact signature and all five public endpoint
+signatures are in the [GN-E2-5e record](pnp3/Docs/GN_E2_5E_FIRST_RETURN_COMMIT.md).
+
+The executed first slot write, first-record spent mark and next-cursor advance
+(or single-gate final-output write) are closed. With `N = (encodeGN r).length`,
+`n = r.inputs.length`, `m = r.program.gates.length`,
+`L = gnRecordSize (gnGateFields g)` and `B = 4*(gnRecordsStart r + L)`,
+the local clock is `N + 8*(L+n) + 4*m + 39`; the endpoint is
+`firstCommitTerminal` at `B+8` if `m=1`, otherwise `firstCommitNext` at `B`.
+The full tape is the bits of `encodeGNAtFrames r [res] ++
+  g1OutputFrames (gnFirstRequest r g) res`, with false padding.
+`gnFirstCommit_structure` links this run to `gnCommit? r [] res`;
+`gnFirstCommit_scratch_preserved` preserves every cell at or above `N`.
+
+Scope against base `067b9ff6253dfa746dfe34e591d2739344593eb9`:
+**1093 additions + 12 deletions = 1105 changed Lean LOC across nine Lean files**
+(eight modules plus `lakefile.lean`). Stage (a) is unchanged at
+`a1bd06ee3639879c1b9e4b8563d7c856185a1d86`; its immediate stage-(b) child is
+amended to correct these records under freeze rule 3(b), with no Lean, checker
+pin, manifest or frozen-byte change in the documentation correction.
+Validation is targeted only: prior Lane B build/audit evidence belongs to the
+implementation and original stage-(b) snapshot; this correction runs only
+non-Lean documentation/Git checks and read-only freeze verification.
+No full gate, independent approval, remote CI or owner attestation is claimed
+for the corrected head. The globally exclusive full gate is active elsewhere;
+no Lean build or full check is run here. No push is performed.
+
+**Current open obligations:** arbitrary-stage gate advance/loop, scratch
+reset/reuse, program verdict, GN acceptance, first-arrival minimality, composed
+clock/runtime adequacy, `ContentVerifierBridge`, advice freedom, and Lane B
+N1/N3. The first-return endpoint does not establish readiness for round two.
+No pnp4 bridge, `SearchMCSPWeakLowerBound`, `VerifiedNPDAGLowerBoundSource`,
+or P-vs-NP mainline progress is supplied. Earlier dated snapshots below retain
+their historical scope; their validation does not certify this head.
+
+**Historical GN-E2-5d / PR #1810 (2026-10-01, Infrastructure only):** the finite
 `requestReady` launch executes the installed request back to its opening `bof`
 and enters the fixed G1 start. `gnCS_encodeGN_firstLaunch_exact` assumes only
 `hg`; output-done and first return additionally require `spec = some res`.
@@ -29,7 +77,7 @@ kernel fixture checks heads zero and four plus a nine-step persistence instance;
 the generic theorem proves stable rejection for every extra step. The new
 endpoint and fixture have named full-proposition surfaces and direct roots in
 both audits (40 focused roots total). The canonical launch/return propositions
-retain their existing premises. The current PR scope against `origin/main`
+retain their existing premises. That GN-E2-5d PR scope against `origin/main`
 is **893 additions + 17 deletions = 910 changed Lean LOC**, across **eight
 modules plus lakefile.lean**, below both caps.
 
@@ -43,9 +91,11 @@ the earlier APPROVE verdicts and 17-step gate apply only to `58c33441`.
 Fresh full-gate/review results, remote CI and owner attestation at a future
 release head are not claimed. This correction is committed locally, with no push.
 
-Returned-bit commit, cursor/spent advance, repeated gates, verdict, GN
-acceptance, first-arrival minimality, composed runtime adequacy,
-`ContentVerifierBridge`, and Lane B N1/N3 remain open. No pnp4 bridge,
+At the GN-E2-5d snapshot, returned-bit commit, cursor/spent advance, repeated
+gates, verdict, GN acceptance, first-arrival minimality, composed runtime
+adequacy, `ContentVerifierBridge`, and Lane B N1/N3 remained open. GN-E2-5e
+closes the first-return commit and its first cursor/spent advance as stated
+above. No pnp4 bridge,
 `SearchMCSPWeakLowerBound` or `VerifiedNPDAGLowerBoundSource` is supplied;
 no P-vs-NP mainline progress is claimed.
 
@@ -79,9 +129,11 @@ reviews both reported **APPROVE**. PR #1808 carries the `Infrastructure` and
 CodeQL and freeze-policy runs. The final raw CI rollup and a fresh agentic review
 of this release-record correction remain merge gates. Exact evidence and scope
 limits are recorded in the GN-E2-5c record linked above.
-Request launch, delegation, returned-bit commit, repeated gates, verdict,
-acceptance, first arrival and new-clock/runtime adequacy remain open, together
-with Lane B's N1/N3 carry-forward items. No P-vs-NP source obligation is reduced.
+At the GN-E2-5c snapshot, request launch, delegation, returned-bit commit,
+repeated gates, verdict, acceptance, first arrival and new-clock/runtime
+adequacy remained open, together with Lane B's N1/N3 carry-forward items.
+GN-E2-5d and GN-E2-5e subsequently close the first launch/return and commit.
+No P-vs-NP source obligation is reduced.
 
 The following GN-E2-5b and earlier records describe their dated snapshots;
 their then-open values-list/tail work is discharged only by GN-E2-5c above.
@@ -135,7 +187,7 @@ repository category remains
 `Infrastructure`; the existing `tmverifier-unfreeze` labeling intent remains.
 No remote label or attestation is issued by this local correction.
 
-Updated: 2026-10-01
+Updated: 2026-10-02
 
 **Historical Lane B integration update (2026-09-29, Infrastructure):**
 the GN-E2-5a branch's third
@@ -4327,18 +4379,18 @@ fixed-slice `PpolyDAG` membership:
 
 ### Canonical-track TM-verifier deliverable (frozen historical roadmap)
 
-> **Freeze note (GN-E2-5c, 2026-10-01).** The broader roadmap remains paused.
-> The current tree is `b2762b378800f81e6adaaa3ecbe6b277ddd59482`, from stage-(a) provenance
-> `d1694e4b8c3e4838fb38d682f4c10d5ffacc6eb8`, repinned by its direct stage-(b) child.
-> This seventh migration since `42c59881` executes the authorized values-list
-> induction and fixed tail after GN-E2-5b, on exact main base
-> `b71eb6ca3ff4101d6d1596dfb4fc06ce63f845c7`. The nonempty first request is
-> fully installed at `requestReady`; launch, delegation, returned-bit commit,
-> looping, verdict, acceptance and new-clock/runtime adequacy remain open.
-> The header and GN-E2-5c record state the targeted build and freeze evidence;
-> no full gate or independent/remote review transfers from an older slice.
-> N1/N3 remain assigned to Lane B. Active model-repair work otherwise uses the
-> uniform complexity foundation outside TMVerifier.
+> **Freeze note (GN-E2-5e, 2026-10-02, Infrastructure only).** The broader
+> roadmap remains paused. The authoritative tree is
+> `17eded124b0b76fb02ceca62b8ad82d91d0fe288`, from stage-(a) provenance
+> `a1bd06ee3639879c1b9e4b8563d7c856185a1d86`, repinned by its immediate
+> stage-(b) child. Canonical first-request launch, return and first-return
+> commit are closed under the header's exact hypotheses. Arbitrary-stage
+> gate advance/loop, scratch reuse, verdict, acceptance, first-arrival
+> minimality, composed runtime adequacy, ContentVerifierBridge, advice
+> freedom and N1/N3 remain open. Validation is targeted only; no full gate,
+> review approval or remote CI is claimed for this corrected head.
+> Active model-repair work otherwise uses the uniform complexity foundation
+> outside TMVerifier.
 
 > **Scope note.**  After the canonical iso-strong / promise-YES
 > conclusion-side refutations recorded above, the canonical asymptotic

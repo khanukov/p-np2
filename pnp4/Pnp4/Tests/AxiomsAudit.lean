@@ -1,3 +1,4 @@
+import Pnp4.Tests.AlgorithmsToLowerBoundsSurfaceTests
 import Pnp4.Frontier.ContractExpansion.ContentRawFencedDecrementBridge
 import Complexity.Uniform.V1.FixedRawLengthFenceHandoff
 import Pnp4.AlgorithmsToLowerBounds.AC0pAsymptoticBridge
@@ -1110,5 +1111,10 @@ end Pnp4
 #print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.raw_fence_handoff_exact
 -- The four new named surface mirrors are directly audited where declared.
 
--- G3t direct production root; its named surface mirror is audited where declared.
+-- G3t direct production root and its named surface mirror.
 #print axioms Pnp4.Frontier.ContractExpansion.raw_fenced_h17_parsed_target
+#print axioms Pnp4.Tests.G3tRawFencedDecrementInfrastructure.check_raw_fenced_h17_parsed_target
+
+-- G3u Infrastructure: same dependent parsed target, fenced execution.
+#print axioms Pnp4.Frontier.ContractExpansion.raw_fenced_countdown_parsed_target
+#print axioms Pnp4.Tests.G3uRawFencedCountdownInfrastructure.check_raw_fenced_countdown_parsed_target

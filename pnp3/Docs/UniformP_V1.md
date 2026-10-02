@@ -3030,6 +3030,45 @@ timeout guard.  The table is fixed and complete but not claimed state-minimal.  
 `SearchMCSPWeakLowerBound` nor `VerifiedNPDAGLowerBoundSource` is reduced.  It is infrastructure, not
 P-vs-NP mainline progress.
 
+**Part A G3u — Infrastructure: generic raw fenced countdown.**
+
+On the unchanged 256-state `FixedRawLengthFence.prefixed`, the actual raw H17
+predecessor now executes the full countdown. Write `L = a+m`, `R = pairLength a m`,
+`P = 3*R+2`, `F = P-(L+3+z)`, and let
+`d = FixedGammaTargetRegisterDecrement.borrow x w z` be the decrement phase's
+borrow length.
+For a matching tag, decoded width `z >= 2`,
+sufficient allocation, actual dispatcher witness, and value `v` identified with
+the decremented register (including its high-bit bound):
+
+- `v <= F` reaches state 254 on the separator with a zero register, exactly `v`
+  tally marks, retained H17 low content, and the installed false fence.
+- `F < v` literally rejects in state 255 at `P`, with register `v-F-1`, exactly
+  `F` marks, and the same false fence. Equality belongs to success.
+
+Both public theorems are full raw `UniformTM.run` configuration equalities with
+persistence. The suffix clocks are `d+2+v*v+v*(2*z+6)+2*z+5` for success and
+`d+2+F*F+F*(2*z+6)+2*z+F+6` for rejection; each adds G3t's actual H17 clock.
+The old round proofs now expose checkpoints/head bounds, discharging fence
+avoidance before the rejecting read. No unfenced execution replaces a raw run.
+The branch deadlines are at most `128*(R+1)^2` with a bounded actual dispatcher;
+allocation remains `16*(R+1)^2`. Time and allocation are separate parameters.
+
+The pnp4 theorem retains the **same** dependent `pr` from `contentInput?`, with
+`pr.2.n = pr.1`, and executes this dichotomy for `v = pr.2.n`. Its success tape
+exposes the zero register, separator, exact tally, low content and false fence.
+Raw executable/full-tape regressions cover `F-1`, `F`, `F+1`, and the G3s word.
+
+Still open: other parsed fields and exact consumption, dependent GN construction
+and initialization, malformed/failed-check rejection completeness, final verifier
+acceptance equivalence, all-input resource bounds, and the V1/legacy model bridge.
+Countdown phase acceptance is not content-verifier correctness. No lower-bound
+source obligation is reduced. Frozen TMVerifier paths and transition tables are
+unchanged. The targeted `pnp2-lake lane-a` build and globally exclusive
+17-step `pnp2-full-check` both passed before release.
+
+The following G3t record is historical; G3u closes its generic countdown gap.
+
 **Part A G3t — Infrastructure: generic fenced raw execution through H17.**
 `FixedGammaSuffixFootprint` and `FixedRawLengthFenceSuffix` extend the actual raw
 execution of the unchanged 256-state `FixedRawLengthFence.prefixed` through
@@ -3072,9 +3111,8 @@ unfinished. No `SearchMCSPWeakLowerBound`, `VerifiedNPDAGLowerBoundSource`, or
 `NP_not_subset_PpolyDAG` obligation is reduced. This is Infrastructure, not
 P-vs-NP mainline progress.
 
-The following G3s record is historical; of its first open obligation G3t narrows
-only the generic fenced H8–H17 preservation half, and the generic countdown
-success/overflow dichotomy stays open exactly as stated there.
+The following G3s record is historical. G3t and G3u together close its first
+listed obligation.
 
 **Part A G3s — Infrastructure: generic fenced H1–H7 and one raw overflow rejection.**
 The machine is unchanged: `FixedRawLengthFence.prefixed`, **256 states / 768 rows**,
@@ -3135,7 +3173,9 @@ execution, not `RejectsWithin ... 45`. Inherited left clamps remain; the suffix
 is not claimed clamp-free. The unfenced drain theorem is never substituted for
 a run on the installed fence.
 
-The following obligations remain open, in order:
+At the G3s snapshot, the following obligations remained open. G3t and G3u later
+together close item 1, and G3u identifies the executed countdown target with
+`pr.2.n`; the remaining fields in item 2 and items 3–6 stay open.
 
 1. Generic fenced H8–H17 preservation and generic countdown success/overflow
    from the actual predecessor configuration; G3s proves only the stated raw witness.

@@ -3,6 +3,9 @@ import Complexity.Uniform.V1.FixedGammaTargetRegisterDecrement
 /-!
 # The gamma target unary countdown round (Part A G2s-a)
 
+G3v additionally exports `exhaust_preterminal`; the fenced raw consumer uses it
+to prove strict success arrival. The older exhaustion propositions remain unchanged.
+
 The original slice description below is historical. G3u adds `entry_head_bound`,
 `round_traced` and `exhaust_traced` without changing the old execution propositions
 or transition table. `FixedRawLengthFenceCountdown` uses these new footprints to
@@ -911,19 +914,21 @@ theorem round_generic {a m B zeros v r : Nat} (x : Bitstring a) (w : Bitstring m
 /-- **The exhaustion.**  Out of a `qLoop` configuration whose register is all `false`, the borrow
 walks off the register's left end onto the boundary blank, `qFin` walks back clearing every digit it
 set, and after exactly `zeroClock zeros = 2*zeros + 5` steps the machine is in `qDone` on the
-separator blank with the tape **unchanged**, marks and all.  The persistence conjunct is not first
-arrival: `qDone` absorbs, so the endpoint holds at every later time, and no theorem here says
-`qDone` is entered for the first time at `zeroClock zeros`.  The final conjunct bounds every head
-position before the endpoint for the G3u fence-framing argument. `qDone` is an internal control tag
-of this phase, not language acceptance. -/
-theorem exhaust_traced {a m B zeros r : Nat} (x : Bitstring a) (w : Bitstring m)
+separator blank with the tape **unchanged**, marks and all. The persistence conjunct alone is not
+first arrival: `qDone` absorbs, so the endpoint holds at every later time. The second conjunct bounds
+every head position before the endpoint for the G3u fence-framing argument. The final conjunct
+records the restored `qFin` predecessor used by G3v to establish strict raw success arrival.
+`qDone` is an internal control tag of this phase, not language acceptance. -/
+private theorem exhaust_checkpoints {a m B zeros r : Nat} (x : Bitstring a) (w : Bitstring m)
     (hroom : a + m + 2 + zeros < tapeLength (pairLength a m) B)
     (c : Config stateCount (pairLength a m) B) (hq : c.state = qLoop)
     (hh : c.head.val = a + m + 2 + zeros) (ht : c.tape = loopTape B x w zeros 0 r) :
     let e := machine.run (zeroClock zeros) c
     (e.state = qDone ∧ e.head.val = a + m + 2 + zeros ∧ e.tape = loopTape B x w zeros 0 r ∧
       (∀ t, zeroClock zeros ≤ t → machine.run t c = e)) ∧
-    (∀ t, t ≤ zeroClock zeros → (machine.run t c).head.val ≤ a+m+2+zeros) := by
+    (∀ t, t ≤ zeroClock zeros → (machine.run t c).head.val ≤ a+m+2+zeros) ∧
+    (let p := machine.run (zeroClock zeros-1) c
+     p.state = qFin ∧ p.head.val = a+m+2+zeros ∧ p.tape = loopTape B x w zeros 0 r) := by
   have hc : At c qLoop (a + m + 2 + zeros) (loopNat B x w zeros 0 r) := At_of hq hh ht
   have hB : At (machine.run (zeros + 2) c) qBorrow (a + m) (clearNat B x w zeros r 0) := by
     rw [← mix_eq_clear]
@@ -946,7 +951,7 @@ theorem exhaust_traced {a m B zeros r : Nat} (x : Bitstring a) (w : Bitstring m)
     unfold zeroClock
     omega
   obtain ⟨h1, h2, h3⟩ := At_tape hE
-  refine ⟨⟨h1, h2, h3, fun t hts => ?_⟩, ?_⟩
+  refine ⟨⟨h1, h2, h3, fun t hts => ?_⟩, ?_, ?_⟩
   · rw [show t = zeroClock zeros + (t - zeroClock zeros) by omega, machine.run_add]
     exact machine.run_accept _ h1 _
   · intro t htime
@@ -958,6 +963,35 @@ theorem exhaust_traced {a m B zeros r : Nat} (x : Bitstring a) (w : Bitstring m)
       · have h := (head_distance c (zeros+3) t (by omega)).2
         rw [hC.2.1] at h
         unfold zeroClock at *; omega
+  · simpa only [zeroClock, show 2*zeros+5-1 = 2*zeros+4 by omega] using At_tape hD
+
+/-- **The exhaustion.** Out of a `qLoop` configuration whose register is all `false`, the borrow
+walks off the register's left end onto the boundary blank, `qFin` walks back clearing every digit it
+set, and after exactly `zeroClock zeros = 2*zeros + 5` steps the machine is in `qDone` on the
+separator blank with the tape **unchanged**, marks and all. The persistence conjunct is not first
+arrival: `qDone` absorbs, so the endpoint holds at every later time, and this proposition does not
+say `qDone` is entered for the first time at `zeroClock zeros`. The final conjunct bounds every head
+position before the endpoint for the G3u fence-framing argument. `qDone` is an internal control tag
+of this phase, not language acceptance. -/
+theorem exhaust_traced {a m B zeros r : Nat} (x : Bitstring a) (w : Bitstring m)
+    (hroom : a + m + 2 + zeros < tapeLength (pairLength a m) B)
+    (c : Config stateCount (pairLength a m) B) (hq : c.state = qLoop)
+    (hh : c.head.val = a + m + 2 + zeros) (ht : c.tape = loopTape B x w zeros 0 r) :
+    let e := machine.run (zeroClock zeros) c
+    (e.state = qDone ∧ e.head.val = a + m + 2 + zeros ∧ e.tape = loopTape B x w zeros 0 r ∧
+      (∀ t, zeroClock zeros ≤ t → machine.run t c = e)) ∧
+    (∀ t, t ≤ zeroClock zeros → (machine.run t c).head.val ≤ a+m+2+zeros) := by
+  have h := exhaust_checkpoints x w hroom c hq hh ht
+  exact ⟨h.1,h.2.1⟩
+
+/-- G3v: the restored nonterminal checkpoint immediately before success. -/
+theorem exhaust_preterminal {a m B z r : Nat} (x : Bitstring a) (w : Bitstring m)
+    (hroom : a+m+2+z < tapeLength (pairLength a m) B)
+    (c : Config stateCount (pairLength a m) B) (hq : c.state = qLoop)
+    (hh : c.head.val = a+m+2+z) (ht : c.tape = loopTape B x w z 0 r) :
+    let e := machine.run (zeroClock z-1) c
+    e.state = qFin ∧ e.head.val = a+m+2+z ∧ e.tape = loopTape B x w z 0 r :=
+  (exhaust_checkpoints x w hroom c hq hh ht).2.2
 
 /-- Original exhaustion surface, with its unchanged proposition. -/
 theorem exhaust_generic {a m B zeros r : Nat} (x : Bitstring a) (w : Bitstring m)

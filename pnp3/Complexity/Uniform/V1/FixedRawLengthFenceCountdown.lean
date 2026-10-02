@@ -330,6 +330,49 @@ theorem raw_fenced_countdown_success_exact {a m B z C v : Nat}
   rw [prefixed.run_add,he,prefixed.run_accept _ rfl]
 
 set_option maxHeartbeats 800000 in
+/-- G3v: strict first terminal arrival, inferred from the actual fenced predecessor. -/
+theorem raw_fenced_countdown_success_strict {a m B z C v : Nat}
+    {q : Fin FixedGammaPayloadDispatcher.stateCount} (x : Bitstring a) (w : Bitstring m)
+    (hr : 2*pairLength a m+2 ≤ B) (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hg : FixedContentGammaTerminator.gammaZeros? (Fin.append x w) = some z) (hz : 2 ≤ z)
+    (hfirst : FixedGammaPayloadDispatcherFirstArrival.StrictFirstTerminalAt B x w C q)
+    (hv : ∀ j, j ≤ z → v.testBit (z-j) = decBit x w z (borrow x w z) j)
+    (hhigh : ∀ b, z < b → v.testBit b = false) (hcap : v ≤ capacity a m z) :
+    ∀ t, t < countdownSuccessClock a m z C (borrow x w z) v →
+      (prefixed.run t (initialConfig prefixed B (encodePair x w))).state ≠ prefixed.accept ∧
+      (prefixed.run t (initialConfig prefixed B (encodePair x w))).state ≠ prefixed.reject := by
+  obtain ⟨hw,hp,hfit⟩ := geometry x w hg hr
+  obtain ⟨hq,hh,ht⟩ := actual_entry x w hr htag hg hv
+  obtain ⟨hkq,hkh,hkt⟩ := fenced_rounds x w hg hr v v 0 (by omega) le_rfl hhigh _ hq hh ht
+  simp only [Nat.sub_self,Nat.zero_add] at hkt
+  let c := U.run (roundsClock z 0 v) (U.run (borrow x w z+2) (h17Phase x w hg hr))
+  let p : Fin (tapeLength (pairLength a m) B) := ⟨fencePos (pairLength a m),hfit⟩
+  let u := {c with tape := loopTape B x w z 0 v}
+  have he := FixedGammaTargetUnaryCountdown.exhaust_preterminal x w (by omega) u hkq hkh rfl
+  have hb := (FixedGammaTargetUnaryCountdown.exhaust_traced x w (by omega) u hkq hkh rfl).2
+  have hf := frame_run p u (zeroClock z-1)
+    (fun t ht => lt_of_le_of_lt (hb t (by omega)) (by dsimp [p]; omega))
+  rw [frame_source x w p rfl c hkt] at hf
+  have hpre : let e := U.run (zeroClock z-1) c
+      e.state = FixedGammaTargetUnaryCountdown.qFin ∧ e.head.val = a+m+2+z ∧
+      e.tape = countdownTape B x w z 0 v := by
+    rw [hf]; exact ⟨he.1,he.2.1,frame_tape x w p rfl _ he.2.2⟩
+  have hclock : countdownSuccessClock a m z C (borrow x w z) v-1 =
+      h17RawClock a m z C (borrow x w z)+((borrow x w z+2)+roundsClock z 0 v+(zeroClock z-1)) := by
+    unfold countdownSuccessClock fullClock FixedGammaTargetUnaryCountdownIteration.drainClock zeroClock
+    omega
+  have hraw :
+    let e := prefixed.run (countdownSuccessClock a m z C (borrow x w z) v-1)
+      (initialConfig prefixed B (encodePair x w))
+    e.state.val = 253 ∧ e.head.val = a+m+2+z ∧ e.tape = countdownTape B x w z 0 v := by
+    dsimp only; rw [hclock,raw_tail x w hr htag hg hz hfirst,U.run_add,U.run_add]
+    exact ⟨by rw [(countdown_embed_fields _).1,hpre.1]; rfl,hpre.2⟩
+  intro t ht
+  apply prefixed.no_terminal_of_le (T := countdownSuccessClock a m z C (borrow x w z) v-1) _ ?_ ?_ t (by omega)
+  · intro he; have := congrArg Fin.val he; rw [hraw.1] at this; contradiction
+  · intro he; have := congrArg Fin.val he; rw [hraw.1] at this; contradiction
+
+set_option maxHeartbeats 800000 in
 /-- Exact raw overflow rejection. The final attempted round consumes one further
 register unit before reading false, and preserves that false symbol at the fence. -/
 theorem raw_fenced_countdown_reject_exact {a m B z C v : Nat}

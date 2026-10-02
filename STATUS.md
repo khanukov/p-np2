@@ -190,7 +190,9 @@ unfinished. No `SearchMCSPWeakLowerBound`, `VerifiedNPDAGLowerBoundSource`, or
 `NP_not_subset_PpolyDAG` obligation is reduced. This is Infrastructure, not
 P-vs-NP mainline progress.
 
-The following G3s record is historical; G3t narrows its generic prefix gap.
+The following G3s record is historical; of its first open obligation G3t narrows
+only the generic fenced H8–H17 preservation half, and the generic countdown
+success/overflow dichotomy stays open exactly as stated there.
 
 **Part A G3s — Infrastructure: generic fenced H1–H7 and one raw overflow rejection.**
 The machine is unchanged: `FixedRawLengthFence.prefixed`, **256 states / 768 rows**,

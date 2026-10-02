@@ -8095,3 +8095,4 @@ theorem check_raw_fenced_h17_parsed_target (k : Nat) {a m : Nat} (x : Bitstring 
       (∀ b : Nat, zeros < b → pr.2.n.testBit b = false) :=
   raw_fenced_h17_parsed_target k x w hpr htag hn
 end Pnp4.Tests.G3tRawFencedDecrementInfrastructure
+#print axioms Pnp4.Tests.G3tRawFencedDecrementInfrastructure.check_raw_fenced_h17_parsed_target

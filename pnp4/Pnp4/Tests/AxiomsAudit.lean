@@ -1118,3 +1118,10 @@ end Pnp4
 -- G3u Infrastructure: same dependent parsed target, fenced execution.
 #print axioms Pnp4.Frontier.ContractExpansion.raw_fenced_countdown_parsed_target
 #print axioms Pnp4.Tests.G3uRawFencedCountdownInfrastructure.check_raw_fenced_countdown_parsed_target
+
+-- G3v Infrastructure: same dependent parse, exact raw first-bit execution.
+#print axioms Pnp4.Frontier.ContractExpansion.contentInput?_x_apply_canonical
+#print axioms Pnp4.Tests.G3vRawFirstTableBitInfrastructure.check_contentInput?_x_apply_canonical
+#print axioms Pnp4.Frontier.ContractExpansion.raw_first_table_bit_parsed_target
+#print axioms Pnp4.Tests.G3vRawFirstTableBitInfrastructure.check_raw_first_table_bit_parsed_target
+#print axioms Pnp4.Tests.G3vRawFirstTableBitInfrastructure.check_concrete_dependent_parse

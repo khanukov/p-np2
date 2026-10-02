@@ -1,3 +1,4 @@
+import Pnp4.Frontier.ContractExpansion.ContentRawFencedTableFirstBitBridge
 import Pnp4.Frontier.ContractExpansion.ContentRawFencedDecrementBridge
 import Complexity.Uniform.V1.FixedRawLengthFenceHandoff
 import Pnp4.AlgorithmsToLowerBounds.BasicCircuitClasses
@@ -8128,3 +8129,88 @@ theorem check_raw_fenced_countdown_parsed_target (k : Nat) {a m : Nat} (x : Bits
             countdownTape B x w z (pr.2.n-capacity a m z-1) (capacity a m z)⟩) :=
   raw_fenced_countdown_parsed_target k x w hpr htag hn
 end Pnp4.Tests.G3uRawFencedCountdownInfrastructure
+
+namespace Pnp4.Tests.G3vRawFirstTableBitInfrastructure
+open Pnp4.Frontier Pnp4.Frontier.ContractExpansion Pnp4.AlgorithmsToLowerBounds
+open Pnp3.Complexity.Uniform.V1 PairEncoding FixedRawLengthFence
+
+theorem check_contentInput?_x_apply_canonical
+    {threshold : Nat → Nat} (codec : TreeCircuitWitnessCodec threshold)
+    {N : Nat} (word : PrefixBitVec N)
+    {pr : Sigma fun r : Nat =>
+      PrefixInput (treeMCSPSearchProblem threshold
+        (TreeMCSPSearchWitnessEncoding.ofCodec codec)) (treeMCSPPrefixM codec r)}
+    (hpr : contentInput? codec word = some pr)
+    (j : Fin (Pnp3.Models.Partial.tableLen pr.2.n)) :
+    pr.2.x j = padRead word (tagLen + gammaLen pr.2.n + j.val) :=
+  contentInput?_x_apply_canonical codec word hpr j
+
+theorem check_raw_first_table_bit_parsed_target
+    (k : Nat) {a m : Nat} (x : Bitstring a) (w : Bitstring m)
+    {pr : Sigma fun r : Nat =>
+      PrefixInput (treeMCSPSearchProblem (thresholdPoly k)
+        (TreeMCSPSearchWitnessEncoding.ofCodec (treeCircuitWitnessCodec (thresholdPoly k))))
+        (treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly k)) r)}
+    (hpr : contentInput? (treeCircuitWitnessCodec (thresholdPoly k))
+      (Fin.append x w) = some pr)
+    (htag : FixedContentTagGate.tagMatches (Fin.append x w) = true)
+    (hn : 3 ≤ pr.2.n)
+    (htrail : 9 + (gammaLen pr.2.n - 1)/2 < a+m)
+    (hcap : pr.2.n ≤ capacity a m ((gammaLen pr.2.n - 1)/2)) :
+    let z := (gammaLen pr.2.n - 1)/2
+    let B := allocation (pairLength a m)
+    pr.2.n = pr.1 ∧
+    contentHeader? (Fin.append x w) = some (pr.2.n, 2*z+1) ∧
+    ∀ s : Nat,
+      FixedRawFencedTableFirstBit.machine.run
+        (FixedRawFencedTableFirstBit.deadline (pairLength a m)+s)
+        (initialConfig FixedRawFencedTableFirstBit.machine B (encodePair x w)) =
+      ⟨FixedRawFencedTableFirstBit.machine.accept,
+        ⟨a+m+1, by simp only [tapeLength, pairLength]; omega⟩,
+        FixedRawFencedTableFirstBit.outputTape B x w z pr.2.n
+          (pr.2.x ⟨0, by exact Nat.two_pow_pos _⟩)⟩ :=
+  raw_first_table_bit_parsed_target k x w hpr htag hn htrail hcap
+
+private def firstBitWord : Bitstring 14 := fun i => decide (i.val ∈ [0,2,3,6,10,13])
+private def empty : Bitstring 0 := Fin.elim0
+/-- A successful dependent parse with a true first bit, executed at the closed raw deadline. -/
+theorem check_concrete_dependent_parse :
+    ∃ pr : Sigma fun r : Nat =>
+      PrefixInput (treeMCSPSearchProblem (thresholdPoly 0)
+        (TreeMCSPSearchWitnessEncoding.ofCodec (treeCircuitWitnessCodec (thresholdPoly 0))))
+        (treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly 0)) r),
+      contentInput? (treeCircuitWitnessCodec (thresholdPoly 0)) (Fin.append empty firstBitWord) = some pr ∧
+      pr.2.n = 3 ∧ pr.2.x ⟨0,by exact Nat.two_pow_pos _⟩ = true ∧
+      ∀ s : Nat, FixedRawFencedTableFirstBit.machine.run
+        (FixedRawFencedTableFirstBit.deadline 15+s)
+        (initialConfig FixedRawFencedTableFirstBit.machine (allocation 15) (encodePair empty firstBitWord)) =
+        ⟨FixedRawFencedTableFirstBit.machine.accept,⟨15,by decide⟩,
+          FixedRawFencedTableFirstBit.outputTape (allocation 15) empty firstBitWord 2 pr.2.n
+            (pr.2.x ⟨0,by exact Nat.two_pow_pos _⟩)⟩ := by
+  have hg3 : gammaLen 3 = 5 := by norm_num [gammaLen,bitLength,Nat.log2]
+  have hw3 : (treeCircuitWitnessCodec (thresholdPoly 0)).witnessBits 3 = 6 := by
+    change (bitLength 3+4)*(3^0+0)=6
+    norm_num [bitLength,Nat.log2]
+  have hi3 : idxWidth (treeCircuitWitnessCodec (thresholdPoly 0)).witnessBits 3 = 3 := by
+    norm_num [idxWidth,hw3,bitLength,Nat.log2]
+  have hm3 : treeMCSPPrefixM (treeCircuitWitnessCodec (thresholdPoly 0)) 3 = 30 := by
+    norm_num [treeMCSPPrefixM,tagLen,hg3,hw3,hi3,Pnp3.Models.Partial.tableLen]
+  have hh3 : contentHeader? (Fin.append empty firstBitWord) = some (3,5) := by decide
+  have hn : (contentInput? (treeCircuitWitnessCodec (thresholdPoly 0)) (Fin.append empty firstBitWord)).isSome := by
+    apply (contentInput?_isSome_iff_of_header _ _ hh3).2
+    rw [hm3,hg3,hi3,hw3]
+    exact ⟨by decide,0,by decide,by decide,by decide⟩
+  cases hp : contentInput? (treeCircuitWitnessCodec (thresholdPoly 0)) (Fin.append empty firstBitWord) with
+  | none => simp [hp] at hn
+  | some pr =>
+    obtain ⟨c,hh,hnr⟩ := contentInput?_target_eq_contentHeader _ _ hp
+    have hn3 : pr.2.n = 3 := by
+      rw [hh3] at hh; simp only [Option.some.injEq,Prod.mk.injEq] at hh; omega
+    have hx : pr.2.x ⟨0,by exact Nat.two_pow_pos _⟩ = true := by
+      rw [contentInput?_x_apply_canonical _ _ hp]; simp only [hn3,hg3]; decide
+    have he := raw_first_table_bit_parsed_target 0 empty firstBitWord hp (by decide)
+      (by omega) (by rw [hn3,hg3]; decide) (by rw [hn3,hg3]; decide)
+    refine ⟨pr,rfl,hn3,hx,?_⟩
+    simpa only [hn3,hg3] using he.2.2
+
+end Pnp4.Tests.G3vRawFirstTableBitInfrastructure

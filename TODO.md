@@ -409,6 +409,96 @@ The raw regressions derive the existing 2335-step overflow H17 endpoint via the
 new generic theorem and cover width-two physical-zero, virtual, and positive
 pending paths, including a strictly larger allocation.
 
+**Part A G3v — Infrastructure: raw execution of the first truth-table bit.**
+
+`FixedRawFencedTableFirstBit.machine` is exactly G3u's 256-state
+`FixedRawLengthFence.prefixed.seq` the new fixed 11-state suffix: 267 states,
+accept 265, reject 266. The suffix has 33 symbol-driven rows. Its control reads
+no input function, address, width, target, parse, clock, dispatcher witness or
+advice. The old tables, raw encoding, initializer, allocation and interpreter
+are unchanged.
+
+Here `machine.accept` (state 265) is the first-bit suffix's `qDone` embedded
+in the composed machine. Under the stated hypotheses, the raw run reaches
+this absorbing state with the specified full tape. This certifies completion
+of the first-bit operation; it does not establish content-verifier correctness
+or characterize acceptance of the intended language.
+
+Write `L=a+m`, `R=2*a+1+m`, `P=3*R+2`, `F=P-(L+3+z)`, `E=9+2*z`, and
+`H=min L E`. The raw success theorem assumes the matching tag, decoded gamma
+width `z>=2`, `B>=2*R+2`, the actual strict dispatcher witness, low and high
+register-bit identification with `v`, `v<=F`, and **`9+z<L`**. It executes from
+`initialConfig` through the actual fenced countdown, then copies exactly the
+first table bit to `L+1`. The complete result is the countdown success tape
+with only that cell replaced by `some (padRead content E)`; the head is `L+1`.
+The low `finishTape`, separator, exact `v` tally and false fence are preserved.
+The register is no longer entirely zero when the copied bit is true.
+
+The handoff is justified by strict first arrival, proved from the actual
+fenced raw predecessor: state 253 at `T0-1`, separator head, restored tape.
+Absorption excludes both earlier verdicts. The suffix reaches `qRead` at
+`z+6+(L-H)` and finishes at `z+8+2*(L-H)`. These steps add to G3u's exact
+success clock. With the bounded dispatcher, the raw clock is at most
+`144*(R+1)^2`; allocation stays `16*(R+1)^2`. Strict overflow routes directly
+to composed reject 266 with G3u's full rejecting tape/head and clock; it
+requires no positive-payload premise. Equality with capacity is success.
+
+`ContentRawFencedTableFirstBitBridge.lean` supplies
+`contentInput?_x_apply_canonical`, the source-field equality, and
+`raw_first_table_bit_parsed_target`, the conditional full raw execution
+theorem described here.
+
+`raw_first_table_bit_parsed_target` uses the **same dependent `pr`** supplied
+by `contentInput?`. Its caller premises are successful parse, explicit matching
+tag, `3<=pr.2.n`, positive physical payload
+`9+(gammaLen pr.2.n-1)/2<L`, and `pr.2.n<=F` at that width. It constructs the
+allocation, dispatcher and register identifications, and proves the full raw
+configuration at `144*(R+1)^2+s`, for every persistence padding `s`, with
+output **`pr.2.x 0`**, exact tally **`pr.2.n`**, and `pr.2.n=pr.1`.
+Only the chosen deadline is polynomially bounded; arbitrary `s` is not.
+The canonical field-recovery theorem follows from the coupled gamma/slice
+parse witness; it is a source-field equality, not execution by itself.
+All claims are forward implications, with no acceptance converse.
+
+Coverage includes physical false/true, `E=L-1`, boundary `E=L`, and virtual
+first bits after a partially physical gamma payload, including the minimal
+trail `z=2,L=12`. The strict positive-payload premise is essential. At
+`z=2,L=11` the wholly virtual payload leaves no erased trail: a finite probe
+remains in the left-scan state at head zero after 200 steps. This is neither
+coverage nor rejection of that branch. Full-tape raw probes also check before,
+at and after handoff/copy, minimal and larger allocation at exact capacity,
+`F+1`, the G3s overflow word, and a closed deadline. The materialized test
+runner is proved equal to `UniformTM.run`; evaluation supplies no proof axiom.
+
+Still open: all remaining table bits and other parsed fields, exact full
+consumption, widths zero/one and the wholly virtual payload for this continuation,
+malformed/failed-check rejection completeness, all-input resources, dependent
+GN construction/serialization/initialization, witness checks, final acceptance
+equivalence, and the V1 Option-Bool/raw-pair to legacy Boolean-TM simulation.
+There is no `ContentVerifierBridge` instance, NP membership result, Part A
+completion, or reduction of either mainline lower-bound source obligation.
+Frozen TMVerifier remains unchanged. On 2026-10-02, after the Lane B owner
+exited, the serialized `pnp2-lake lane-a build` passed all four integration
+targets: `Tests.UniformV1FixedRawFencedTableFirstBitSurfaceTests`,
+`Pnp4.Tests.AlgorithmsToLowerBoundsSurfaceTests`, `Tests.AxiomsAudit`, and
+`Pnp4.Tests.AxiomsAudit`. This validates staged integration tree
+`3afb3510a15976f1e999fc758dd95c927d595c5d` on main parent
+`88b17c754e3d9792bcc865080cef806191dccc0e`; the subsequent validation-record
+update changes no Lean source. The six full-tape success probes, closed
+deadline, exact-capacity/overflow probes and excluded-branch observation
+all ran successfully. All 52 added direct audit roots (33 production) use
+only `propext`, `Classical.choice`, and `Quot.sound` where needed. Of the 23
+executable-definition roots, 19 have no axioms; `machine`, `sourceBit` and
+`outputTape` use `propext`/`Quot.sound`, and `deadline` uses `propext`.
+None of those executable roots uses `Classical.choice`. The frozen-tree
+checker also passed. Evidence is recorded in
+`/root/reports/g3v-current-main-targeted-report-2.md` and its external logs.
+The global full check remains outstanding and was omitted by the explicit
+slice instruction; no full-gate or independent-review result is claimed.
+
+The following G3u record is historical; G3v adds strict success handoff and
+one first-table-bit operation on the qualifying branch.
+
 **Part A G3u — Infrastructure: generic raw fenced countdown.**
 
 On the unchanged 256-state `FixedRawLengthFence.prefixed`, the actual raw H17

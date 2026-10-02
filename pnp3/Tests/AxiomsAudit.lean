@@ -1,5 +1,6 @@
 import Tests.TMGateNFixedDelegateRelocationSurfaceTests
 import Tests.TMGateNFirstCommitSurfaceTests
+import Tests.UniformV1FixedRawFencedTableFirstBitSurfaceTests
 import Tests.UniformV1FixedRawLengthFenceCountdownSurfaceTests
 import Tests.UniformV1FixedRawLengthFenceSuffixSurfaceTests
 import Tests.UniformV1FixedRawLengthFenceContentSurfaceTests
@@ -6937,3 +6938,55 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceCountdownSurfaceTests.check_g3s_overflow_from_generic
 #print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceCountdownSurfaceTests.check_exact_capacity_min_allocation
 #print axioms Pnp3.Tests.UniformV1FixedRawLengthFenceCountdownSurfaceTests.check_compact_run_eq
+
+-- G3v Infrastructure: direct production roots and complete proposition pins.
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.exhaust_preterminal
+#print axioms Pnp3.Tests.UniformV1FixedRawFencedTableFirstBitSurfaceTests.check_exhaust_preterminal
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.raw_fenced_countdown_success_strict
+#print axioms Pnp3.Tests.UniformV1FixedRawFencedTableFirstBitSurfaceTests.check_raw_fenced_countdown_success_strict
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.table_and_resource_pins
+#print axioms Pnp3.Tests.UniformV1FixedRawFencedTableFirstBitSurfaceTests.check_table_and_resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.seek_first_exact
+#print axioms Pnp3.Tests.UniformV1FixedRawFencedTableFirstBitSurfaceTests.check_seek_first_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.copy_first_exact
+#print axioms Pnp3.Tests.UniformV1FixedRawFencedTableFirstBitSurfaceTests.check_copy_first_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.raw_first_bit_exact
+#print axioms Pnp3.Tests.UniformV1FixedRawFencedTableFirstBitSurfaceTests.check_raw_first_bit_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.raw_overflow_exact
+#print axioms Pnp3.Tests.UniformV1FixedRawFencedTableFirstBitSurfaceTests.check_raw_overflow_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.raw_clock_bound
+#print axioms Pnp3.Tests.UniformV1FixedRawFencedTableFirstBitSurfaceTests.check_raw_clock_bound
+#print axioms Pnp3.Tests.UniformV1FixedRawFencedTableFirstBitSurfaceTests.check_all_rows
+#print axioms Pnp3.Tests.UniformV1FixedRawFencedTableFirstBitSurfaceTests.check_raw_minimal_virtual
+#print axioms Pnp3.Tests.UniformV1FixedRawFencedTableFirstBitSurfaceTests.check_tight_minimal
+#print axioms Pnp3.Tests.UniformV1FixedRawFencedTableFirstBitSurfaceTests.check_one_over
+#print axioms Pnp3.Tests.UniformV1FixedRawFencedTableFirstBitSurfaceTests.check_g3s_overflow
+#print axioms Pnp3.Tests.UniformV1FixedRawFencedTableFirstBitSurfaceTests.check_compact_run_eq
+
+-- Executable definitions separately: no proof-selected runtime data.
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.stateCount
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.qStart
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.qRegL
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.qContentL
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.qOnTerm
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.qRead
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.qSeekFalse
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.qSeekTrue
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.qWriteFalse
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.qWriteTrue
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.qDone
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.qReject
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.raw
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.suffix
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.machine
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.sourceOffset
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.sourceCursor
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.sourceBit
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.outputTape
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.cursorClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.copyClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.rawClock
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawFencedTableFirstBit.deadline
+
+#print axioms Pnp3.Tests.UniformV1FixedRawFencedTableFirstBitSurfaceTests.check_raw_physical_false
+#print axioms Pnp3.Tests.UniformV1FixedRawFencedTableFirstBitSurfaceTests.check_raw_physical_true

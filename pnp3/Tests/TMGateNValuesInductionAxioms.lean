@@ -1,0 +1,26 @@
+import Tests.TMGateNValuesInductionSurfaceTests
+
+/-! Focused direct GN-E2-5c Infrastructure audit; also listed in the aggregate. -/
+
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_values_outputFalse_tail_exact
+#print axioms Pnp3.Tests.TMGateNValuesInductionSurface.check_gnCS_values_outputFalse_tail_exact
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnValuesListSteps_cons
+#print axioms Pnp3.Tests.TMGateNValuesInductionSurface.check_gnValuesListSteps_cons
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_values_list_exact
+#print axioms Pnp3.Tests.TMGateNValuesInductionSurface.check_gnCS_values_list_exact
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_values_list_requestReady_exact
+#print axioms Pnp3.Tests.TMGateNValuesInductionSurface.check_gnCS_values_list_requestReady_exact
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnValuesRequestReadySteps_provenance
+#print axioms Pnp3.Tests.TMGateNValuesInductionSurface.check_gnValuesRequestReadySteps_provenance
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_valuesEntry_requestReady_exact
+#print axioms Pnp3.Tests.TMGateNValuesInductionSurface.check_gnCS_valuesEntry_requestReady_exact
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.gnCS_encodeGN_valuesRequestReady_exact
+#print axioms Pnp3.Tests.TMGateNValuesInductionSurface.check_gnCS_encodeGN_valuesRequestReady_exact
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNValuesInductionProbes.literal_two_values_requestReady
+#print axioms Pnp3.Tests.TMGateNValuesInductionSurface.check_literal_two_values_requestReady
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNValuesInductionProbes.literal_two_values_executable
+#print axioms Pnp3.Tests.TMGateNValuesInductionSurface.check_literal_two_values_executable
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNValuesInductionProbes.literal_cap_valuesRequestReady
+#print axioms Pnp3.Tests.TMGateNValuesInductionSurface.check_literal_cap_valuesRequestReady
+#print axioms Pnp3.Internal.PsubsetPpoly.TM.GNValuesInductionProbes.literal_reserved_reject_stable
+#print axioms Pnp3.Tests.TMGateNValuesInductionSurface.check_literal_reserved_reject_stable

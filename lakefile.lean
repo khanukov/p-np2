@@ -772,6 +772,20 @@ lean_lib PnP3 where
     -- the values boundary; no value copied, no tail written, no launch,
     -- delegation, commit, loop, verdict or acceptance.
     Glob.one `Complexity.TMVerifier.TuringToolkit.GateNValuesRewind,
+    -- GN-E2-5a (2026-09-28): the values/tail control and the input-free first
+    -- request's `output false`/`finish` tail write, ending in the dormant
+    -- `requestReady` arrival; the per-value copy round is GN-E2-5b's, and
+    -- there is no launch, delegation, commit, loop, verdict or acceptance.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateNValuesWriter,
+    -- GN-E2-5b (2026-10-01): one physical value copy, return and pending-tail
+    -- handoff, including the real initial endpoint; full-list completion is open.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateNValuesCopy,
+    -- GN-E2-5c (2026-10-01): values-list induction and executed first-request
+    -- tail; Infrastructure, with launch/delegation/commit/runtime still open.
+    Glob.one `Complexity.TMVerifier.TuringToolkit.GateNValuesInduction,
+    -- GN-E2-5d: real first launch and successful interception; Infrastructure.
+    Glob.one `Complexity.TMVerifierExtensions.GateNFirstRequestLaunch,
+    Glob.one `Complexity.TMVerifierExtensions.GateNFirstRequestLaunchExamples,
     Glob.one `Complexity.PsubsetPpolyInternal.CircuitTree,
     Glob.one `Complexity.PsubsetPpolyInternal.StraightLine,
     Glob.one `Complexity.PsubsetPpolyInternal.TreeToStraight,
@@ -1106,6 +1120,23 @@ lean_lib PnP3 where
     -- rewind schedule, generic and real-input capstones, endpoint structure,
     -- scoped clock and the 700/4 literal proposition wrappers.
     Glob.one `Tests.TMGateNValuesRewindSurfaceTests,
+    -- GN-E2-5a (2026-09-28): new values/tail control rows, the tail schedule,
+    -- room, the generic and input-free real-input capstones, endpoint
+    -- structure, scoped clock, the two values-ingress rejection wrappers and
+    -- the 784/80 literal proposition wrapper.
+    Glob.one `Tests.TMGateNValuesWriterSurfaceTests,
+    -- GN-E2-5b (2026-10-01): 15 definition pins and 22 full-proposition
+    -- wrappers for the classifier, one-value endpoints, handoffs and fixtures.
+    Glob.one `Tests.TMGateNValuesCopySurfaceTests,
+    -- GN-E2-5b (2026-10-01): 44 direct owner/wrapper audit roots, also in
+    -- Tests.AxiomsAudit; imports the surface module for focused validation.
+    Glob.one `Tests.TMGateNValuesCopyAxioms,
+    -- GN-E2-5c (2026-10-01): full-proposition execution/clock/fixture surfaces
+    -- and dependency-closed direct owner/wrapper axiom roots.
+    Glob.one `Tests.TMGateNValuesInductionSurfaceTests,
+    Glob.one `Tests.TMGateNValuesInductionAxioms,
+    Glob.one `Tests.TMGateNFirstRequestLaunchSurfaceTests,
+    Glob.one `Tests.TMGateNFirstRequestLaunchAxioms,
     -- GN-E2-0 (2026-09-01): definition/configuration pins and direct explicit
     -- wrappers for pure physical stages, first-request geometry, and the
     -- complete installed physical endpoint equality.

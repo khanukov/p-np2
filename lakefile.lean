@@ -213,6 +213,9 @@ lean_lib PnP3 where
     -- transition (a zero-step handoff); seq_handoff composes the two runs under a load-bearing
     -- first-arrival hypothesis.  No concrete machine, clock or acceptance claim.
     Glob.one `Complexity.Uniform.V1.SequentialComposition,
+    -- G3r: executed raw-length fence installation, Infrastructure only.
+    Glob.one `Complexity.Uniform.V1.FixedRawLengthFence,
+    Glob.one `Complexity.Uniform.V1.FixedRawLengthFenceHandoff,
     -- Part A G3g, generic half: `M.mergeAccept e` retargets every row aiming at a second absorbing
     -- success endpoint e to M.accept, leaving e dead, so `seq` routes both.  No acceptance claim.
     Glob.one `Complexity.Uniform.V1.AcceptMerge,
@@ -999,6 +1002,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedPairSeparatorHoleTagRemovalShiftAlignmentCountdownSurfaceTests,
     Glob.one `Tests.UniformV1FixedPairSeparatorCursorHoleTagRemovalShiftAlignmentCountdownSurfaceTests,
     Glob.one `Tests.UniformV1FixedPairSentinelCursorHoleTagRemovalShiftAlignmentCountdownSurfaceTests,
+    Glob.one `Tests.UniformV1FixedRawLengthFenceSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,

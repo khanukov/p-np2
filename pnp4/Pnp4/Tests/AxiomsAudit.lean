@@ -1,3 +1,4 @@
+import Complexity.Uniform.V1.FixedRawLengthFenceHandoff
 import Pnp4.AlgorithmsToLowerBounds.AC0pAsymptoticBridge
 import Pnp4.AlgorithmsToLowerBounds.AC0pSuperPolynomialBridge
 import Pnp4.AlgorithmsToLowerBounds.MCSP_AC0p_Final
@@ -1095,3 +1096,15 @@ end Pnp4
 -- audited in `Pnp4/Tests/AlgorithmsToLowerBoundsSurfaceTests.lean`.
 #print axioms
   Pnp4.Frontier.ContractExpansion.scratch_bootstrap_first_payload_second_payload_markers_loop_decrement_countdown_drained_accepted_content_at_polyClock
+
+/-! G3r Infrastructure: no new verifier or source lower bound. -/
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.table_and_resource_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.install_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.install_trace
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.installed_cells
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.resource_bounds
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.raw_install_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.prefixed_pins
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.fence_handoff_exact
+#print axioms Pnp3.Complexity.Uniform.V1.FixedRawLengthFence.raw_fence_handoff_exact
+-- The four new named surface mirrors are directly audited where declared.

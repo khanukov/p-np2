@@ -1788,7 +1788,9 @@ pending paths, including a strictly larger allocation.
 
 On the unchanged 256-state `FixedRawLengthFence.prefixed`, the actual raw H17
 predecessor now executes the full countdown. Write `L = a+m`, `R = pairLength a m`,
-`P = 3*R+2`, `F = P-(L+3+z)`, and let `d` be the decrement phase's borrow bit.
+`P = 3*R+2`, `F = P-(L+3+z)`, and let
+`d = FixedGammaTargetRegisterDecrement.borrow x w z` be the decrement phase's
+borrow length.
 For a matching tag, decoded width `z >= 2`,
 sufficient allocation, actual dispatcher witness, and value `v` identified with
 the decremented register (including its high-bit bound):
@@ -1886,9 +1888,9 @@ execution, not `RejectsWithin ... 45`. Inherited left clamps remain; the suffix
 is not claimed clamp-free. The unfenced drain theorem is never substituted for
 a run on the installed fence.
 
-At the G3s snapshot, the following obligations remained open. G3u later closes
-item 1 and identifies the executed countdown target with `pr.2.n`; the remaining
-fields in item 2 and items 3–6 stay open.
+At the G3s snapshot, the following obligations remained open. G3t and G3u later
+together close item 1, and G3u identifies the executed countdown target with
+`pr.2.n`; the remaining fields in item 2 and items 3–6 stay open.
 
 1. Generic fenced H8–H17 preservation and generic countdown success/overflow
    from the actual predecessor configuration; G3s proves only the stated raw witness.

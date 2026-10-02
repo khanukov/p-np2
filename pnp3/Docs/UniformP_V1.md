@@ -3034,7 +3034,9 @@ P-vs-NP mainline progress.
 
 On the unchanged 256-state `FixedRawLengthFence.prefixed`, the actual raw H17
 predecessor now executes the full countdown. Write `L = a+m`, `R = pairLength a m`,
-`P = 3*R+2`, `F = P-(L+3+z)`, and let `d` be the decrement phase's borrow bit.
+`P = 3*R+2`, `F = P-(L+3+z)`, and let
+`d = FixedGammaTargetRegisterDecrement.borrow x w z` be the decrement phase's
+borrow length.
 For a matching tag, decoded width `z >= 2`,
 sufficient allocation, actual dispatcher witness, and value `v` identified with
 the decremented register (including its high-bit bound):
@@ -3109,9 +3111,8 @@ unfinished. No `SearchMCSPWeakLowerBound`, `VerifiedNPDAGLowerBoundSource`, or
 `NP_not_subset_PpolyDAG` obligation is reduced. This is Infrastructure, not
 P-vs-NP mainline progress.
 
-The following G3s record is historical; of its first open obligation G3t narrows
-only the generic fenced H8–H17 preservation half, and the generic countdown
-success/overflow dichotomy stays open exactly as stated there.
+The following G3s record is historical. G3t and G3u together close its first
+listed obligation.
 
 **Part A G3s — Infrastructure: generic fenced H1–H7 and one raw overflow rejection.**
 The machine is unchanged: `FixedRawLengthFence.prefixed`, **256 states / 768 rows**,
@@ -3172,7 +3173,9 @@ execution, not `RejectsWithin ... 45`. Inherited left clamps remain; the suffix
 is not claimed clamp-free. The unfenced drain theorem is never substituted for
 a run on the installed fence.
 
-The following obligations remain open, in order:
+At the G3s snapshot, the following obligations remained open. G3t and G3u later
+together close item 1, and G3u identifies the executed countdown target with
+`pr.2.n`; the remaining fields in item 2 and items 3–6 stay open.
 
 1. Generic fenced H8–H17 preservation and generic countdown success/overflow
    from the actual predecessor configuration; G3s proves only the stated raw witness.

@@ -2,10 +2,10 @@
 
 Classification: **Infrastructure**. This change reduces neither pnp4 source
 obligation. The original historical base is
-`067b9ff6253dfa746dfe34e591d2739344593eb9`; after two `origin/main` integration
+`067b9ff6253dfa746dfe34e591d2739344593eb9`; after three `origin/main` integration
 merges the release scope is measured at the integration head
-`a7086994cebe3dcee10fba463f736fd23e13d3cf` against its `origin/main` parent
-`ea574c53644e19a0f24c0bdf0f356d1c403b60ea` (see
+`beba9d1b669323e1dd01ae65a853afb1af090537` against its `origin/main` parent
+`5deb0abda65479a529111e66fa97bcb409661118` (see
 [Ordered content-addressed migration](#ordered-content-addressed-migration)).
 Only `GateNFixedDelegateRelocation.lean` changes inside the frozen subtree.
 
@@ -74,7 +74,7 @@ schema-3 manifest from the committed Git subtree and completes the documentation
 The fresh authorization and requirement-1 rationale are recorded in
 [TMVERIFIER_FREEZE.md](TMVERIFIER_FREEZE.md#authorized-gn-e2-5e-local-migration-2026-10-02).
 No squash, push, or PR is part of this task. The history through integration
-head `a7086994` adds the two merges recorded below after stage (b); this
+head `beba9d1b` adds the three merges recorded below after stage (b); this
 documentation correction is a later child, not a new freeze migration.
 Original targeted Lane B validation and pre-correction commit identifiers are
 recorded in `/tmp/gn-e25e-writer-report.md`; no full-check run is claimed.
@@ -92,23 +92,27 @@ changes in stage (b). Its amendment from superseded unpushed
 `18ac69f15ac7d4d854802f8cfb5c7026673d893d` leaves checker pins and manifest
 unchanged. Original post-repin validation is recorded in
 `/tmp/gn-e25e-writer-report.md`; stage-(b) amendment checks are recorded in
-`/tmp/gn-e25e-docfix-report.md`. This later correction's checks and resulting
-SHA are recorded in `/root/reports/gn-e25e-a708-docfix-writer.md`.
+`/tmp/gn-e25e-docfix-report.md`. The prior documentation correction at
+`20945334` is recorded in
+`/root/reports/gn-e25e-a708-docfix-writer.md`. This correction's checks and
+resulting SHA are recorded in `/root/reports/gn-e25e-beba-docfix-writer.md`.
 
 Release scope is measured at integration head
-`a7086994cebe3dcee10fba463f736fd23e13d3cf` against its main parent
-`ea574c53644e19a0f24c0bdf0f356d1c403b60ea`:
+`beba9d1b669323e1dd01ae65a853afb1af090537` against its main parent
+`5deb0abda65479a529111e66fa97bcb409661118`:
 **1093 additions + 12 deletions = 1105 changed Lean LOC across nine Lean files**
 (eight modules plus `lakefile.lean`). The original stage-(a) parent
 `067b9ff6253dfa746dfe34e591d2739344593eb9` is historical, not the release-scope
-base. Two `origin/main` integration merges followed stage (b):
+base. Three `origin/main` integration merges followed stage (b):
 `2cda48bd9ed267e4c47c0cd3bb7cd35e36dc75fb` merged
 `bedc3d1710d034dc913b862969b7b436a7cc0bcc`, then
 `a7086994cebe3dcee10fba463f736fd23e13d3cf` merged
-`ea574c53644e19a0f24c0bdf0f356d1c403b60ea`. The original-base-to-integration-head
-whole-repository diff is 4103 additions + 88 deletions across 28 files,
-including main's G3r/G3s work; it is not the slice's Lean scope.
-Both merges preserve the GN-E2-5e owner, extension modules, focused tests,
+`ea574c53644e19a0f24c0bdf0f356d1c403b60ea`, then
+`beba9d1b669323e1dd01ae65a853afb1af090537` merged
+`5deb0abda65479a529111e66fa97bcb409661118`. The original-base-to-integration-head
+whole-repository diff is 5262 additions + 88 deletions across 32 files,
+including main's G3r/G3s/G3t work; it is not the slice's Lean scope.
+All three merges preserve the GN-E2-5e owner, extension modules, focused tests,
 checker pins and manifest; shared registrations, aggregate audits and status
 records incorporate main's changes.
 
@@ -118,14 +122,15 @@ stage-(b) child `1cefc7a0670c32254491978615b100071bc84a9c`.
 The latter superseded `18ac69f15ac7d4d854802f8cfb5c7026673d893d` under freeze
 rule 3(b) through a documentation-only amendment; that amendment changed no
 Lean, checker pin, manifest or frozen byte. This later documentation correction
-preserves that pair and both integration merges in ancestry.
+preserves that pair and all three integration merges in ancestry.
 
 Validation is targeted only. Original implementation and stage-(b) evidence
 remains scoped to those snapshots. The existing successful targeted-build log
 `/tmp/lane-b-gn-e25e-merge-targeted.log` matches the earlier integration head
 `2cda48bd`: 5607 aggregate audit entries, ending at `AxiomsAudit.lean:6858`.
-It does not validate the merged `AxiomsAudit.lean` union at `a7086994`, which
-contains 5637 roots, including 30 G3s roots absent from that log. Targeted
+It does not validate the merged `AxiomsAudit.lean` union at `beba9d1b`, which
+contains 5659 roots: 52 roots absent from that log (30 G3s roots added at
+`a7086994` and 22 G3t roots added at `beba9d1b`). Targeted
 validation of that merged union remains outstanding; no successful merged-head
 build is claimed. This correction runs only documentation/Git consistency
 checks and read-only freeze verification. No Lean build or full check is run,
@@ -136,7 +141,7 @@ Reproduce the release Lean scope with immutable endpoints (sum the first two
 columns and count the rows):
 
 ```sh
-git diff --numstat ea574c53644e19a0f24c0bdf0f356d1c403b60ea a7086994cebe3dcee10fba463f736fd23e13d3cf -- '*.lean'
+git diff --numstat 5deb0abda65479a529111e66fa97bcb409661118 beba9d1b669323e1dd01ae65a853afb1af090537 -- '*.lean'
 ```
 
 The result is 1093 additions, 12 deletions, nine files, satisfying the
@@ -144,15 +149,16 @@ The result is 1093 additions, 12 deletions, nine files, satisfying the
 comparison is separately reproducible:
 
 ```sh
-git diff --shortstat 067b9ff6253dfa746dfe34e591d2739344593eb9 a7086994cebe3dcee10fba463f736fd23e13d3cf
+git diff --shortstat 067b9ff6253dfa746dfe34e591d2739344593eb9 beba9d1b669323e1dd01ae65a853afb1af090537
 ```
 
 The targeted log ends with `Build completed successfully.` Its 5607 aggregate
 audit messages match the root names and line numbers at `2cda48bd` (allowing
 Lean's qualification of printed names); its last root is
 `Pnp3.Tests.UniformV1FixedRawLengthFenceSurfaceTests.check_endpoint_definitions`.
-The 30 roots added at `a7086994` do not occur in the log. This identifies the
-audit snapshot supported by that log, not a successful build of the later
+The 30 roots added at `a7086994` and 22 added at `beba9d1b` do not occur in
+the log: 52 roots of the current 5659-root union are absent. This identifies
+the audit snapshot supported by that log, not a successful build of the later
 merged union. Release validation remains with the supervisor.
 
 ## Exact public endpoint declarations and hypotheses

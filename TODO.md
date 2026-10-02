@@ -1,26 +1,73 @@
 # TODO / Roadmap (current)
 
-GN-E2-5d (2026-10-01, Infrastructure) closes actual first-request launch
-under the selected-gate premise and successful first evaluation/interception
-under the additional defined-specification premise. Exact initial clocks:
-1333 launch, 1562 output-done, 1563 intercepted for capProgram. Complete
-premises and scoped validation are in
-[pnp3/Docs/GN_E2_5D_FIRST_REQUEST_LAUNCH.md](pnp3/Docs/GN_E2_5D_FIRST_REQUEST_LAUNCH.md).
-Remaining: returned-bit commit, gate advance/loop, verdict, GN acceptance,
-composed runtime adequacy, first arrival, ContentVerifierBridge, and N1/N3.
-No lower-bound source or pnp4 bridge is supplied.
-PR #1810 at exact head `58c334417d29086245c488bf980d2154194f1b8f` passed the
-targeted Lane B build, Codex and Fable 5.1 **APPROVE** reviews, and all 17 steps
-of the globally exclusive full gate. Qodo's blank/no-bof launch loop, two stale
-writer comments and stale validation records are being fixed by a new ordered
-stage-(a)/(b) migration. The new all-blank exact-run endpoint includes head zero,
-full tape preservation, stable rejection, named surface and direct audit roots.
-Canonical launch/return premises are unchanged. Revalidate the correction with
-targeted Lane B and freeze/negative/policy tests; fresh full gate, reviews,
-remote CI and owner attestation remain release-head obligations. Earlier
-results do not certify a later head. No push is authorized in this correction.
+**GN-E2-5e (2026-10-02, Infrastructure only): canonical first-return commit is closed.**
+`gnCS_firstReturned_commit_exact` has implicit parameters
+`{r : GNProgram} {g : SLGate r.inputs.length}` and explicit parameters
+`(hg : r.program.gates[0]? = some g) (res : Bool)`. It proves
+`TM.runConfig (M := GNM) (gnFirstReturnedConfig r g hg res)
+  (gnFirstCommitSteps r g) = gnFirstCommitConfig r g hg res`.
+`gnCS_encodeGN_firstCommit_exact` additionally assumes
+`(hs : (gnFirstRequest r g).spec = some res)` and proves the same endpoint
+from `GNM.initialConfig (gnPoint (encodeGN r))` after
+`gnFirstLaunchSteps r g + (g1GateDoneSteps (gnFirstRequest r g)+1) +
+  gnFirstCommitSteps r g`. Neither execution theorem assumes room, global
+well-formedness, an execution contract, or second-gate success.
+The separate `gnFirstReturnedConfig_eq_physical` lemma explicitly takes a
+head-bound premise `hr`; its exact signature and all five public endpoint
+signatures are in the [GN-E2-5e record](pnp3/Docs/GN_E2_5E_FIRST_RETURN_COMMIT.md).
 
-Updated: 2026-10-01
+The executed first slot write, first-record spent mark and next-cursor advance
+(or single-gate final-output write) are closed. With `N = (encodeGN r).length`,
+`n = r.inputs.length`, `m = r.program.gates.length`,
+`L = gnRecordSize (gnGateFields g)` and `B = 4*(gnRecordsStart r + L)`,
+the local clock is `N + 8*(L+n) + 4*m + 39`; the endpoint is
+`firstCommitTerminal` at `B+8` if `m=1`, otherwise `firstCommitNext` at `B`.
+The full tape is the bits of `encodeGNAtFrames r [res] ++
+  g1OutputFrames (gnFirstRequest r g) res`, with false padding.
+`gnFirstCommit_structure` links this run to `gnCommit? r [] res`;
+`gnFirstCommit_scratch_preserved` preserves every cell at or above `N`.
+
+Release scope is measured at integration head
+`beba9d1b669323e1dd01ae65a853afb1af090537` against its main parent
+`5deb0abda65479a529111e66fa97bcb409661118`:
+**1093 additions + 12 deletions = 1105 changed Lean LOC across nine Lean files**
+(eight modules plus `lakefile.lean`). The original stage-(a) parent
+`067b9ff6253dfa746dfe34e591d2739344593eb9` is historical, not the release-scope
+base. Three `origin/main` integration merges followed stage (b):
+`2cda48bd9ed267e4c47c0cd3bb7cd35e36dc75fb` merged
+`bedc3d1710d034dc913b862969b7b436a7cc0bcc`, then
+`a7086994cebe3dcee10fba463f736fd23e13d3cf` merged
+`ea574c53644e19a0f24c0bdf0f356d1c403b60ea`, then
+`beba9d1b669323e1dd01ae65a853afb1af090537` merged
+`5deb0abda65479a529111e66fa97bcb409661118`. The original-base-to-integration-head
+whole-repository diff is 5262 additions + 88 deletions across 32 files,
+including main's G3r/G3s/G3t work; it is not the slice's Lean scope.
+All three merges preserve the GN-E2-5e owner, extension modules, focused tests,
+checker pins and manifest; shared registrations, aggregate audits and status
+records incorporate main's changes.
+
+The explicit freeze decision pair is stage (a)
+`a1bd06ee3639879c1b9e4b8563d7c856185a1d86` and its immediate corrected
+stage-(b) child `1cefc7a0670c32254491978615b100071bc84a9c`.
+The latter superseded `18ac69f15ac7d4d854802f8cfb5c7026673d893d` under freeze
+rule 3(b) through a documentation-only amendment; that amendment changed no
+Lean, checker pin, manifest or frozen byte. This later documentation correction
+preserves that pair and all three integration merges in ancestry.
+
+Release candidate `95ba057c77f3cb60933c32b63bb4aec471d19239` passed the
+17-step full gate and exact-head Codex/Opus reviews. The canonical evidence and
+latest-head merge requirements are in the [GN-E2-5e record](pnp3/Docs/GN_E2_5E_FIRST_RETURN_COMMIT.md#ordered-content-addressed-migration)
+and PR #1815.
+
+**Current open obligations:** arbitrary-stage gate advance/loop, scratch
+reset/reuse, program verdict, GN acceptance, first-arrival minimality, composed
+clock/runtime adequacy, `ContentVerifierBridge`, advice freedom, and Lane B
+N1/N3. The first-return endpoint does not establish readiness for round two.
+No pnp4 bridge, `SearchMCSPWeakLowerBound`, `VerifiedNPDAGLowerBoundSource`,
+or P-vs-NP mainline progress is supplied. Earlier dated snapshots below retain
+their historical scope; their validation does not certify this head.
+
+Updated: 2026-10-02
 
 Canonical checklist:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -37,8 +84,9 @@ Research method boundary:
 
 - Active `axiom` in `pnp3/`: `0`.
 - Active `sorry/admit` in `pnp3/`: `0`.
-- GN-E2-5d full gate: all 17 steps passed at `58c33441` (PR #1810).
-  The Qodo correction has separate targeted validation; no latest-head full gate is claimed.
+- GN-E2-5e: first-return commit closed; release candidate `95ba057c` passed the
+  17-step full gate and exact-head reviews. PR #1815 remains authoritative for
+  latest-head CI and review coverage.
 - Inclusion is internalized as coarse `P_subset_PpolyDAG`.
 - The simulation layer is not a fine-grained Cook-Levin or
   hardness-magnification compiler adequacy theorem.

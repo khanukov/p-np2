@@ -1,6 +1,81 @@
 # TMVerifier freeze decision
 
-**GN-E2-5d / PR #1810 (2026-10-01, Infrastructure only):** the finite
+**Current authoritative frozen tree:** `17eded124b0b76fb02ceca62b8ad82d91d0fe288`.
+**Current provenance commit (`FROZEN_COMMIT`):** `a1bd06ee3639879c1b9e4b8563d7c856185a1d86`.
+**Stage-(a) whole repository tree:** `06601fd2bfcfe40fc22a9c8e6f27f1c40fd719d7`.
+This provenance identifies the authorized implementation snapshot, not an
+independent review or remote attestation. The checker's “reviewed provenance”
+output verifies the commit/tree identity only. The freeze pins source bytes,
+not the full semantic/toolchain dependency closure.
+
+**GN-E2-5e (2026-10-02, Infrastructure only): canonical first-return commit is closed.**
+`gnCS_firstReturned_commit_exact` has implicit parameters
+`{r : GNProgram} {g : SLGate r.inputs.length}` and explicit parameters
+`(hg : r.program.gates[0]? = some g) (res : Bool)`. It proves
+`TM.runConfig (M := GNM) (gnFirstReturnedConfig r g hg res)
+  (gnFirstCommitSteps r g) = gnFirstCommitConfig r g hg res`.
+`gnCS_encodeGN_firstCommit_exact` additionally assumes
+`(hs : (gnFirstRequest r g).spec = some res)` and proves the same endpoint
+from `GNM.initialConfig (gnPoint (encodeGN r))` after
+`gnFirstLaunchSteps r g + (g1GateDoneSteps (gnFirstRequest r g)+1) +
+  gnFirstCommitSteps r g`. Neither execution theorem assumes room, global
+well-formedness, an execution contract, or second-gate success.
+The separate `gnFirstReturnedConfig_eq_physical` lemma explicitly takes a
+head-bound premise `hr`; its exact signature and all five public endpoint
+signatures are in the [GN-E2-5e record](GN_E2_5E_FIRST_RETURN_COMMIT.md).
+
+The executed first slot write, first-record spent mark and next-cursor advance
+(or single-gate final-output write) are closed. With `N = (encodeGN r).length`,
+`n = r.inputs.length`, `m = r.program.gates.length`,
+`L = gnRecordSize (gnGateFields g)` and `B = 4*(gnRecordsStart r + L)`,
+the local clock is `N + 8*(L+n) + 4*m + 39`; the endpoint is
+`firstCommitTerminal` at `B+8` if `m=1`, otherwise `firstCommitNext` at `B`.
+The full tape is the bits of `encodeGNAtFrames r [res] ++
+  g1OutputFrames (gnFirstRequest r g) res`, with false padding.
+`gnFirstCommit_structure` links this run to `gnCommit? r [] res`;
+`gnFirstCommit_scratch_preserved` preserves every cell at or above `N`.
+
+Release scope is measured at integration head
+`beba9d1b669323e1dd01ae65a853afb1af090537` against its main parent
+`5deb0abda65479a529111e66fa97bcb409661118`:
+**1093 additions + 12 deletions = 1105 changed Lean LOC across nine Lean files**
+(eight modules plus `lakefile.lean`). The original stage-(a) parent
+`067b9ff6253dfa746dfe34e591d2739344593eb9` is historical, not the release-scope
+base. Three `origin/main` integration merges followed stage (b):
+`2cda48bd9ed267e4c47c0cd3bb7cd35e36dc75fb` merged
+`bedc3d1710d034dc913b862969b7b436a7cc0bcc`, then
+`a7086994cebe3dcee10fba463f736fd23e13d3cf` merged
+`ea574c53644e19a0f24c0bdf0f356d1c403b60ea`, then
+`beba9d1b669323e1dd01ae65a853afb1af090537` merged
+`5deb0abda65479a529111e66fa97bcb409661118`. The original-base-to-integration-head
+whole-repository diff is 5262 additions + 88 deletions across 32 files,
+including main's G3r/G3s/G3t work; it is not the slice's Lean scope.
+All three merges preserve the GN-E2-5e owner, extension modules, focused tests,
+checker pins and manifest; shared registrations, aggregate audits and status
+records incorporate main's changes.
+
+The explicit freeze decision pair is stage (a)
+`a1bd06ee3639879c1b9e4b8563d7c856185a1d86` and its immediate corrected
+stage-(b) child `1cefc7a0670c32254491978615b100071bc84a9c`.
+The latter superseded `18ac69f15ac7d4d854802f8cfb5c7026673d893d` under freeze
+rule 3(b) through a documentation-only amendment; that amendment changed no
+Lean, checker pin, manifest or frozen byte. This later documentation correction
+preserves that pair and all three integration merges in ancestry.
+
+Release candidate `95ba057c77f3cb60933c32b63bb4aec471d19239` passed the
+17-step full gate and exact-head Codex/Opus reviews. The canonical evidence and
+latest-head merge requirements are in the [GN-E2-5e record](GN_E2_5E_FIRST_RETURN_COMMIT.md#ordered-content-addressed-migration)
+and PR #1815.
+
+**Current open obligations:** arbitrary-stage gate advance/loop, scratch
+reset/reuse, program verdict, GN acceptance, first-arrival minimality, composed
+clock/runtime adequacy, `ContentVerifierBridge`, advice freedom, and Lane B
+N1/N3. The first-return endpoint does not establish readiness for round two.
+No pnp4 bridge, `SearchMCSPWeakLowerBound`, `VerifiedNPDAGLowerBoundSource`,
+or P-vs-NP mainline progress is supplied. Earlier dated snapshots below retain
+their historical scope; their validation does not certify this head.
+
+**Historical GN-E2-5d / PR #1810 (2026-10-01, Infrastructure only):** the finite
 `requestReady` launch executes the installed request back to its opening `bof`
 and enters the fixed G1 start. `gnCS_encodeGN_firstLaunch_exact` assumes only
 `hg`; output-done and first return additionally require `spec = some res`.
@@ -29,7 +104,7 @@ kernel fixture checks heads zero and four plus a nine-step persistence instance;
 the generic theorem proves stable rejection for every extra step. The new
 endpoint and fixture have named full-proposition surfaces and direct roots in
 both audits (40 focused roots total). The canonical launch/return propositions
-retain their existing premises. The current PR scope against `origin/main`
+retain their existing premises. That GN-E2-5d PR scope against `origin/main`
 is **893 additions + 17 deletions = 910 changed Lean LOC**, across **eight
 modules plus lakefile.lean**, below both caps.
 
@@ -43,9 +118,11 @@ the earlier APPROVE verdicts and 17-step gate apply only to `58c33441`.
 Fresh full-gate/review results, remote CI and owner attestation at a future
 release head are not claimed. This correction is committed locally, with no push.
 
-Returned-bit commit, cursor/spent advance, repeated gates, verdict, GN
-acceptance, first-arrival minimality, composed runtime adequacy,
-`ContentVerifierBridge`, and Lane B N1/N3 remain open. No pnp4 bridge,
+At the GN-E2-5d snapshot, returned-bit commit, cursor/spent advance, repeated
+gates, verdict, GN acceptance, first-arrival minimality, composed runtime
+adequacy, `ContentVerifierBridge`, and Lane B N1/N3 remained open. GN-E2-5e
+closes the first-return commit and its first cursor/spent advance as stated
+above. No pnp4 bridge,
 `SearchMCSPWeakLowerBound` or `VerifiedNPDAGLowerBoundSource` is supplied;
 no P-vs-NP mainline progress is claimed.
 
@@ -79,17 +156,11 @@ reviews both reported **APPROVE**. PR #1808 carries the `Infrastructure` and
 CodeQL and freeze-policy runs. The final raw CI rollup and a fresh agentic review
 of this release-record correction remain merge gates. Exact evidence and scope
 limits are recorded in the GN-E2-5c record linked above.
-Request launch, delegation, returned-bit commit, repeated gates, verdict,
-acceptance, first arrival and new-clock/runtime adequacy remain open, together
-with Lane B's N1/N3 carry-forward items. No P-vs-NP source obligation is reduced.
-
-**Current authoritative frozen tree:** `455c53bd237af6319c1cadb744cc2575081a13e2`.
-**Current provenance commit (`FROZEN_COMMIT`):** `09d043bd242a81458fbe68caf26e4aadbf4b4ac3`.
-**Stage-(a) whole repository tree:** `2217c7cb3afe9f8c6b800e1a2b60f33412a5c95e`.
-This provenance identifies the authorized implementation snapshot, not an
-independent review or remote attestation. The checker’s “reviewed provenance”
-output verifies the commit/tree identity only. The freeze pins source bytes,
-not the full semantic/toolchain dependency closure.
+At the GN-E2-5c snapshot, request launch, delegation, returned-bit commit,
+repeated gates, verdict, acceptance, first arrival and new-clock/runtime
+adequacy remained open, together with Lane B's N1/N3 carry-forward items.
+GN-E2-5d and GN-E2-5e subsequently close the first launch/return and commit.
+No P-vs-NP source obligation is reduced.
 
 The following GN-E2-5b and earlier records describe their dated snapshots;
 their then-open values-list/tail work is discharged only by GN-E2-5c above.
@@ -357,6 +428,36 @@ blank-frame rejection, related proofs/tests and both writer comment fixes,
 with the same two-stage discipline and caps measured against `origin/main`.
 It requires post-repin targeted Lane B and freeze/negative/policy validation.
 No push is authorized; the general release/attestation policy remains in place.
+
+## Authorized GN-E2-5e local migration (2026-10-02)
+
+This fresh authorization covers only the canonical first-return commit slice
+on base `067b9ff6253dfa746dfe34e591d2739344593eb9`, classified solely as
+Infrastructure. It permits finite returned-bit commit control in the single
+frozen owner `TuringToolkit/GateNFixedDelegateRelocation.lean`, with execution
+proofs, fixtures, full-proposition surfaces, audits and registrations outside
+the frozen subtree. All other frozen files must remain byte-identical.
+It does not authorize arbitrary-stage looping, verdict or acceptance work,
+resume the broader roadmap, waive release gates, or authorize a push.
+
+**Requirement 1 (why the frozen artifact must change):** genuine execution on
+`GNM = gnCS.toPhased.toTM` requires the live `gnCS` transition table to consume
+the intercepted returned bit and perform the slot/spent/cursor or terminal
+output writes. That table and its finite state constructors are defined in the
+frozen owner. An external proof module alone cannot add those transitions to
+the existing machine. All downstream proofs therefore live outside the freeze;
+only the necessary finite control and its owner documentation change inside it.
+
+The ordered stage (a) commits implementation, registration, tests and the
+initial slice record while leaving the old pins stale on exactly that owner.
+Stage (b) repins the committed stage-(a) subtree and must update this decision
+record under rule 3(b). The owner's present documentation-fix instruction
+explicitly authorizes amending the unpushed stage-(b) commit to complete that
+record, preserving stage (a) unchanged as its immediate parent. No child,
+squash, rebase or push is authorized. The amendment changes documentation only;
+the already generated manifest, checker pins and all Lean/frozen bytes stay
+unchanged. Complete local/remote release gates and fresh exact-head reviews
+remain outstanding; this local authorization does not claim their completion.
 
 ## Allowed changes
 
@@ -2081,3 +2182,66 @@ The prior Codex/Fable APPROVE and 17-step full gate remain evidence only for
 `58c33441`; fresh release-head full gate, reviews, CI and owner attestation are
 not claimed. No push is performed. All mathematical and machine-completion
 obligations listed above remain open; this is Infrastructure only.
+
+### 2026-10-02 — GN-E2-5e canonical first-return commit
+
+Infrastructure only. The [slice record](GN_E2_5E_FIRST_RETURN_COMMIT.md)
+contains the exact five public signatures and hypotheses. The returned-start
+execution theorem requires only `hg` and `res`; the encoded-initial theorem
+additionally requires `hs : (gnFirstRequest r g).spec = some res`. The physical
+configuration lemma separately takes `hr`. First-return commit and its first
+slot/spent/cursor or terminal-output writes are closed. Arbitrary-stage gate
+advance/loop, scratch reset/reuse, program verdict, GN acceptance, first-arrival
+minimality, composed clock/runtime adequacy, `ContentVerifierBridge`, advice
+freedom and Lane B N1/N3 remain open. No P-vs-NP source obligation is reduced.
+
+| Item | Exact value |
+| --- | --- |
+| Original historical base / stage-(a) parent | `067b9ff6253dfa746dfe34e591d2739344593eb9` |
+| Stage (a), unchanged implementation provenance | `a1bd06ee3639879c1b9e4b8563d7c856185a1d86` |
+| Stage-(a) whole repository tree | `06601fd2bfcfe40fc22a9c8e6f27f1c40fd719d7` |
+| Authoritative TMVerifier subtree at both stages | `17eded124b0b76fb02ceca62b8ad82d91d0fe288` |
+| Previous provenance | `09d043bd242a81458fbe68caf26e4aadbf4b4ac3` |
+| Previous authoritative subtree | `455c53bd237af6319c1cadb744cc2575081a13e2` |
+| Superseded unpushed stage-(b) commit | `18ac69f15ac7d4d854802f8cfb5c7026673d893d` |
+| **Corrected stage (b)** — current decision pair with stage (a) | `1cefc7a0670c32254491978615b100071bc84a9c` |
+| First integration merge, of main `bedc3d1710d034dc913b862969b7b436a7cc0bcc` | `2cda48bd9ed267e4c47c0cd3bb7cd35e36dc75fb` |
+| Second integration merge, of main `ea574c53644e19a0f24c0bdf0f356d1c403b60ea` | `a7086994cebe3dcee10fba463f736fd23e13d3cf` |
+| Third integration merge, of main `5deb0abda65479a529111e66fa97bcb409661118` | `beba9d1b669323e1dd01ae65a853afb1af090537` |
+| Scope-measurement base (integration head `beba9d1b`'s main parent) | `5deb0abda65479a529111e66fa97bcb409661118` |
+
+The current decision pair is stage (a) `a1bd06ee3639879c1b9e4b8563d7c856185a1d86`
+with the corrected stage (b) `1cefc7a0670c32254491978615b100071bc84a9c`, its
+immediate child; the original stage (b) `18ac69f15ac7d4d854802f8cfb5c7026673d893d`
+is superseded. Rule 3(b) is satisfied within stage (b), not by a later child.
+The three integration merges listed above are later descendants and carry no new
+freeze decision: the frozen subtree is `17eded124b0b76fb02ceca62b8ad82d91d0fe288`
+at stage (a), stage (b) and all three merges. This documentation-only child
+preserves those bytes and ancestry. The schema-3 manifest retains all 120 paths/modes;
+relative to the historical base, only the owner's blob/hash changes. Stage (b)
+changes no Lean or frozen byte; its documentation amendment changes neither
+checker pins nor manifest.
+
+Measured at integration head `beba9d1b669323e1dd01ae65a853afb1af090537`
+against its main parent `5deb0abda65479a529111e66fa97bcb409661118`, the Lean delta
+is **1093 additions + 12 deletions = 1105 changed Lean LOC across nine Lean files**
+(eight modules plus `lakefile.lean`). Reproduce it with:
+
+```sh
+git diff --numstat 5deb0abda65479a529111e66fa97bcb409661118 beba9d1b669323e1dd01ae65a853afb1af090537 -- '*.lean'
+```
+
+The historical base `067b9ff6253dfa746dfe34e591d2739344593eb9` compared to
+`beba9d1b` instead gives 5262 additions + 88 deletions across 32 files for the
+whole repository, including main's G3r/G3s/G3t work. All three merges preserve the
+GN-E2-5e owner, extension modules, focused tests, checker pins and manifest;
+shared registrations, aggregate audits and status records incorporate main's
+changes. The slice record supplies the historical comparison command too.
+
+Earlier targeted snapshots were superseded for release purposes by candidate
+`95ba057c77f3cb60933c32b63bb4aec471d19239`. At that exact head the globally
+exclusive `pnp2-full-check` passed all 17 steps, Codex approved, and Opus 5
+approved as the documented Fable 5.1 account-limit fallback. PR #1815 is the
+durable source for owner authorization and raw CI/CodeQL/freeze-policy rollups.
+Any later documentation-only remediation must receive latest-head review and
+green rollups before merge; it does not alter the stage-(a)/(b) freeze pair.

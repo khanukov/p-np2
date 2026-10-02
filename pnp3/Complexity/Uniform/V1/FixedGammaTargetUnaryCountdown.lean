@@ -911,10 +911,11 @@ theorem round_generic {a m B zeros v r : Nat} (x : Bitstring a) (w : Bitstring m
 /-- **The exhaustion.**  Out of a `qLoop` configuration whose register is all `false`, the borrow
 walks off the register's left end onto the boundary blank, `qFin` walks back clearing every digit it
 set, and after exactly `zeroClock zeros = 2*zeros + 5` steps the machine is in `qDone` on the
-separator blank with the tape **unchanged**, marks and all.  The last conjunct is persistence, not
-first arrival: `qDone` absorbs, so the endpoint holds at every later time, and no theorem here says
-`qDone` is entered for the first time at `zeroClock zeros`.  `qDone` is an internal control tag of
-this phase, not language acceptance. -/
+separator blank with the tape **unchanged**, marks and all.  The persistence conjunct is not first
+arrival: `qDone` absorbs, so the endpoint holds at every later time, and no theorem here says
+`qDone` is entered for the first time at `zeroClock zeros`.  The final conjunct bounds every head
+position before the endpoint for the G3u fence-framing argument. `qDone` is an internal control tag
+of this phase, not language acceptance. -/
 theorem exhaust_traced {a m B zeros r : Nat} (x : Bitstring a) (w : Bitstring m)
     (hroom : a + m + 2 + zeros < tapeLength (pairLength a m) B)
     (c : Config stateCount (pairLength a m) B) (hq : c.state = qLoop)

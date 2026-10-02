@@ -1784,8 +1784,32 @@ The raw regressions derive the existing 2335-step overflow H17 endpoint via the
 new generic theorem and cover width-two physical-zero, virtual, and positive
 pending paths, including a strictly larger allocation.
 
-G3t stops at nonterminal countdown entry 245. Generic **fenced countdown**,
-including success at exact capacity and overflow rejection, remains open.
+**Part A G3u — Infrastructure: generic raw fenced countdown.**
+
+On the unchanged 256-state `FixedRawLengthFence.prefixed`, the actual raw H17
+predecessor now executes the full countdown. Write `L = a+m`, `R = pairLength a m`,
+`P = 3*R+2`, and `F = P-(L+3+z)`. For a matching tag, decoded width `z >= 2`,
+sufficient allocation, actual dispatcher witness, and value `v` identified with
+the decremented register (including its high-bit bound):
+
+- `v <= F` reaches state 254 on the separator with a zero register, exactly `v`
+  tally marks, retained H17 low content, and the installed false fence.
+- `F < v` literally rejects in state 255 at `P`, with register `v-F-1`, exactly
+  `F` marks, and the same false fence. Equality belongs to success.
+
+Both public theorems are full raw `UniformTM.run` configuration equalities with
+persistence. The suffix clocks are `d+2+v*v+v*(2*z+6)+2*z+5` for success and
+`d+2+F*F+F*(2*z+6)+2*z+F+6` for rejection; each adds G3t's actual H17 clock.
+The old round proofs now expose checkpoints/head bounds, discharging fence
+avoidance before the rejecting read. No unfenced execution replaces a raw run.
+The branch deadlines are at most `128*(R+1)^2` with a bounded actual dispatcher;
+allocation remains `16*(R+1)^2`. Time and allocation are separate parameters.
+
+The pnp4 theorem retains the **same** dependent `pr` from `contentInput?`, with
+`pr.2.n = pr.1`, and executes this dichotomy for `v = pr.2.n`. Its success tape
+exposes the zero register, separator, exact tally, low content and false fence.
+Raw executable/full-tape regressions cover `F-1`, `F`, `F+1`, and the G3s word.
+
 Remaining parser fields, GN program/serialization/start configuration and
 witness checks, malformed-input rejection completeness, acceptance equivalence,
 whole-verifier length-only resource domination, and operational advice freedom
@@ -1796,9 +1820,8 @@ unfinished. No `SearchMCSPWeakLowerBound`, `VerifiedNPDAGLowerBoundSource`, or
 `NP_not_subset_PpolyDAG` obligation is reduced. This is Infrastructure, not
 P-vs-NP mainline progress.
 
-The following G3s record is historical; of its first open obligation G3t narrows
-only the generic fenced H8–H17 preservation half, and the generic countdown
-success/overflow dichotomy stays open exactly as stated there.
+The preceding G3t and following G3s records are historical. G3u closes G3t's
+generic countdown gap and G3s's first listed obligation.
 
 **Part A G3s — Infrastructure: generic fenced H1–H7 and one raw overflow rejection.**
 The machine is unchanged: `FixedRawLengthFence.prefixed`, **256 states / 768 rows**,
@@ -1859,7 +1882,9 @@ execution, not `RejectsWithin ... 45`. Inherited left clamps remain; the suffix
 is not claimed clamp-free. The unfenced drain theorem is never substituted for
 a run on the installed fence.
 
-The following obligations remain open, in order:
+At the G3s snapshot, the following obligations remained open. G3u later closes
+item 1 and identifies the executed countdown target with `pr.2.n`; the remaining
+fields in item 2 and items 3–6 stay open.
 
 1. Generic fenced H8–H17 preservation and generic countdown success/overflow
    from the actual predecessor configuration; G3s proves only the stated raw witness.

@@ -216,6 +216,10 @@ lean_lib PnP3 where
     -- G3r: executed raw-length fence installation, Infrastructure only.
     Glob.one `Complexity.Uniform.V1.FixedRawLengthFence,
     Glob.one `Complexity.Uniform.V1.FixedRawLengthFenceHandoff,
+    -- G3s Infrastructure: generic fenced content handoff and one raw overflow.
+    Glob.one `Complexity.Uniform.V1.TapeFrame,
+    Glob.one `Complexity.Uniform.V1.FixedRawLengthFenceContent,
+    Glob.one `Complexity.Uniform.V1.FixedRawLengthFenceOverflowWitness,
     -- Part A G3g, generic half: `M.mergeAccept e` retargets every row aiming at a second absorbing
     -- success endpoint e to M.accept, leaving e dead, so `seq` routes both.  No acceptance claim.
     Glob.one `Complexity.Uniform.V1.AcceptMerge,
@@ -1007,6 +1011,7 @@ lean_lib PnP3 where
     Glob.one `Tests.UniformV1FixedPairSeparatorCursorHoleTagRemovalShiftAlignmentCountdownSurfaceTests,
     Glob.one `Tests.UniformV1FixedPairSentinelCursorHoleTagRemovalShiftAlignmentCountdownSurfaceTests,
     Glob.one `Tests.UniformV1FixedRawLengthFenceSurfaceTests,
+    Glob.one `Tests.UniformV1FixedRawLengthFenceContentSurfaceTests,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,
     Glob.one `Tests.UniformV1CombinedCorrectnessSurfaceTests,

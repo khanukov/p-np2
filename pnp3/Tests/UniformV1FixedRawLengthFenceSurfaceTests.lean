@@ -12,6 +12,21 @@ theorem check_table_and_resource_pins :
     (∀ q s, machine.step q s = machine.rawStep q s) :=
   table_and_resource_pins
 
+/-- Public endpoint data and the unchanged suffix, with no run hypotheses. -/
+theorem check_endpoint_definitions {R : Nat} (B : Nat) (input : Bitstring R) :
+    fencePos R = 3*R+2 ∧
+    installClock R = (if R = 0 then 4 else 3*R*R+9*R+5) ∧
+    allocation R = 16*(R+1)^2 ∧
+    fenceTape B input = (fun i => if h : i.val < R then some (input ⟨i.val,h⟩)
+      else if i.val = fencePos R then some false else none) ∧
+    installedConfig B input =
+      ⟨machine.accept, ⟨0, by simp [tapeLength]⟩, fenceTape B input⟩ ∧
+    G = FixedPairSentinelCursorHoleTagRemovalShiftAlignmentCountdown.machine ∧
+    prefixed = machine.seq G ∧
+    g3qEntry B input = ⟨G.start, ⟨0, by simp [tapeLength]⟩, fenceTape B input⟩ := by
+  repeat' apply And.intro
+  all_goals rfl
+
 theorem check_install_exact {R B : Nat} (input : Bitstring R) (hroom : 2*R+2 ≤ B) :
     machine.run (installClock R) (initialConfig machine B input) = installedConfig B input :=
   install_exact input hroom

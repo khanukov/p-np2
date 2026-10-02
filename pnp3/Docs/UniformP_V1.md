@@ -3137,6 +3137,14 @@ embedded at offset 48. At s=0 the composite is in state 48, neither verdict.
 The raw `[true,false,true]` witness has R=3, B=256, time 59 and marker 11;
 the full tape contains only cells 0=true, 1=false, 2=true and 11=false.
 
+Review hypothesis freeze: `install_exact`, `install_trace`, `installed_cells`
+and `fence_handoff_exact` require exactly `2*R+2 ≤ B`; the raw capstones
+supply that inequality using `allocation R` and take no propositional premise.
+Their execution is V1 `UniformTM.run`, not legacy `TM.runConfig`. The suffix
+time `s` is arbitrary, with no suffix verdict or runtime bound asserted.
+G3q's eight drain premises recorded below still concern its unfenced entry;
+none supplies the missing fenced-entry preservation theorem.
+
 At G3r the following obligations were open; G3s above narrows the first and the prefix resources:
 
 1. Preserve the fence through H1–H17 and prove fenced countdown success and

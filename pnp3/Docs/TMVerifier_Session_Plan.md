@@ -54,18 +54,10 @@ rule 3(b) through a documentation-only amendment; that amendment changed no
 Lean, checker pin, manifest or frozen byte. This later documentation correction
 preserves that pair and all three integration merges in ancestry.
 
-Validation is targeted only. Original implementation and stage-(b) evidence
-remains scoped to those snapshots. The existing successful targeted-build log
-`/tmp/lane-b-gn-e25e-merge-targeted.log` matches the earlier integration head
-`2cda48bd`: 5607 aggregate audit entries, ending at `AxiomsAudit.lean:6858`.
-It does not validate the merged `AxiomsAudit.lean` union at `beba9d1b`, which
-contains 5659 roots: 52 roots absent from that log (30 G3s roots added at
-`a7086994` and 22 G3t roots added at `beba9d1b`). Targeted
-validation of that merged union remains outstanding; no successful merged-head
-build is claimed. This correction runs only documentation/Git consistency
-checks and read-only freeze verification. No Lean build or full check is run,
-and no full gate, fresh independent approval, remote CI or owner attestation is
-claimed for this correction. No push is performed.
+Release candidate `95ba057c77f3cb60933c32b63bb4aec471d19239` passed the
+17-step full gate and exact-head Codex/Opus reviews. The canonical evidence and
+latest-head merge requirements are in the [GN-E2-5e record](GN_E2_5E_FIRST_RETURN_COMMIT.md#ordered-content-addressed-migration)
+and PR #1815.
 
 **Current open obligations:** arbitrary-stage gate advance/loop, scratch
 reset/reuse, program verdict, GN acceptance, first-arrival minimality, composed

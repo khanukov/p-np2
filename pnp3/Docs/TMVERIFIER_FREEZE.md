@@ -62,18 +62,10 @@ rule 3(b) through a documentation-only amendment; that amendment changed no
 Lean, checker pin, manifest or frozen byte. This later documentation correction
 preserves that pair and all three integration merges in ancestry.
 
-Validation is targeted only. Original implementation and stage-(b) evidence
-remains scoped to those snapshots. The existing successful targeted-build log
-`/tmp/lane-b-gn-e25e-merge-targeted.log` matches the earlier integration head
-`2cda48bd`: 5607 aggregate audit entries, ending at `AxiomsAudit.lean:6858`.
-It does not validate the merged `AxiomsAudit.lean` union at `beba9d1b`, which
-contains 5659 roots: 52 roots absent from that log (30 G3s roots added at
-`a7086994` and 22 G3t roots added at `beba9d1b`). Targeted
-validation of that merged union remains outstanding; no successful merged-head
-build is claimed. This correction runs only documentation/Git consistency
-checks and read-only freeze verification. No Lean build or full check is run,
-and no full gate, fresh independent approval, remote CI or owner attestation is
-claimed for this correction. No push is performed.
+Release candidate `95ba057c77f3cb60933c32b63bb4aec471d19239` passed the
+17-step full gate and exact-head Codex/Opus reviews. The canonical evidence and
+latest-head merge requirements are in the [GN-E2-5e record](GN_E2_5E_FIRST_RETURN_COMMIT.md#ordered-content-addressed-migration)
+and PR #1815.
 
 **Current open obligations:** arbitrary-stage gate advance/loop, scratch
 reset/reuse, program verdict, GN acceptance, first-arrival minimality, composed
@@ -2246,33 +2238,10 @@ GN-E2-5e owner, extension modules, focused tests, checker pins and manifest;
 shared registrations, aggregate audits and status records incorporate main's
 changes. The slice record supplies the historical comparison command too.
 
-Prior targeted Lane B builds, 26 focused roots, 24 new aggregate roots (plus
-the two existing owner roots), old-checker single-owner failure, and post-repin
-freeze/negative/policy checks are recorded for the original implementation in
-`/tmp/gn-e25e-writer-report.md`. The Fable review at superseded `18ac69f1`
-requested the earlier documentation corrections. The exact-head review
-`/root/reports/gn-e25e-a708-opus5-fallback-review.md` requested the release-base,
-decision-pair and merged-head evidence corrections made at `20945334`. The
-review `/root/reports/gn-e25e-beba-exact-opus5-review.md` requested this
-refresh for the third integration merge; none of these reviews approves this
-correction.
-
-The existing targeted log `/tmp/lane-b-gn-e25e-merge-targeted.log` ends with
-`Build completed successfully.` Its 5607 aggregate audit entries match the
-root names and line numbers at `2cda48bd` (allowing Lean's qualification of
-printed names), ending at `AxiomsAudit.lean:6858` with
-`Pnp3.Tests.UniformV1FixedRawLengthFenceSurfaceTests.check_endpoint_definitions`.
-The merged union at `beba9d1b` contains 5659 roots: 52 roots absent from that
-log (30 G3s roots added at `a7086994` and 22 G3t roots added at `beba9d1b`).
-The successful log therefore supports the earlier audit snapshot; it does not
-validate the later merged union. Targeted validation of
-that union remains outstanding, and no successful merged-head build is claimed.
-
-This correction validates documentation consistency, Git diff, ancestry,
-frozen-byte identity and the read-only Python/Git freeze checker only. No Lean
-build, full check, negative-control replay or policy-suite replay is run.
-No full gate, fresh independent approval, remote CI or owner attestation is
-claimed for this correction. Release validation remains with the supervisor;
-no push, PR, squash or rebase is performed. This correction's own non-Lean
-checks and resulting SHA are recorded in
-`/root/reports/gn-e25e-beba-docfix-writer.md`.
+Earlier targeted snapshots were superseded for release purposes by candidate
+`95ba057c77f3cb60933c32b63bb4aec471d19239`. At that exact head the globally
+exclusive `pnp2-full-check` passed all 17 steps, Codex approved, and Opus 5
+approved as the documented Fable 5.1 account-limit fallback. PR #1815 is the
+durable source for owner authorization and raw CI/CodeQL/freeze-policy rollups.
+Any later documentation-only remediation must receive latest-head review and
+green rollups before merge; it does not alter the stage-(a)/(b) freeze pair.

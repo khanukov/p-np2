@@ -73,11 +73,10 @@ no Lean or frozen byte: it repins the checker constants and regenerates the
 schema-3 manifest from the committed Git subtree and completes the documentation.
 The fresh authorization and requirement-1 rationale are recorded in
 [TMVERIFIER_FREEZE.md](TMVERIFIER_FREEZE.md#authorized-gn-e2-5e-local-migration-2026-10-02).
-No squash, push, or PR is part of this task. The history through integration
-head `beba9d1b` adds the three merges recorded below after stage (b); this
-documentation correction is a later child, not a new freeze migration.
-Original targeted Lane B validation and pre-correction commit identifiers are
-recorded in `/tmp/gn-e25e-writer-report.md`; no full-check run is claimed.
+The history through integration head `beba9d1b` adds the three merges recorded
+below after stage (b); later documentation-only children are not new freeze
+migrations. Release candidate `95ba057c` and PR #1815 supply the durable
+validation and review record.
 
 ## Ordered content-addressed migration
 
@@ -90,12 +89,8 @@ the checker pins, generated manifest, slice and freeze decision records, and
 current-status documentation relative to stage (a). No Lean or frozen byte
 changes in stage (b). Its amendment from superseded unpushed
 `18ac69f15ac7d4d854802f8cfb5c7026673d893d` leaves checker pins and manifest
-unchanged. Original post-repin validation is recorded in
-`/tmp/gn-e25e-writer-report.md`; stage-(b) amendment checks are recorded in
-`/tmp/gn-e25e-docfix-report.md`. The prior documentation correction at
-`20945334` is recorded in
-`/root/reports/gn-e25e-a708-docfix-writer.md`. This correction's checks and
-resulting SHA are recorded in `/root/reports/gn-e25e-beba-docfix-writer.md`.
+unchanged. PR #1815 records the review sequence, owner authorization, and raw remote
+check rollups for the release candidate while preserving this ancestry.
 
 Release scope is measured at integration head
 `beba9d1b669323e1dd01ae65a853afb1af090537` against its main parent
@@ -124,18 +119,14 @@ rule 3(b) through a documentation-only amendment; that amendment changed no
 Lean, checker pin, manifest or frozen byte. This later documentation correction
 preserves that pair and all three integration merges in ancestry.
 
-Validation is targeted only. Original implementation and stage-(b) evidence
-remains scoped to those snapshots. The existing successful targeted-build log
-`/tmp/lane-b-gn-e25e-merge-targeted.log` matches the earlier integration head
-`2cda48bd`: 5607 aggregate audit entries, ending at `AxiomsAudit.lean:6858`.
-It does not validate the merged `AxiomsAudit.lean` union at `beba9d1b`, which
-contains 5659 roots: 52 roots absent from that log (30 G3s roots added at
-`a7086994` and 22 G3t roots added at `beba9d1b`). Targeted
-validation of that merged union remains outstanding; no successful merged-head
-build is claimed. This correction runs only documentation/Git consistency
-checks and read-only freeze verification. No Lean build or full check is run,
-and no full gate, fresh independent approval, remote CI or owner attestation is
-claimed for this correction. No push is performed.
+Release candidate `95ba057c77f3cb60933c32b63bb4aec471d19239` was
+validated after the third integration merge: the globally exclusive
+`pnp2-full-check` passed all 17 steps, exact-head Codex approved, and exact-head
+Opus 5 approved as the documented Fable 5.1 account-limit fallback. PR #1815
+is the durable release record for those reviews, owner authorization, and raw
+CI/CodeQL/freeze-policy rollups. Any later documentation-only remediation must
+again receive latest-head review and green rollups before merge; PR #1815's
+current head and check rollup, rather than a host-local log, are authoritative.
 
 Reproduce the release Lean scope with immutable endpoints (sum the first two
 columns and count the rows):
@@ -152,14 +143,10 @@ comparison is separately reproducible:
 git diff --shortstat 067b9ff6253dfa746dfe34e591d2739344593eb9 beba9d1b669323e1dd01ae65a853afb1af090537
 ```
 
-The targeted log ends with `Build completed successfully.` Its 5607 aggregate
-audit messages match the root names and line numbers at `2cda48bd` (allowing
-Lean's qualification of printed names); its last root is
-`Pnp3.Tests.UniformV1FixedRawLengthFenceSurfaceTests.check_endpoint_definitions`.
-The 30 roots added at `a7086994` and 22 added at `beba9d1b` do not occur in
-the log: 52 roots of the current 5659-root union are absent. This identifies
-the audit snapshot supported by that log, not a successful build of the later
-merged union. Release validation remains with the supervisor.
+The earlier 5607-root targeted build at `2cda48bd` did not include 52 later
+G3s/G3t aggregate roots. That historical limitation was superseded by the
+17-step full gate at exact release candidate `95ba057c`, which checked the
+merged union. PR #1815 is authoritative for latest-head remote checks.
 
 ## Exact public endpoint declarations and hypotheses
 

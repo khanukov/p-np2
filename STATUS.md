@@ -228,6 +228,12 @@ no input function, address, width, target, parse, clock, dispatcher witness or
 advice. The old tables, raw encoding, initializer, allocation and interpreter
 are unchanged.
 
+Here `machine.accept` (state 265) is the first-bit suffix's `qDone` embedded
+in the composed machine. Under the stated hypotheses, the raw run reaches
+this absorbing state with the specified full tape. This certifies completion
+of the first-bit operation; it does not establish content-verifier correctness
+or characterize acceptance of the intended language.
+
 Write `L=a+m`, `R=2*a+1+m`, `P=3*R+2`, `F=P-(L+3+z)`, `E=9+2*z`, and
 `H=min L E`. The raw success theorem assumes the matching tag, decoded gamma
 width `z>=2`, `B>=2*R+2`, the actual strict dispatcher witness, low and high
@@ -246,6 +252,11 @@ success clock. With the bounded dispatcher, the raw clock is at most
 `144*(R+1)^2`; allocation stays `16*(R+1)^2`. Strict overflow routes directly
 to composed reject 266 with G3u's full rejecting tape/head and clock; it
 requires no positive-payload premise. Equality with capacity is success.
+
+`ContentRawFencedTableFirstBitBridge.lean` supplies
+`contentInput?_x_apply_canonical`, the source-field equality, and
+`raw_first_table_bit_parsed_target`, the conditional full raw execution
+theorem described here.
 
 `raw_first_table_bit_parsed_target` uses the **same dependent `pr`** supplied
 by `contentInput?`. Its caller premises are successful parse, explicit matching

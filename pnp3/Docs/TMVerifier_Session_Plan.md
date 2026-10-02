@@ -27,18 +27,42 @@ The full tape is the bits of `encodeGNAtFrames r [res] ++
 `gnFirstCommit_structure` links this run to `gnCommit? r [] res`;
 `gnFirstCommit_scratch_preserved` preserves every cell at or above `N`.
 
-Scope against base `067b9ff6253dfa746dfe34e591d2739344593eb9`:
+Release scope is measured at integration head
+`a7086994cebe3dcee10fba463f736fd23e13d3cf` against its main parent
+`ea574c53644e19a0f24c0bdf0f356d1c403b60ea`:
 **1093 additions + 12 deletions = 1105 changed Lean LOC across nine Lean files**
-(eight modules plus `lakefile.lean`). Stage (a) is unchanged at
-`a1bd06ee3639879c1b9e4b8563d7c856185a1d86`; its immediate stage-(b) child is
-amended to correct these records under freeze rule 3(b), with no Lean, checker
-pin, manifest or frozen-byte change in the documentation correction.
-Validation is targeted only: prior Lane B build/audit evidence belongs to the
-implementation and original stage-(b) snapshot; this correction runs only
-non-Lean documentation/Git checks and read-only freeze verification.
-No full gate, independent approval, remote CI or owner attestation is claimed
-for the corrected head. The globally exclusive full gate is active elsewhere;
-no Lean build or full check is run here. No push is performed.
+(eight modules plus `lakefile.lean`). The original stage-(a) parent
+`067b9ff6253dfa746dfe34e591d2739344593eb9` is historical, not the release-scope
+base. Two `origin/main` integration merges followed stage (b):
+`2cda48bd9ed267e4c47c0cd3bb7cd35e36dc75fb` merged
+`bedc3d1710d034dc913b862969b7b436a7cc0bcc`, then
+`a7086994cebe3dcee10fba463f736fd23e13d3cf` merged
+`ea574c53644e19a0f24c0bdf0f356d1c403b60ea`. The original-base-to-integration-head
+whole-repository diff is 4103 additions + 88 deletions across 28 files,
+including main's G3r/G3s work; it is not the slice's Lean scope.
+Both merges preserve the GN-E2-5e owner, extension modules, focused tests,
+checker pins and manifest; shared registrations, aggregate audits and status
+records incorporate main's changes.
+
+The explicit freeze decision pair is stage (a)
+`a1bd06ee3639879c1b9e4b8563d7c856185a1d86` and its immediate corrected
+stage-(b) child `1cefc7a0670c32254491978615b100071bc84a9c`.
+The latter superseded `18ac69f15ac7d4d854802f8cfb5c7026673d893d` under freeze
+rule 3(b) through a documentation-only amendment; that amendment changed no
+Lean, checker pin, manifest or frozen byte. This later documentation correction
+preserves that pair and both integration merges in ancestry.
+
+Validation is targeted only. Original implementation and stage-(b) evidence
+remains scoped to those snapshots. The existing successful targeted-build log
+`/tmp/lane-b-gn-e25e-merge-targeted.log` matches the earlier integration head
+`2cda48bd`: 5607 aggregate audit entries, ending at `AxiomsAudit.lean:6858`.
+It does not validate the merged `AxiomsAudit.lean` union at `a7086994`, which
+contains 5637 roots, including 30 G3s roots absent from that log. Targeted
+validation of that merged union remains outstanding; no successful merged-head
+build is claimed. This correction runs only documentation/Git consistency
+checks and read-only freeze verification. No Lean build or full check is run,
+and no full gate, fresh independent approval, remote CI or owner attestation is
+claimed for this correction. No push is performed.
 
 **Current open obligations:** arbitrary-stage gate advance/loop, scratch
 reset/reuse, program verdict, GN acceptance, first-arrival minimality, composed

@@ -35,18 +35,42 @@ The full tape is the bits of `encodeGNAtFrames r [res] ++
 `gnFirstCommit_structure` links this run to `gnCommit? r [] res`;
 `gnFirstCommit_scratch_preserved` preserves every cell at or above `N`.
 
-Scope against base `067b9ff6253dfa746dfe34e591d2739344593eb9`:
+Release scope is measured at integration head
+`a7086994cebe3dcee10fba463f736fd23e13d3cf` against its main parent
+`ea574c53644e19a0f24c0bdf0f356d1c403b60ea`:
 **1093 additions + 12 deletions = 1105 changed Lean LOC across nine Lean files**
-(eight modules plus `lakefile.lean`). Stage (a) is unchanged at
-`a1bd06ee3639879c1b9e4b8563d7c856185a1d86`; its immediate stage-(b) child is
-amended to correct these records under freeze rule 3(b), with no Lean, checker
-pin, manifest or frozen-byte change in the documentation correction.
-Validation is targeted only: prior Lane B build/audit evidence belongs to the
-implementation and original stage-(b) snapshot; this correction runs only
-non-Lean documentation/Git checks and read-only freeze verification.
-No full gate, independent approval, remote CI or owner attestation is claimed
-for the corrected head. The globally exclusive full gate is active elsewhere;
-no Lean build or full check is run here. No push is performed.
+(eight modules plus `lakefile.lean`). The original stage-(a) parent
+`067b9ff6253dfa746dfe34e591d2739344593eb9` is historical, not the release-scope
+base. Two `origin/main` integration merges followed stage (b):
+`2cda48bd9ed267e4c47c0cd3bb7cd35e36dc75fb` merged
+`bedc3d1710d034dc913b862969b7b436a7cc0bcc`, then
+`a7086994cebe3dcee10fba463f736fd23e13d3cf` merged
+`ea574c53644e19a0f24c0bdf0f356d1c403b60ea`. The original-base-to-integration-head
+whole-repository diff is 4103 additions + 88 deletions across 28 files,
+including main's G3r/G3s work; it is not the slice's Lean scope.
+Both merges preserve the GN-E2-5e owner, extension modules, focused tests,
+checker pins and manifest; shared registrations, aggregate audits and status
+records incorporate main's changes.
+
+The explicit freeze decision pair is stage (a)
+`a1bd06ee3639879c1b9e4b8563d7c856185a1d86` and its immediate corrected
+stage-(b) child `1cefc7a0670c32254491978615b100071bc84a9c`.
+The latter superseded `18ac69f15ac7d4d854802f8cfb5c7026673d893d` under freeze
+rule 3(b) through a documentation-only amendment; that amendment changed no
+Lean, checker pin, manifest or frozen byte. This later documentation correction
+preserves that pair and both integration merges in ancestry.
+
+Validation is targeted only. Original implementation and stage-(b) evidence
+remains scoped to those snapshots. The existing successful targeted-build log
+`/tmp/lane-b-gn-e25e-merge-targeted.log` matches the earlier integration head
+`2cda48bd`: 5607 aggregate audit entries, ending at `AxiomsAudit.lean:6858`.
+It does not validate the merged `AxiomsAudit.lean` union at `a7086994`, which
+contains 5637 roots, including 30 G3s roots absent from that log. Targeted
+validation of that merged union remains outstanding; no successful merged-head
+build is claimed. This correction runs only documentation/Git consistency
+checks and read-only freeze verification. No Lean build or full check is run,
+and no full gate, fresh independent approval, remote CI or owner attestation is
+claimed for this correction. No push is performed.
 
 **Current open obligations:** arbitrary-stage gate advance/loop, scratch
 reset/reuse, program verdict, GN acceptance, first-arrival minimality, composed
@@ -2178,32 +2202,70 @@ freedom and Lane B N1/N3 remain open. No P-vs-NP source obligation is reduced.
 
 | Item | Exact value |
 | --- | --- |
-| Exact base / stage-(a) parent | `067b9ff6253dfa746dfe34e591d2739344593eb9` |
+| Original historical base / stage-(a) parent | `067b9ff6253dfa746dfe34e591d2739344593eb9` |
 | Stage (a), unchanged implementation provenance | `a1bd06ee3639879c1b9e4b8563d7c856185a1d86` |
 | Stage-(a) whole repository tree | `06601fd2bfcfe40fc22a9c8e6f27f1c40fd719d7` |
 | Authoritative TMVerifier subtree at both stages | `17eded124b0b76fb02ceca62b8ad82d91d0fe288` |
 | Previous provenance | `09d043bd242a81458fbe68caf26e4aadbf4b4ac3` |
 | Previous authoritative subtree | `455c53bd237af6319c1cadb744cc2575081a13e2` |
 | Superseded unpushed stage-(b) commit | `18ac69f15ac7d4d854802f8cfb5c7026673d893d` |
+| **Corrected stage (b)** — current decision pair with stage (a) | `1cefc7a0670c32254491978615b100071bc84a9c` |
+| First integration merge, of main `bedc3d1710d034dc913b862969b7b436a7cc0bcc` | `2cda48bd9ed267e4c47c0cd3bb7cd35e36dc75fb` |
+| Second integration merge, of main `ea574c53644e19a0f24c0bdf0f356d1c403b60ea` | `a7086994cebe3dcee10fba463f736fd23e13d3cf` |
+| Scope-measurement base (integration head `a7086994`'s main parent) | `ea574c53644e19a0f24c0bdf0f356d1c403b60ea` |
 
-The corrected stage (b) is this commit, the immediate child of stage (a); its
-exact resulting SHA is recorded after amendment in
-`/tmp/gn-e25e-docfix-report.md`. Rule 3(b) is satisfied within stage (b), not by
-a later child. The schema-3 manifest retains all 120 paths/modes; relative to
-the base only the owner's blob/hash changes. Stage (b) changes no Lean or
-frozen byte. The amendment changes neither checker pins nor manifest.
+The current decision pair is stage (a) `a1bd06ee3639879c1b9e4b8563d7c856185a1d86`
+with the corrected stage (b) `1cefc7a0670c32254491978615b100071bc84a9c`, its
+immediate child; the original stage (b) `18ac69f15ac7d4d854802f8cfb5c7026673d893d`
+is superseded. Rule 3(b) is satisfied within stage (b), not by a later child.
+The two integration merges listed above are later descendants and carry no new
+freeze decision: the frozen subtree is `17eded124b0b76fb02ceca62b8ad82d91d0fe288`
+at stage (a), stage (b) and both merges. This documentation-only child preserves
+those bytes and ancestry. The schema-3 manifest retains all 120 paths/modes;
+relative to the historical base, only the owner's blob/hash changes. Stage (b)
+changes no Lean or frozen byte; its documentation amendment changes neither
+checker pins nor manifest.
 
-The base-to-head Lean delta remains **1093 additions + 12 deletions = 1105
-changed Lean LOC across nine Lean files** (eight modules plus `lakefile.lean`).
+Measured at integration head `a7086994cebe3dcee10fba463f736fd23e13d3cf`
+against its main parent `ea574c53644e19a0f24c0bdf0f356d1c403b60ea`, the Lean delta
+is **1093 additions + 12 deletions = 1105 changed Lean LOC across nine Lean files**
+(eight modules plus `lakefile.lean`). Reproduce it with:
+
+```sh
+git diff --numstat ea574c53644e19a0f24c0bdf0f356d1c403b60ea a7086994cebe3dcee10fba463f736fd23e13d3cf -- '*.lean'
+```
+
+The historical base `067b9ff6253dfa746dfe34e591d2739344593eb9` compared to
+`a7086994` instead gives 4103 additions + 88 deletions across 28 files for the
+whole repository, including main's G3r/G3s work. Both merges preserve the
+GN-E2-5e owner, extension modules, focused tests, checker pins and manifest;
+shared registrations, aggregate audits and status records incorporate main's
+changes. The slice record supplies the historical comparison command too.
+
 Prior targeted Lane B builds, 26 focused roots, 24 new aggregate roots (plus
 the two existing owner roots), old-checker single-owner failure, and post-repin
 freeze/negative/policy checks are recorded for the original implementation in
 `/tmp/gn-e25e-writer-report.md`. The Fable review at superseded `18ac69f1`
-requested these two documentation corrections; it is not an approval of the
-corrected head. This amendment validates documentation consistency, Git diff,
-ancestry, frozen-byte identity and the read-only Python/Git freeze checker only.
-No Lean build, full check, negative-control replay or policy-suite replay is run
-during this correction because the globally exclusive full gate is active.
+requested the earlier documentation corrections. The exact-head review
+`/root/reports/gn-e25e-a708-opus5-fallback-review.md` requested the release-base,
+decision-pair and merged-head evidence corrections here; neither review is an
+approval of this correction.
+
+The existing targeted log `/tmp/lane-b-gn-e25e-merge-targeted.log` ends with
+`Build completed successfully.` Its 5607 aggregate audit entries match the
+root names and line numbers at `2cda48bd` (allowing Lean's qualification of
+printed names), ending at `AxiomsAudit.lean:6858` with
+`Pnp3.Tests.UniformV1FixedRawLengthFenceSurfaceTests.check_endpoint_definitions`.
+The merged union at `a7086994` contains 5637 roots, including 30 added G3s roots
+absent from that log. The successful log therefore supports the earlier audit
+snapshot; it does not validate the later merged union. Targeted validation of
+that union remains outstanding, and no successful merged-head build is claimed.
+
+This correction validates documentation consistency, Git diff, ancestry,
+frozen-byte identity and the read-only Python/Git freeze checker only. No Lean
+build, full check, negative-control replay or policy-suite replay is run.
 No full gate, fresh independent approval, remote CI or owner attestation is
-claimed for the corrected head. Release validation remains with the supervisor;
-no push, PR, squash or rebase is performed.
+claimed for this correction. Release validation remains with the supervisor;
+no push, PR, squash or rebase is performed. This correction's own non-Lean
+checks and resulting SHA are recorded in
+`/root/reports/gn-e25e-a708-docfix-writer.md`.

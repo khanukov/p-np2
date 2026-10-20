@@ -1,5 +1,27 @@
 # TODO / Roadmap (current)
 
+**Part A foundation integration (2026-10-20, Infrastructure only).**
+The first seven `Body`/`AcceptedBody` modules and `Tests.PartABodySurfaceTests`
+are registered; all 117 direct roots are in canonical `Tests.AxiomsAudit`.
+This is conditional raw counter
+execution, not a semantic content verdict: `AcceptedBody.exact` assumes the
+accepted guarded relation, with the orbit conditional on the decoded-target
+lower bound `3 ≤ pr.2.n`. The initial seven-source/two-consumer Lake `--wfail`
+build passed. The fresh adapted central audit was marked Built and printed all
+117 expected standard-axiom roots; the aggregate `--wfail` attempt ended at
+2026-10-20 09:54 UTC with exit 1 on 54 warnings in eight unchanged base modules.
+Keep that failure distinct from the separately required warning-as-error
+consumer, full-repository and latest-head release checks. See
+[pnp3/Docs/PART_A_BODY_FOUNDATION.md](pnp3/Docs/PART_A_BODY_FOUNDATION.md).
+Continue with dependency-closed runtime-reader/evaluator/verifier consumers,
+retaining exact-head source, full-repository and release verification.
+The all-input verifier and
+versioned/ordinary membership endpoint are not part of this slice; the
+legacy-model NP-witness bridge and `ContentVerifierBridge` remain open.
+Neither `SearchMCSPWeakLowerBound` nor `VerifiedNPDAGLowerBoundSource` is reduced,
+and no `P != NP` conclusion is supplied. Preserve the independent GN/Lane B
+follow-ups below rather than treating this counter as their closure.
+
 **GN-E2-5e (2026-10-02, Infrastructure only): canonical first-return commit is closed.**
 `gnCS_firstReturned_commit_exact` has implicit parameters
 `{r : GNProgram} {g : SLGate r.inputs.length}` and explicit parameters

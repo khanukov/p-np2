@@ -10,6 +10,26 @@ bounded budget transport for a fixed `UniformTM`; P2-3cB2 adds the routed
 combined-machine constructor and exact parser handoff; P2-3cB3 proves total
 combined relation verification.
 
+**Part A foundation integration (2026-10-20, Infrastructure only).** The seven
+`Body`/`AcceptedBody` modules add fixed raw-origin unary installation and binary
+counter execution, with named full-proposition mirrors and direct axiom roots
+in `Tests.PartABodySurfaceTests` and canonical `Tests.AxiomsAudit`.
+`AcceptedBody.exact` assumes semantic acceptance of the guarded relation;
+its orbit is conditional on the decoded-target lower bound `3 ≤ pr.2.n`.
+The initial seven-source/two-consumer Lake `--wfail` build passed. The adapted
+central audit was freshly marked Built and printed all 117 expected roots
+with standard axioms only; the aggregate `--wfail` attempt ended at
+2026-10-20 09:54 UTC with exit 1 on 54 warnings in eight unchanged base modules.
+That failed gate is preserved. A separate warning-as-error consumer compile,
+canonical full-repository check and latest-head automated checks are required
+for release; none follows from the fresh Built marker alone.
+Counter overflow and producer handoffs are not language verdicts. This first
+slice does not yet provide the all-input `Body.Target.PartA` verifier family,
+the legacy NP-witness bridge or `ContentVerifierBridge`, and does not alter
+canonical `P`/`NP` or close a P-vs-NP source obligation. Exact contracts,
+source hashes and unchanged source options are in
+[PART_A_BODY_FOUNDATION.md](PART_A_BODY_FOUNDATION.md).
+
 The versioned namespace is:
 
 ```text

@@ -1,5 +1,32 @@
 # Project Status (current)
 
+**Part A Body/AcceptedBody foundation (2026-10-20, Infrastructure only).**
+The first dependency-closed integration slice registers the five `Body` modules,
+`AcceptedBody.Target`, `AcceptedBody.Closure`, and the focused public-contract
+consumer; the direct roots are integrated into the existing central audit.
+`Body.raw_counter_parsed` and `Body.raw_repeated_parsed` execute the
+literal raw-origin unary installation/counter orbit under their stated parse,
+tag, decoded-target lower bound `3 ≤ pr.2.n`, and capacity premises.
+`AcceptedBody.exact` derives the
+accepted orbit from the guarded relation's semantic-acceptance premise. Work
+acceptance here is counter overflow or a handoff, **not a content verdict**.
+The named complete-proposition mirrors and direct axiom roots are in
+`Tests.PartABodySurfaceTests` and canonical `Tests.AxiomsAudit`; signatures, exact
+source provenance and resource options are recorded in
+[pnp3/Docs/PART_A_BODY_FOUNDATION.md](pnp3/Docs/PART_A_BODY_FOUNDATION.md).
+This slice does not supply an all-input verifier, a legacy-model NP witness,
+`ContentVerifierBridge`, either P-vs-NP mainline source obligation, or `P != NP`.
+The remaining private verifier consumers are not implicitly integrated by this
+foundation, and the separate GN/Lane B obligations below are unchanged.
+The initial seven-source/two-consumer Lake `--wfail` build passed. After moving
+the 117 roots into the central audit, the fresh canonical compiler was marked
+Built and emitted all 117 expected roots with standard axioms only. Its aggregate
+Lake `--wfail` attempt ended at 2026-10-20 09:54 UTC with exit 1 because of 54
+warnings in eight unchanged base modules; this is preserved as a failed gate.
+Release verification separately requires a warning-as-error audit-consumer
+compile, the canonical full-repository check and latest-head automated checks;
+the fresh Built marker does not substitute for these gates.
+
 **GN-E2-5e (2026-10-02, Infrastructure only): canonical first-return commit is closed.**
 `gnCS_firstReturned_commit_exact` has implicit parameters
 `{r : GNProgram} {g : SLGate r.inputs.length}` and explicit parameters

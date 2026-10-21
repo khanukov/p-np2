@@ -1,14 +1,18 @@
 <!-- Part A R1 local prefix; publication is coordinator-owned. -->
 
-Part A R1 (2026-10-21), Infrastructure: local uncommitted release-prefix preparation
+Part A R1 (Infrastructure) was locally committed on 2026-10-21 at
+`e33fae0fabb930f744366b479d66575c7d6702f7`. This prefix
 adds only InputRead, GammaSupport and ConnectedRead (9 exact original modules,
 815 physical source lines) over the already accepted Body/AcceptedBody seven.
 The actual prefix public API has 213 owner-resolved names and 108 theorem-kind
 entries. Existing full mirrors are reused; missing literal mirrors, independent
 expected-type pins and direct canonical roots are separate finite sets.
-Local compiler receipts and the unchanged default check-script result are recorded
-in the R1 report; source review, exact-head protected-path attestation, raw CI and
-release acceptance remain pending. The ordinary 1500 gross changed Lean LOC /
+Scoped Codex+Claude source opinions approve that implementation with a chronology
+LOW addressed by this docs-only follow-up; its unchanged default17 has actual
+parent-verified PASS. This follow-up makes no semantic source change or remote release.
+The implementation SHA is a fixed historical referent. New-docs-head source/docs
+closure and default17, exact-head protected-path attestation, raw CI and release
+acceptance remain pending. The ordinary 1500 gross changed Lean LOC /
 10 MODULES policy remains; this prefix uses the already authorized finite
 migration exception for exact sources and measured mechanical integration.
 This is not Part A completion, a lower bound, P != NP or legacy TM bridge closure.

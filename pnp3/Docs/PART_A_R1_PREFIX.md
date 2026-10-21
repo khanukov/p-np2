@@ -1,9 +1,16 @@
 # Part A R1 connected reader prefix
 
-This is Infrastructure and local uncommitted release preparation. The accepted
+This Infrastructure implementation was locally committed on 2026-10-21 at
+`e33fae0fabb930f744366b479d66575c7d6702f7`. The accepted
 Body/AcceptedBody seven remain unchanged. Only InputRead.Machine/Path/Target/Proof/Raw,
 GammaSupport.Target/Closure and ConnectedRead.Target/Closure are new originals:
 815 physical source lines, copied with exact admitted bytes and private owners.
+
+Scoped Codex+Claude source opinions approve the implementation with the chronology
+LOW addressed by this docs-only follow-up. Its unchanged default17 has actual
+parent-verified PASS: all 17 stages and 622 own-context standard-only direct roots.
+This follow-up changes three docs only. Results for the fixed implementation SHA
+do not establish new-docs-head checks or approval, raw CI or remote release.
 
 The full ConnectedRead.exact surface retains accepted-input parsing, table support,
 the n >= 3 guard, physical gamma support 9+2*z <= a+m, the whole final Config and
@@ -37,9 +44,14 @@ priced. Ordinary policy is 1500 additions+deletions of Lean LOC /10 MODULES.
 The human-authorized finite migration exception is not a global cap waiver.
 
 Part A remains OPEN. This prefix does not close the legacy TM bridge or produce
-an NP lower bound against PpolyDAG. Source/helper review in this exact import
-context, final-head Codex+Claude alignment, protected Lake-path attestation,
+an NP lower bound against PpolyDAG. New-docs-head source/docs closure,
+final-head Codex+Claude alignment, protected Lake-path attestation,
 serialized final-head checks, raw CI and publication remain coordinator work.
+
+Historical worker scope and dated addenda follow verbatim. Their no-commit,
+uncommitted/admission and pending-review fields describe earlier phases and are
+superseded for the implementation by the fixed-SHA current status above.
+
 No staging, commit, push, merge, PR or Qodo action is authorized in this phase.
 
 The unchanged default17 script has literal /tmp log paths outside this R1 worker's

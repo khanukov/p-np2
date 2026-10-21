@@ -1,3 +1,5 @@
+import Tests.PartAR1ConsumerTypes
+import Tests.PartACanonicalAuditSupport
 import Tests.PartABodySurfaceTests
 import Tests.TMGateNFixedDelegateRelocationSurfaceTests
 import Tests.TMGateNFirstCommitSurfaceTests
@@ -7058,3 +7060,1249 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_sweep
 #print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_value_lt
 #print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_zero_value
+
+-- R1 canonical release prefix: direct roots in this invoking audit context.
+#print axioms AcceptedBody.AcceptedOrbit
+#partA_axioms "AcceptedBody.AcceptedOrbit"
+#print axioms AcceptedBody.Parsed
+#partA_axioms "AcceptedBody.Parsed"
+#print axioms AcceptedBody.clock_bound
+#partA_axioms "AcceptedBody.clock_bound"
+#print axioms AcceptedBody.concat_eq_append
+#partA_axioms "AcceptedBody.concat_eq_append"
+#print axioms AcceptedBody.deadline
+#partA_axioms "AcceptedBody.deadline"
+#print axioms AcceptedBody.exact
+#partA_axioms "AcceptedBody.exact"
+#print axioms AcceptedBody.strict_capacity
+#partA_axioms "AcceptedBody.strict_capacity"
+#print axioms AcceptedBody.table_support
+#partA_axioms "AcceptedBody.table_support"
+#print axioms Body.Edge
+#partA_axioms "Body.Edge"
+#print axioms Body.Edge.after
+#partA_axioms "Body.Edge.after"
+#print axioms Body.Edge.before
+#partA_axioms "Body.Edge.before"
+#print axioms Body.Edge.casesOn
+#partA_axioms "Body.Edge.casesOn"
+#print axioms Body.Edge.mk
+#partA_axioms "Body.Edge.mk"
+#print axioms Body.Edge.move
+#partA_axioms "Body.Edge.move"
+#print axioms Body.Edge.noConfusion
+#partA_axioms "Body.Edge.noConfusion"
+#print axioms Body.Edge.noConfusionType
+#partA_axioms "Body.Edge.noConfusionType"
+#print axioms Body.Edge.noConfusionType.withCtor
+#partA_axioms "Body.Edge.noConfusionType.withCtor"
+#print axioms Body.Edge.noConfusionType.withCtorType
+#partA_axioms "Body.Edge.noConfusionType.withCtorType"
+#print axioms Body.Edge.rec
+#partA_axioms "Body.Edge.rec"
+#print axioms Body.Edge.recOn
+#partA_axioms "Body.Edge.recOn"
+#print axioms Body.Edge.row
+#partA_axioms "Body.Edge.row"
+#print axioms Body.Edge.tape
+#partA_axioms "Body.Edge.tape"
+#print axioms Body.Good
+#partA_axioms "Body.Good"
+#print axioms Body.Node
+#partA_axioms "Body.Node"
+#print axioms Body.Node.casesOn
+#partA_axioms "Body.Node.casesOn"
+#print axioms Body.Node.head
+#partA_axioms "Body.Node.head"
+#print axioms Body.Node.mk
+#partA_axioms "Body.Node.mk"
+#print axioms Body.Node.mk.inj
+#partA_axioms "Body.Node.mk.inj"
+#print axioms Body.Node.mk.injEq
+#partA_axioms "Body.Node.mk.injEq"
+#print axioms Body.Node.mk.sizeOf_spec
+#partA_axioms "Body.Node.mk.sizeOf_spec"
+#print axioms Body.Node.noConfusion
+#partA_axioms "Body.Node.noConfusion"
+#print axioms Body.Node.noConfusionType
+#partA_axioms "Body.Node.noConfusionType"
+#print axioms Body.Node.noConfusionType.withCtor
+#partA_axioms "Body.Node.noConfusionType.withCtor"
+#print axioms Body.Node.noConfusionType.withCtorType
+#partA_axioms "Body.Node.noConfusionType.withCtorType"
+#print axioms Body.Node.rec
+#partA_axioms "Body.Node.rec"
+#print axioms Body.Node.recOn
+#partA_axioms "Body.Node.recOn"
+#print axioms Body.Node.state
+#partA_axioms "Body.Node.state"
+#print axioms Body.Node.tape
+#partA_axioms "Body.Node.tape"
+#print axioms Body.Path
+#partA_axioms "Body.Path"
+#print axioms Body.Path.append
+#partA_axioms "Body.Path.append"
+#print axioms Body.Path.below
+#partA_axioms "Body.Path.below"
+#print axioms Body.Path.below.casesOn
+#partA_axioms "Body.Path.below.casesOn"
+#print axioms Body.Path.below.cons
+#partA_axioms "Body.Path.below.cons"
+#print axioms Body.Path.below.nil
+#partA_axioms "Body.Path.below.nil"
+#print axioms Body.Path.below.rec
+#partA_axioms "Body.Path.below.rec"
+#print axioms Body.Path.bounds
+#partA_axioms "Body.Path.bounds"
+#print axioms Body.Path.casesOn
+#partA_axioms "Body.Path.casesOn"
+#print axioms Body.Path.cons
+#partA_axioms "Body.Path.cons"
+#print axioms Body.Path.execute
+#partA_axioms "Body.Path.execute"
+#print axioms Body.Path.nil
+#partA_axioms "Body.Path.nil"
+#print axioms Body.Path.rec
+#partA_axioms "Body.Path.rec"
+#print axioms Body.Path.recOn
+#partA_axioms "Body.Path.recOn"
+#print axioms Body.Reads
+#partA_axioms "Body.Reads"
+#print axioms Body.Reads.eq_1
+#partA_axioms "Body.Reads.eq_1"
+#print axioms Body.Target.PartA
+#partA_axioms "Body.Target.PartA"
+#print axioms Body.Target.Round
+#partA_axioms "Body.Target.Round"
+#print axioms Body.Target.Span
+#partA_axioms "Body.Target.Span"
+#print axioms Body.carryClock
+#partA_axioms "Body.carryClock"
+#print axioms Body.carryClock.eq_1
+#partA_axioms "Body.carryClock.eq_1"
+#print axioms Body.carryClock.eq_2
+#partA_axioms "Body.carryClock.eq_2"
+#print axioms Body.carryClock.eq_3
+#partA_axioms "Body.carryClock.eq_3"
+#print axioms Body.carryTape
+#partA_axioms "Body.carryTape"
+#print axioms Body.carryTape.eq_1
+#partA_axioms "Body.carryTape.eq_1"
+#print axioms Body.carryTape.eq_2
+#partA_axioms "Body.carryTape.eq_2"
+#print axioms Body.carryTape.eq_3
+#partA_axioms "Body.carryTape.eq_3"
+#print axioms Body.carry_frame
+#partA_axioms "Body.carry_frame"
+#print axioms Body.carry_path
+#partA_axioms "Body.carry_path"
+#print axioms Body.carry_reads
+#partA_axioms "Body.carry_reads"
+#print axioms Body.clear
+#partA_axioms "Body.clear"
+#print axioms Body.clear.eq_1
+#partA_axioms "Body.clear.eq_1"
+#print axioms Body.clear_step
+#partA_axioms "Body.clear_step"
+#print axioms Body.dest
+#partA_axioms "Body.dest"
+#print axioms Body.dest.eq_1
+#partA_axioms "Body.dest.eq_1"
+#print axioms Body.dest.eq_2
+#partA_axioms "Body.dest.eq_2"
+#print axioms Body.dest.eq_3
+#partA_axioms "Body.dest.eq_3"
+#print axioms Body.embed
+#partA_axioms "Body.embed"
+#print axioms Body.embed.eq_1
+#partA_axioms "Body.embed.eq_1"
+#print axioms Body.extend
+#partA_axioms "Body.extend"
+#print axioms Body.extend.eq_1
+#partA_axioms "Body.extend.eq_1"
+#print axioms Body.extend_read
+#partA_axioms "Body.extend_read"
+#print axioms Body.first_accept_whole
+#partA_axioms "Body.first_accept_whole"
+#print axioms Body.good_of_lt
+#partA_axioms "Body.good_of_lt"
+#print axioms Body.hop
+#partA_axioms "Body.hop"
+#print axioms Body.inc
+#partA_axioms "Body.inc"
+#print axioms Body.inc.eq_1
+#partA_axioms "Body.inc.eq_1"
+#print axioms Body.inc.eq_2
+#partA_axioms "Body.inc.eq_2"
+#print axioms Body.inc.eq_3
+#partA_axioms "Body.inc.eq_3"
+#print axioms Body.inc_length
+#partA_axioms "Body.inc_length"
+#print axioms Body.inc_value
+#partA_axioms "Body.inc_value"
+#print axioms Body.install_exact
+#partA_axioms "Body.install_exact"
+#print axioms Body.install_path
+#partA_axioms "Body.install_path"
+#print axioms Body.installedTape
+#partA_axioms "Body.installedTape"
+#print axioms Body.installedTape.eq_1
+#partA_axioms "Body.installedTape.eq_1"
+#print axioms Body.iterBits
+#partA_axioms "Body.iterBits"
+#print axioms Body.iterBits.eq_1
+#partA_axioms "Body.iterBits.eq_1"
+#print axioms Body.iterBits.eq_2
+#partA_axioms "Body.iterBits.eq_2"
+#print axioms Body.iterClock
+#partA_axioms "Body.iterClock"
+#print axioms Body.iterClock.eq_1
+#partA_axioms "Body.iterClock.eq_1"
+#print axioms Body.iterClock.eq_2
+#partA_axioms "Body.iterClock.eq_2"
+#print axioms Body.iter_clock_le
+#partA_axioms "Body.iter_clock_le"
+#print axioms Body.iter_length
+#partA_axioms "Body.iter_length"
+#print axioms Body.machine
+#partA_axioms "Body.machine"
+#print axioms Body.put
+#partA_axioms "Body.put"
+#print axioms Body.put.eq_1
+#partA_axioms "Body.put.eq_1"
+#print axioms Body.put_same
+#partA_axioms "Body.put_same"
+#print axioms Body.q
+#partA_axioms "Body.q"
+#print axioms Body.raw
+#partA_axioms "Body.raw"
+#print axioms Body.rawMachine
+#partA_axioms "Body.rawMachine"
+#print axioms Body.raw_counter_parsed
+#partA_axioms "Body.raw_counter_parsed"
+#print axioms Body.raw_repeated_parsed
+#partA_axioms "Body.raw_repeated_parsed"
+#print axioms Body.raw_source_after_header
+#partA_axioms "Body.raw_source_after_header"
+#print axioms Body.reads_cons
+#partA_axioms "Body.reads_cons"
+#print axioms Body.reads_put_outside
+#partA_axioms "Body.reads_put_outside"
+#print axioms Body.repeated_exact
+#partA_axioms "Body.repeated_exact"
+#print axioms Body.roundClock
+#partA_axioms "Body.roundClock"
+#print axioms Body.roundClock.eq_1
+#partA_axioms "Body.roundClock.eq_1"
+#print axioms Body.round_clock_le
+#partA_axioms "Body.round_clock_le"
+#print axioms Body.round_exact
+#partA_axioms "Body.round_exact"
+#print axioms Body.round_path
+#partA_axioms "Body.round_path"
+#print axioms Body.seed_path
+#partA_axioms "Body.seed_path"
+#print axioms Body.sweep
+#partA_axioms "Body.sweep"
+#print axioms Body.value
+#partA_axioms "Body.value"
+#print axioms Body.value.eq_1
+#partA_axioms "Body.value.eq_1"
+#print axioms Body.value.eq_2
+#partA_axioms "Body.value.eq_2"
+#print axioms Body.value_lt
+#partA_axioms "Body.value_lt"
+#print axioms Body.zero_value
+#partA_axioms "Body.zero_value"
+#print axioms ConnectedRead.Exact
+#partA_axioms "ConnectedRead.Exact"
+#print axioms ConnectedRead.exact
+#partA_axioms "ConnectedRead.exact"
+#print axioms GammaSupport.Exact
+#partA_axioms "GammaSupport.Exact"
+#print axioms GammaSupport.canonical
+#partA_axioms "GammaSupport.canonical"
+#print axioms GammaSupport.exact
+#partA_axioms "GammaSupport.exact"
+#print axioms InputRead.Edge
+#partA_axioms "InputRead.Edge"
+#print axioms InputRead.Edge.after
+#partA_axioms "InputRead.Edge.after"
+#print axioms InputRead.Edge.before
+#partA_axioms "InputRead.Edge.before"
+#print axioms InputRead.Edge.casesOn
+#partA_axioms "InputRead.Edge.casesOn"
+#print axioms InputRead.Edge.mk
+#partA_axioms "InputRead.Edge.mk"
+#print axioms InputRead.Edge.move
+#partA_axioms "InputRead.Edge.move"
+#print axioms InputRead.Edge.noConfusion
+#partA_axioms "InputRead.Edge.noConfusion"
+#print axioms InputRead.Edge.noConfusionType
+#partA_axioms "InputRead.Edge.noConfusionType"
+#print axioms InputRead.Edge.noConfusionType.withCtor
+#partA_axioms "InputRead.Edge.noConfusionType.withCtor"
+#print axioms InputRead.Edge.noConfusionType.withCtorType
+#partA_axioms "InputRead.Edge.noConfusionType.withCtorType"
+#print axioms InputRead.Edge.rec
+#partA_axioms "InputRead.Edge.rec"
+#print axioms InputRead.Edge.recOn
+#partA_axioms "InputRead.Edge.recOn"
+#print axioms InputRead.Edge.row
+#partA_axioms "InputRead.Edge.row"
+#print axioms InputRead.Edge.tape
+#partA_axioms "InputRead.Edge.tape"
+#print axioms InputRead.Node
+#partA_axioms "InputRead.Node"
+#print axioms InputRead.Node.casesOn
+#partA_axioms "InputRead.Node.casesOn"
+#print axioms InputRead.Node.head
+#partA_axioms "InputRead.Node.head"
+#print axioms InputRead.Node.mk
+#partA_axioms "InputRead.Node.mk"
+#print axioms InputRead.Node.mk.inj
+#partA_axioms "InputRead.Node.mk.inj"
+#print axioms InputRead.Node.mk.injEq
+#partA_axioms "InputRead.Node.mk.injEq"
+#print axioms InputRead.Node.mk.sizeOf_spec
+#partA_axioms "InputRead.Node.mk.sizeOf_spec"
+#print axioms InputRead.Node.noConfusion
+#partA_axioms "InputRead.Node.noConfusion"
+#print axioms InputRead.Node.noConfusionType
+#partA_axioms "InputRead.Node.noConfusionType"
+#print axioms InputRead.Node.noConfusionType.withCtor
+#partA_axioms "InputRead.Node.noConfusionType.withCtor"
+#print axioms InputRead.Node.noConfusionType.withCtorType
+#partA_axioms "InputRead.Node.noConfusionType.withCtorType"
+#print axioms InputRead.Node.rec
+#partA_axioms "InputRead.Node.rec"
+#print axioms InputRead.Node.recOn
+#partA_axioms "InputRead.Node.recOn"
+#print axioms InputRead.Node.state
+#partA_axioms "InputRead.Node.state"
+#print axioms InputRead.Node.tape
+#partA_axioms "InputRead.Node.tape"
+#print axioms InputRead.Path
+#partA_axioms "InputRead.Path"
+#print axioms InputRead.Path.append
+#partA_axioms "InputRead.Path.append"
+#print axioms InputRead.Path.below
+#partA_axioms "InputRead.Path.below"
+#print axioms InputRead.Path.below.casesOn
+#partA_axioms "InputRead.Path.below.casesOn"
+#print axioms InputRead.Path.below.cons
+#partA_axioms "InputRead.Path.below.cons"
+#print axioms InputRead.Path.below.nil
+#partA_axioms "InputRead.Path.below.nil"
+#print axioms InputRead.Path.below.rec
+#partA_axioms "InputRead.Path.below.rec"
+#print axioms InputRead.Path.bounds
+#partA_axioms "InputRead.Path.bounds"
+#print axioms InputRead.Path.casesOn
+#partA_axioms "InputRead.Path.casesOn"
+#print axioms InputRead.Path.cons
+#partA_axioms "InputRead.Path.cons"
+#print axioms InputRead.Path.execute
+#partA_axioms "InputRead.Path.execute"
+#print axioms InputRead.Path.nil
+#partA_axioms "InputRead.Path.nil"
+#print axioms InputRead.Path.rec
+#partA_axioms "InputRead.Path.rec"
+#print axioms InputRead.Path.recOn
+#partA_axioms "InputRead.Path.recOn"
+#print axioms InputRead.Target.CursorRead
+#partA_axioms "InputRead.Target.CursorRead"
+#print axioms InputRead.Target.PartA
+#partA_axioms "InputRead.Target.PartA"
+#print axioms InputRead.accepted_cursor
+#partA_axioms "InputRead.accepted_cursor"
+#print axioms InputRead.cursor_exact
+#partA_axioms "InputRead.cursor_exact"
+#print axioms InputRead.dest
+#partA_axioms "InputRead.dest"
+#print axioms InputRead.dest.eq_1
+#partA_axioms "InputRead.dest.eq_1"
+#print axioms InputRead.dest.eq_2
+#partA_axioms "InputRead.dest.eq_2"
+#print axioms InputRead.dest.eq_3
+#partA_axioms "InputRead.dest.eq_3"
+#print axioms InputRead.embed
+#partA_axioms "InputRead.embed"
+#print axioms InputRead.embed.eq_1
+#partA_axioms "InputRead.embed.eq_1"
+#print axioms InputRead.hop
+#partA_axioms "InputRead.hop"
+#print axioms InputRead.install_exact
+#partA_axioms "InputRead.install_exact"
+#print axioms InputRead.install_path
+#partA_axioms "InputRead.install_path"
+#print axioms InputRead.keep
+#partA_axioms "InputRead.keep"
+#print axioms InputRead.machine
+#partA_axioms "InputRead.machine"
+#print axioms InputRead.modeOf
+#partA_axioms "InputRead.modeOf"
+#print axioms InputRead.modeOf.eq_1
+#partA_axioms "InputRead.modeOf.eq_1"
+#print axioms InputRead.put
+#partA_axioms "InputRead.put"
+#print axioms InputRead.put.eq_1
+#partA_axioms "InputRead.put.eq_1"
+#print axioms InputRead.put_same
+#partA_axioms "InputRead.put_same"
+#print axioms InputRead.q
+#partA_axioms "InputRead.q"
+#print axioms InputRead.rawMachine
+#partA_axioms "InputRead.rawMachine"
+#print axioms InputRead.raw_cursor_parsed
+#partA_axioms "InputRead.raw_cursor_parsed"
+#print axioms InputRead.readClock
+#partA_axioms "InputRead.readClock"
+#print axioms InputRead.readClock.eq_1
+#partA_axioms "InputRead.readClock.eq_1"
+#print axioms InputRead.read_path
+#partA_axioms "InputRead.read_path"
+#print axioms InputRead.ready
+#partA_axioms "InputRead.ready"
+#print axioms InputRead.result
+#partA_axioms "InputRead.result"
+#print axioms InputRead.result.eq_1
+#partA_axioms "InputRead.result.eq_1"
+#print axioms InputRead.return_path
+#partA_axioms "InputRead.return_path"
+#print axioms InputRead.return_rows
+#partA_axioms "InputRead.return_rows"
+#print axioms InputRead.rows
+#partA_axioms "InputRead.rows"
+#print axioms InputRead.seed_path
+#partA_axioms "InputRead.seed_path"
+#print axioms InputRead.seek_path
+#partA_axioms "InputRead.seek_path"
+#print axioms InputRead.stageDeadline
+#partA_axioms "InputRead.stageDeadline"
+#print axioms InputRead.stage_clock
+#partA_axioms "InputRead.stage_clock"
+#print axioms InputRead.sweepL
+#partA_axioms "InputRead.sweepL"
+#print axioms InputRead.sweepR
+#partA_axioms "InputRead.sweepR"
+#print axioms PartACanonical.Audit.directAxioms
+#partA_axioms "PartACanonical.Audit.directAxioms"
+#print axioms PartACanonical.Audit.elaborateDirectAxioms
+#partA_axioms "PartACanonical.Audit.elaborateDirectAxioms"
+#print axioms PartACanonical.Audit.printDirect
+#partA_axioms "PartACanonical.Audit.printDirect"
+#print axioms PartACanonical.Audit.printDirect.match_1
+#partA_axioms "PartACanonical.Audit.printDirect.match_1"
+#print axioms PartACanonical.Audit.printDirect.match_3
+#partA_axioms "PartACanonical.Audit.printDirect.match_3"
+#print axioms PartACanonical.Audit.printDirect.match_5
+#partA_axioms "PartACanonical.Audit.printDirect.match_5"
+#print axioms PartACanonical.G2.connectedRead_exact_mirror
+#partA_axioms "PartACanonical.G2.connectedRead_exact_mirror"
+#print axioms PartACanonical.G2.gammaSupport_canonical_mirror
+#partA_axioms "PartACanonical.G2.gammaSupport_canonical_mirror"
+#print axioms PartACanonical.G2.gammaSupport_exact_mirror
+#partA_axioms "PartACanonical.G2.gammaSupport_exact_mirror"
+#print axioms PartACanonical.G2.inputRead_partA_body_contract
+#partA_axioms "PartACanonical.G2.inputRead_partA_body_contract"
+#print axioms PartACanonical.Surface.m0060
+#partA_axioms "PartACanonical.Surface.m0060"
+#print axioms PartACanonical.Surface.m0061
+#partA_axioms "PartACanonical.Surface.m0061"
+#print axioms PartACanonical.Surface.m0062
+#partA_axioms "PartACanonical.Surface.m0062"
+#print axioms PartACanonical.Surface.m0066
+#partA_axioms "PartACanonical.Surface.m0066"
+#print axioms PartACanonical.Surface.m0067
+#partA_axioms "PartACanonical.Surface.m0067"
+#print axioms PartACanonical.Surface.m0068
+#partA_axioms "PartACanonical.Surface.m0068"
+#print axioms PartACanonical.Surface.m0069
+#partA_axioms "PartACanonical.Surface.m0069"
+#print axioms PartACanonical.Surface.m0070
+#partA_axioms "PartACanonical.Surface.m0070"
+#print axioms PartACanonical.Surface.m0071
+#partA_axioms "PartACanonical.Surface.m0071"
+#print axioms PartACanonical.Surface.m0072
+#partA_axioms "PartACanonical.Surface.m0072"
+#print axioms PartACanonical.Surface.m0076
+#partA_axioms "PartACanonical.Surface.m0076"
+#print axioms PartACanonical.Surface.m0078
+#partA_axioms "PartACanonical.Surface.m0078"
+#print axioms PartACanonical.Surface.m0079
+#partA_axioms "PartACanonical.Surface.m0079"
+#print axioms PartACanonical.Surface.m0080
+#partA_axioms "PartACanonical.Surface.m0080"
+#print axioms PartACanonical.Surface.m0081
+#partA_axioms "PartACanonical.Surface.m0081"
+#print axioms PartACanonical.Surface.m0082
+#partA_axioms "PartACanonical.Surface.m0082"
+#print axioms PartACanonical.Surface.m0087
+#partA_axioms "PartACanonical.Surface.m0087"
+#print axioms PartACanonical.Surface.m0088
+#partA_axioms "PartACanonical.Surface.m0088"
+#print axioms PartACanonical.Surface.m0089
+#partA_axioms "PartACanonical.Surface.m0089"
+#print axioms PartACanonical.Surface.m0094
+#partA_axioms "PartACanonical.Surface.m0094"
+#print axioms PartACanonical.Surface.m0095
+#partA_axioms "PartACanonical.Surface.m0095"
+#print axioms PartACanonical.Surface.m0096
+#partA_axioms "PartACanonical.Surface.m0096"
+#print axioms PartACanonical.Surface.m0097
+#partA_axioms "PartACanonical.Surface.m0097"
+#print axioms PartACanonical.Surface.m0098
+#partA_axioms "PartACanonical.Surface.m0098"
+#print axioms PartACanonical.Surface.m0101
+#partA_axioms "PartACanonical.Surface.m0101"
+#print axioms PartACanonical.Surface.m0109
+#partA_axioms "PartACanonical.Surface.m0109"
+#print axioms PartACanonical.Surface.m0115
+#partA_axioms "PartACanonical.Surface.m0115"
+#print axioms PartACanonical.Surface.m0116
+#partA_axioms "PartACanonical.Surface.m0116"
+#print axioms PartACanonical.Surface.m0266
+#partA_axioms "PartACanonical.Surface.m0266"
+#print axioms PartACanonical.Surface.m0267
+#partA_axioms "PartACanonical.Surface.m0267"
+#print axioms PartACanonical.Surface.m0268
+#partA_axioms "PartACanonical.Surface.m0268"
+#print axioms PartACanonical.Surface.m0274
+#partA_axioms "PartACanonical.Surface.m0274"
+#print axioms PartACanonical.Surface.m0275
+#partA_axioms "PartACanonical.Surface.m0275"
+#print axioms PartACanonical.Surface.m0276
+#partA_axioms "PartACanonical.Surface.m0276"
+#print axioms PartACanonical.Surface.m0277
+#partA_axioms "PartACanonical.Surface.m0277"
+#print axioms PartACanonical.Surface.m0282
+#partA_axioms "PartACanonical.Surface.m0282"
+#print axioms PartACanonical.Surface.m0283
+#partA_axioms "PartACanonical.Surface.m0283"
+#print axioms PartACanonical.Surface.m0286
+#partA_axioms "PartACanonical.Surface.m0286"
+#print axioms PartACanonical.Surface.m0288
+#partA_axioms "PartACanonical.Surface.m0288"
+#print axioms PartACanonical.Surface.m0341
+#partA_axioms "PartACanonical.Surface.m0341"
+#print axioms PartACanonical.Types.e0001
+#partA_axioms "PartACanonical.Types.e0001"
+#print axioms PartACanonical.Types.e0002
+#partA_axioms "PartACanonical.Types.e0002"
+#print axioms PartACanonical.Types.e0003
+#partA_axioms "PartACanonical.Types.e0003"
+#print axioms PartACanonical.Types.e0004
+#partA_axioms "PartACanonical.Types.e0004"
+#print axioms PartACanonical.Types.e0005
+#partA_axioms "PartACanonical.Types.e0005"
+#print axioms PartACanonical.Types.e0006
+#partA_axioms "PartACanonical.Types.e0006"
+#print axioms PartACanonical.Types.e0007
+#partA_axioms "PartACanonical.Types.e0007"
+#print axioms PartACanonical.Types.e0008
+#partA_axioms "PartACanonical.Types.e0008"
+#print axioms PartACanonical.Types.e0009
+#partA_axioms "PartACanonical.Types.e0009"
+#print axioms PartACanonical.Types.e0010
+#partA_axioms "PartACanonical.Types.e0010"
+#print axioms PartACanonical.Types.e0011
+#partA_axioms "PartACanonical.Types.e0011"
+#print axioms PartACanonical.Types.l0003
+#partA_axioms "PartACanonical.Types.l0003"
+#print axioms PartACanonical.Types.l0004
+#partA_axioms "PartACanonical.Types.l0004"
+#print axioms PartACanonical.Types.l0005
+#partA_axioms "PartACanonical.Types.l0005"
+#print axioms PartACanonical.Types.l0006
+#partA_axioms "PartACanonical.Types.l0006"
+#print axioms PartACanonical.Types.l0007
+#partA_axioms "PartACanonical.Types.l0007"
+#print axioms PartACanonical.Types.l0008
+#partA_axioms "PartACanonical.Types.l0008"
+#print axioms PartACanonical.Types.l0009
+#partA_axioms "PartACanonical.Types.l0009"
+#print axioms PartACanonical.Types.l0010
+#partA_axioms "PartACanonical.Types.l0010"
+#print axioms PartACanonical.Types.l0011
+#partA_axioms "PartACanonical.Types.l0011"
+#print axioms PartACanonical.Types.l0012
+#partA_axioms "PartACanonical.Types.l0012"
+#print axioms PartACanonical.Types.l0013
+#partA_axioms "PartACanonical.Types.l0013"
+#print axioms PartACanonical.Types.l0014
+#partA_axioms "PartACanonical.Types.l0014"
+#print axioms PartACanonical.Types.l0015
+#partA_axioms "PartACanonical.Types.l0015"
+#print axioms PartACanonical.Types.l0016
+#partA_axioms "PartACanonical.Types.l0016"
+#print axioms PartACanonical.Types.l0017
+#partA_axioms "PartACanonical.Types.l0017"
+#print axioms PartACanonical.Types.l0018
+#partA_axioms "PartACanonical.Types.l0018"
+#print axioms PartACanonical.Types.l0019
+#partA_axioms "PartACanonical.Types.l0019"
+#print axioms PartACanonical.Types.l0020
+#partA_axioms "PartACanonical.Types.l0020"
+#print axioms PartACanonical.Types.l0021
+#partA_axioms "PartACanonical.Types.l0021"
+#print axioms PartACanonical.Types.l0022
+#partA_axioms "PartACanonical.Types.l0022"
+#print axioms PartACanonical.Types.l0023
+#partA_axioms "PartACanonical.Types.l0023"
+#print axioms PartACanonical.Types.l0024
+#partA_axioms "PartACanonical.Types.l0024"
+#print axioms PartACanonical.Types.l0025
+#partA_axioms "PartACanonical.Types.l0025"
+#print axioms PartACanonical.Types.l0026
+#partA_axioms "PartACanonical.Types.l0026"
+#print axioms PartACanonical.Types.l0027
+#partA_axioms "PartACanonical.Types.l0027"
+#print axioms PartACanonical.Types.l0028
+#partA_axioms "PartACanonical.Types.l0028"
+#print axioms PartACanonical.Types.l0029
+#partA_axioms "PartACanonical.Types.l0029"
+#print axioms PartACanonical.Types.l0030
+#partA_axioms "PartACanonical.Types.l0030"
+#print axioms PartACanonical.Types.l0031
+#partA_axioms "PartACanonical.Types.l0031"
+#print axioms PartACanonical.Types.l0032
+#partA_axioms "PartACanonical.Types.l0032"
+#print axioms PartACanonical.Types.l0033
+#partA_axioms "PartACanonical.Types.l0033"
+#print axioms PartACanonical.Types.l0034
+#partA_axioms "PartACanonical.Types.l0034"
+#print axioms PartACanonical.Types.l0035
+#partA_axioms "PartACanonical.Types.l0035"
+#print axioms PartACanonical.Types.l0036
+#partA_axioms "PartACanonical.Types.l0036"
+#print axioms PartACanonical.Types.l0037
+#partA_axioms "PartACanonical.Types.l0037"
+#print axioms PartACanonical.Types.l0038
+#partA_axioms "PartACanonical.Types.l0038"
+#print axioms PartACanonical.Types.l0039
+#partA_axioms "PartACanonical.Types.l0039"
+#print axioms PartACanonical.Types.l0040
+#partA_axioms "PartACanonical.Types.l0040"
+#print axioms PartACanonical.Types.l0041
+#partA_axioms "PartACanonical.Types.l0041"
+#print axioms PartACanonical.Types.l0042
+#partA_axioms "PartACanonical.Types.l0042"
+#print axioms PartACanonical.Types.l0043
+#partA_axioms "PartACanonical.Types.l0043"
+#print axioms PartACanonical.Types.l0045
+#partA_axioms "PartACanonical.Types.l0045"
+#print axioms PartACanonical.Types.l0046
+#partA_axioms "PartACanonical.Types.l0046"
+#print axioms PartACanonical.Types.l0047
+#partA_axioms "PartACanonical.Types.l0047"
+#print axioms PartACanonical.Types.l0048
+#partA_axioms "PartACanonical.Types.l0048"
+#print axioms PartACanonical.Types.l0049
+#partA_axioms "PartACanonical.Types.l0049"
+#print axioms PartACanonical.Types.l0050
+#partA_axioms "PartACanonical.Types.l0050"
+#print axioms PartACanonical.Types.l0051
+#partA_axioms "PartACanonical.Types.l0051"
+#print axioms PartACanonical.Types.l0052
+#partA_axioms "PartACanonical.Types.l0052"
+#print axioms PartACanonical.Types.l0053
+#partA_axioms "PartACanonical.Types.l0053"
+#print axioms PartACanonical.Types.l0054
+#partA_axioms "PartACanonical.Types.l0054"
+#print axioms PartACanonical.Types.l0055
+#partA_axioms "PartACanonical.Types.l0055"
+#print axioms PartACanonical.Types.l0056
+#partA_axioms "PartACanonical.Types.l0056"
+#print axioms PartACanonical.Types.l0057
+#partA_axioms "PartACanonical.Types.l0057"
+#print axioms PartACanonical.Types.l0058
+#partA_axioms "PartACanonical.Types.l0058"
+#print axioms PartACanonical.Types.l0059
+#partA_axioms "PartACanonical.Types.l0059"
+#print axioms PartACanonical.Types.l0060
+#partA_axioms "PartACanonical.Types.l0060"
+#print axioms PartACanonical.Types.l0061
+#partA_axioms "PartACanonical.Types.l0061"
+#print axioms PartACanonical.Types.l0062
+#partA_axioms "PartACanonical.Types.l0062"
+#print axioms PartACanonical.Types.l0063
+#partA_axioms "PartACanonical.Types.l0063"
+#print axioms PartACanonical.Types.l0064
+#partA_axioms "PartACanonical.Types.l0064"
+#print axioms PartACanonical.Types.l0065
+#partA_axioms "PartACanonical.Types.l0065"
+#print axioms PartACanonical.Types.l0066
+#partA_axioms "PartACanonical.Types.l0066"
+#print axioms PartACanonical.Types.l0067
+#partA_axioms "PartACanonical.Types.l0067"
+#print axioms PartACanonical.Types.l0068
+#partA_axioms "PartACanonical.Types.l0068"
+#print axioms PartACanonical.Types.p0001
+#partA_axioms "PartACanonical.Types.p0001"
+#print axioms PartACanonical.Types.p0002
+#partA_axioms "PartACanonical.Types.p0002"
+#print axioms PartACanonical.Types.p0003
+#partA_axioms "PartACanonical.Types.p0003"
+#print axioms PartACanonical.Types.p0004
+#partA_axioms "PartACanonical.Types.p0004"
+#print axioms PartACanonical.Types.p0005
+#partA_axioms "PartACanonical.Types.p0005"
+#print axioms PartACanonical.Types.p0006
+#partA_axioms "PartACanonical.Types.p0006"
+#print axioms PartACanonical.Types.p0007
+#partA_axioms "PartACanonical.Types.p0007"
+#print axioms PartACanonical.Types.p0008
+#partA_axioms "PartACanonical.Types.p0008"
+#print axioms PartACanonical.Types.p0077
+#partA_axioms "PartACanonical.Types.p0077"
+#print axioms PartACanonical.Types.p0078
+#partA_axioms "PartACanonical.Types.p0078"
+#print axioms PartACanonical.Types.p0079
+#partA_axioms "PartACanonical.Types.p0079"
+#print axioms PartACanonical.Types.p0080
+#partA_axioms "PartACanonical.Types.p0080"
+#print axioms PartACanonical.Types.p0081
+#partA_axioms "PartACanonical.Types.p0081"
+#print axioms PartACanonical.Types.p0082
+#partA_axioms "PartACanonical.Types.p0082"
+#print axioms PartACanonical.Types.p0083
+#partA_axioms "PartACanonical.Types.p0083"
+#print axioms PartACanonical.Types.p0084
+#partA_axioms "PartACanonical.Types.p0084"
+#print axioms PartACanonical.Types.p0085
+#partA_axioms "PartACanonical.Types.p0085"
+#print axioms PartACanonical.Types.p0086
+#partA_axioms "PartACanonical.Types.p0086"
+#print axioms PartACanonical.Types.p0087
+#partA_axioms "PartACanonical.Types.p0087"
+#print axioms PartACanonical.Types.p0088
+#partA_axioms "PartACanonical.Types.p0088"
+#print axioms PartACanonical.Types.p0089
+#partA_axioms "PartACanonical.Types.p0089"
+#print axioms PartACanonical.Types.p0090
+#partA_axioms "PartACanonical.Types.p0090"
+#print axioms PartACanonical.Types.p0091
+#partA_axioms "PartACanonical.Types.p0091"
+#print axioms PartACanonical.Types.p0092
+#partA_axioms "PartACanonical.Types.p0092"
+#print axioms PartACanonical.Types.p0093
+#partA_axioms "PartACanonical.Types.p0093"
+#print axioms PartACanonical.Types.p0094
+#partA_axioms "PartACanonical.Types.p0094"
+#print axioms PartACanonical.Types.p0095
+#partA_axioms "PartACanonical.Types.p0095"
+#print axioms PartACanonical.Types.p0096
+#partA_axioms "PartACanonical.Types.p0096"
+#print axioms PartACanonical.Types.p0097
+#partA_axioms "PartACanonical.Types.p0097"
+#print axioms PartACanonical.Types.p0098
+#partA_axioms "PartACanonical.Types.p0098"
+#print axioms PartACanonical.Types.p0099
+#partA_axioms "PartACanonical.Types.p0099"
+#print axioms PartACanonical.Types.p0100
+#partA_axioms "PartACanonical.Types.p0100"
+#print axioms PartACanonical.Types.p0101
+#partA_axioms "PartACanonical.Types.p0101"
+#print axioms PartACanonical.Types.p0102
+#partA_axioms "PartACanonical.Types.p0102"
+#print axioms PartACanonical.Types.p0103
+#partA_axioms "PartACanonical.Types.p0103"
+#print axioms PartACanonical.Types.p0104
+#partA_axioms "PartACanonical.Types.p0104"
+#print axioms PartACanonical.Types.p0105
+#partA_axioms "PartACanonical.Types.p0105"
+#print axioms PartACanonical.Types.p0106
+#partA_axioms "PartACanonical.Types.p0106"
+#print axioms PartACanonical.Types.p0107
+#partA_axioms "PartACanonical.Types.p0107"
+#print axioms PartACanonical.Types.p0108
+#partA_axioms "PartACanonical.Types.p0108"
+#print axioms PartACanonical.Types.p0109
+#partA_axioms "PartACanonical.Types.p0109"
+#print axioms PartACanonical.Types.p0110
+#partA_axioms "PartACanonical.Types.p0110"
+#print axioms PartACanonical.Types.p0111
+#partA_axioms "PartACanonical.Types.p0111"
+#print axioms PartACanonical.Types.p0112
+#partA_axioms "PartACanonical.Types.p0112"
+#print axioms PartACanonical.Types.p0113
+#partA_axioms "PartACanonical.Types.p0113"
+#print axioms PartACanonical.Types.p0114
+#partA_axioms "PartACanonical.Types.p0114"
+#print axioms PartACanonical.Types.p0115
+#partA_axioms "PartACanonical.Types.p0115"
+#print axioms PartACanonical.Types.p0116
+#partA_axioms "PartACanonical.Types.p0116"
+#print axioms PartACanonical.Types.p0117
+#partA_axioms "PartACanonical.Types.p0117"
+#print axioms PartACanonical.Types.p0118
+#partA_axioms "PartACanonical.Types.p0118"
+#print axioms PartACanonical.Types.p0119
+#partA_axioms "PartACanonical.Types.p0119"
+#print axioms PartACanonical.Types.p0120
+#partA_axioms "PartACanonical.Types.p0120"
+#print axioms PartACanonical.Types.p0121
+#partA_axioms "PartACanonical.Types.p0121"
+#print axioms PartACanonical.Types.p0122
+#partA_axioms "PartACanonical.Types.p0122"
+#print axioms PartACanonical.Types.p0123
+#partA_axioms "PartACanonical.Types.p0123"
+#print axioms PartACanonical.Types.p0124
+#partA_axioms "PartACanonical.Types.p0124"
+#print axioms PartACanonical.Types.p0125
+#partA_axioms "PartACanonical.Types.p0125"
+#print axioms PartACanonical.Types.p0126
+#partA_axioms "PartACanonical.Types.p0126"
+#print axioms PartACanonical.Types.p0127
+#partA_axioms "PartACanonical.Types.p0127"
+#print axioms PartACanonical.Types.p0128
+#partA_axioms "PartACanonical.Types.p0128"
+#print axioms PartACanonical.Types.p0129
+#partA_axioms "PartACanonical.Types.p0129"
+#print axioms PartACanonical.Types.p0130
+#partA_axioms "PartACanonical.Types.p0130"
+#print axioms PartACanonical.Types.p0131
+#partA_axioms "PartACanonical.Types.p0131"
+#print axioms PartACanonical.Types.p0132
+#partA_axioms "PartACanonical.Types.p0132"
+#print axioms PartACanonical.Types.p0133
+#partA_axioms "PartACanonical.Types.p0133"
+#print axioms PartACanonical.Types.p0134
+#partA_axioms "PartACanonical.Types.p0134"
+#print axioms PartACanonical.Types.p0135
+#partA_axioms "PartACanonical.Types.p0135"
+#print axioms PartACanonical.Types.p0136
+#partA_axioms "PartACanonical.Types.p0136"
+#print axioms PartACanonical.Types.p0137
+#partA_axioms "PartACanonical.Types.p0137"
+#print axioms PartACanonical.Types.p0138
+#partA_axioms "PartACanonical.Types.p0138"
+#print axioms PartACanonical.Types.p0139
+#partA_axioms "PartACanonical.Types.p0139"
+#print axioms PartACanonical.Types.p0140
+#partA_axioms "PartACanonical.Types.p0140"
+#print axioms PartACanonical.Types.p0141
+#partA_axioms "PartACanonical.Types.p0141"
+#print axioms PartACanonical.Types.p0142
+#partA_axioms "PartACanonical.Types.p0142"
+#print axioms PartACanonical.Types.p0143
+#partA_axioms "PartACanonical.Types.p0143"
+#print axioms PartACanonical.Types.p0144
+#partA_axioms "PartACanonical.Types.p0144"
+#print axioms PartACanonical.Types.p0145
+#partA_axioms "PartACanonical.Types.p0145"
+#print axioms PartACanonical.Types.p0146
+#partA_axioms "PartACanonical.Types.p0146"
+#print axioms PartACanonical.Types.p0147
+#partA_axioms "PartACanonical.Types.p0147"
+#print axioms PartACanonical.Types.p0148
+#partA_axioms "PartACanonical.Types.p0148"
+#print axioms PartACanonical.Types.p0149
+#partA_axioms "PartACanonical.Types.p0149"
+#print axioms PartACanonical.Types.p0150
+#partA_axioms "PartACanonical.Types.p0150"
+#print axioms PartACanonical.Types.p0151
+#partA_axioms "PartACanonical.Types.p0151"
+#print axioms PartACanonical.Types.p0152
+#partA_axioms "PartACanonical.Types.p0152"
+#print axioms PartACanonical.Types.p0153
+#partA_axioms "PartACanonical.Types.p0153"
+#print axioms PartACanonical.Types.p0154
+#partA_axioms "PartACanonical.Types.p0154"
+#print axioms PartACanonical.Types.p0155
+#partA_axioms "PartACanonical.Types.p0155"
+#print axioms PartACanonical.Types.p0156
+#partA_axioms "PartACanonical.Types.p0156"
+#print axioms PartACanonical.Types.p0157
+#partA_axioms "PartACanonical.Types.p0157"
+#print axioms PartACanonical.Types.p0158
+#partA_axioms "PartACanonical.Types.p0158"
+#print axioms PartACanonical.Types.p0159
+#partA_axioms "PartACanonical.Types.p0159"
+#print axioms PartACanonical.Types.p0160
+#partA_axioms "PartACanonical.Types.p0160"
+#print axioms PartACanonical.Types.p0161
+#partA_axioms "PartACanonical.Types.p0161"
+#print axioms PartACanonical.Types.p0162
+#partA_axioms "PartACanonical.Types.p0162"
+#print axioms PartACanonical.Types.p0163
+#partA_axioms "PartACanonical.Types.p0163"
+#print axioms PartACanonical.Types.p0164
+#partA_axioms "PartACanonical.Types.p0164"
+#print axioms PartACanonical.Types.p0165
+#partA_axioms "PartACanonical.Types.p0165"
+#print axioms PartACanonical.Types.p0166
+#partA_axioms "PartACanonical.Types.p0166"
+#print axioms PartACanonical.Types.p0167
+#partA_axioms "PartACanonical.Types.p0167"
+#print axioms PartACanonical.Types.p0168
+#partA_axioms "PartACanonical.Types.p0168"
+#print axioms PartACanonical.Types.p0169
+#partA_axioms "PartACanonical.Types.p0169"
+#print axioms PartACanonical.Types.p0170
+#partA_axioms "PartACanonical.Types.p0170"
+#print axioms PartACanonical.Types.p0171
+#partA_axioms "PartACanonical.Types.p0171"
+#print axioms PartACanonical.Types.p0172
+#partA_axioms "PartACanonical.Types.p0172"
+#print axioms PartACanonical.Types.p0173
+#partA_axioms "PartACanonical.Types.p0173"
+#print axioms PartACanonical.Types.p0174
+#partA_axioms "PartACanonical.Types.p0174"
+#print axioms PartACanonical.Types.p0175
+#partA_axioms "PartACanonical.Types.p0175"
+#print axioms PartACanonical.Types.p0176
+#partA_axioms "PartACanonical.Types.p0176"
+#print axioms PartACanonical.Types.p0177
+#partA_axioms "PartACanonical.Types.p0177"
+#print axioms PartACanonical.Types.p0178
+#partA_axioms "PartACanonical.Types.p0178"
+#print axioms PartACanonical.Types.p0179
+#partA_axioms "PartACanonical.Types.p0179"
+#print axioms PartACanonical.Types.p0180
+#partA_axioms "PartACanonical.Types.p0180"
+#print axioms PartACanonical.Types.p0181
+#partA_axioms "PartACanonical.Types.p0181"
+#print axioms PartACanonical.Types.p0182
+#partA_axioms "PartACanonical.Types.p0182"
+#print axioms PartACanonical.Types.p0183
+#partA_axioms "PartACanonical.Types.p0183"
+#print axioms PartACanonical.Types.p0184
+#partA_axioms "PartACanonical.Types.p0184"
+#print axioms PartACanonical.Types.p0185
+#partA_axioms "PartACanonical.Types.p0185"
+#print axioms PartACanonical.Types.p0186
+#partA_axioms "PartACanonical.Types.p0186"
+#print axioms PartACanonical.Types.p0187
+#partA_axioms "PartACanonical.Types.p0187"
+#print axioms PartACanonical.Types.p0188
+#partA_axioms "PartACanonical.Types.p0188"
+#print axioms PartACanonical.Types.p0189
+#partA_axioms "PartACanonical.Types.p0189"
+#print axioms PartACanonical.Types.p0190
+#partA_axioms "PartACanonical.Types.p0190"
+#print axioms PartACanonical.Types.p0191
+#partA_axioms "PartACanonical.Types.p0191"
+#print axioms PartACanonical.Types.p0192
+#partA_axioms "PartACanonical.Types.p0192"
+#print axioms PartACanonical.Types.p0193
+#partA_axioms "PartACanonical.Types.p0193"
+#print axioms PartACanonical.Types.p0194
+#partA_axioms "PartACanonical.Types.p0194"
+#print axioms PartACanonical.Types.p0314
+#partA_axioms "PartACanonical.Types.p0314"
+#print axioms PartACanonical.Types.p0315
+#partA_axioms "PartACanonical.Types.p0315"
+#print axioms PartACanonical.Types.p0395
+#partA_axioms "PartACanonical.Types.p0395"
+#print axioms PartACanonical.Types.p0396
+#partA_axioms "PartACanonical.Types.p0396"
+#print axioms PartACanonical.Types.p0397
+#partA_axioms "PartACanonical.Types.p0397"
+#print axioms PartACanonical.Types.p0425
+#partA_axioms "PartACanonical.Types.p0425"
+#print axioms PartACanonical.Types.p0426
+#partA_axioms "PartACanonical.Types.p0426"
+#print axioms PartACanonical.Types.p0427
+#partA_axioms "PartACanonical.Types.p0427"
+#print axioms PartACanonical.Types.p0428
+#partA_axioms "PartACanonical.Types.p0428"
+#print axioms PartACanonical.Types.p0429
+#partA_axioms "PartACanonical.Types.p0429"
+#print axioms PartACanonical.Types.p0430
+#partA_axioms "PartACanonical.Types.p0430"
+#print axioms PartACanonical.Types.p0431
+#partA_axioms "PartACanonical.Types.p0431"
+#print axioms PartACanonical.Types.p0432
+#partA_axioms "PartACanonical.Types.p0432"
+#print axioms PartACanonical.Types.p0433
+#partA_axioms "PartACanonical.Types.p0433"
+#print axioms PartACanonical.Types.p0434
+#partA_axioms "PartACanonical.Types.p0434"
+#print axioms PartACanonical.Types.p0435
+#partA_axioms "PartACanonical.Types.p0435"
+#print axioms PartACanonical.Types.p0436
+#partA_axioms "PartACanonical.Types.p0436"
+#print axioms PartACanonical.Types.p0437
+#partA_axioms "PartACanonical.Types.p0437"
+#print axioms PartACanonical.Types.p0438
+#partA_axioms "PartACanonical.Types.p0438"
+#print axioms PartACanonical.Types.p0439
+#partA_axioms "PartACanonical.Types.p0439"
+#print axioms PartACanonical.Types.p0440
+#partA_axioms "PartACanonical.Types.p0440"
+#print axioms PartACanonical.Types.p0441
+#partA_axioms "PartACanonical.Types.p0441"
+#print axioms PartACanonical.Types.p0442
+#partA_axioms "PartACanonical.Types.p0442"
+#print axioms PartACanonical.Types.p0443
+#partA_axioms "PartACanonical.Types.p0443"
+#print axioms PartACanonical.Types.p0444
+#partA_axioms "PartACanonical.Types.p0444"
+#print axioms PartACanonical.Types.p0445
+#partA_axioms "PartACanonical.Types.p0445"
+#print axioms PartACanonical.Types.p0446
+#partA_axioms "PartACanonical.Types.p0446"
+#print axioms PartACanonical.Types.p0447
+#partA_axioms "PartACanonical.Types.p0447"
+#print axioms PartACanonical.Types.p0448
+#partA_axioms "PartACanonical.Types.p0448"
+#print axioms PartACanonical.Types.p0449
+#partA_axioms "PartACanonical.Types.p0449"
+#print axioms PartACanonical.Types.p0450
+#partA_axioms "PartACanonical.Types.p0450"
+#print axioms PartACanonical.Types.p0451
+#partA_axioms "PartACanonical.Types.p0451"
+#print axioms PartACanonical.Types.p0452
+#partA_axioms "PartACanonical.Types.p0452"
+#print axioms PartACanonical.Types.p0453
+#partA_axioms "PartACanonical.Types.p0453"
+#print axioms PartACanonical.Types.p0454
+#partA_axioms "PartACanonical.Types.p0454"
+#print axioms PartACanonical.Types.p0455
+#partA_axioms "PartACanonical.Types.p0455"
+#print axioms PartACanonical.Types.p0456
+#partA_axioms "PartACanonical.Types.p0456"
+#print axioms PartACanonical.Types.p0457
+#partA_axioms "PartACanonical.Types.p0457"
+#print axioms PartACanonical.Types.p0458
+#partA_axioms "PartACanonical.Types.p0458"
+#print axioms PartACanonical.Types.p0459
+#partA_axioms "PartACanonical.Types.p0459"
+#print axioms PartACanonical.Types.p0460
+#partA_axioms "PartACanonical.Types.p0460"
+#print axioms PartACanonical.Types.p0461
+#partA_axioms "PartACanonical.Types.p0461"
+#print axioms PartACanonical.Types.p0462
+#partA_axioms "PartACanonical.Types.p0462"
+#print axioms PartACanonical.Types.p0463
+#partA_axioms "PartACanonical.Types.p0463"
+#print axioms PartACanonical.Types.p0464
+#partA_axioms "PartACanonical.Types.p0464"
+#print axioms PartACanonical.Types.p0465
+#partA_axioms "PartACanonical.Types.p0465"
+#print axioms PartACanonical.Types.p0466
+#partA_axioms "PartACanonical.Types.p0466"
+#print axioms PartACanonical.Types.p0467
+#partA_axioms "PartACanonical.Types.p0467"
+#print axioms PartACanonical.Types.p0469
+#partA_axioms "PartACanonical.Types.p0469"
+#print axioms PartACanonical.Types.p0470
+#partA_axioms "PartACanonical.Types.p0470"
+#print axioms PartACanonical.Types.p0471
+#partA_axioms "PartACanonical.Types.p0471"
+#print axioms PartACanonical.Types.p0472
+#partA_axioms "PartACanonical.Types.p0472"
+#print axioms PartACanonical.Types.p0473
+#partA_axioms "PartACanonical.Types.p0473"
+#print axioms PartACanonical.Types.p0474
+#partA_axioms "PartACanonical.Types.p0474"
+#print axioms PartACanonical.Types.p0475
+#partA_axioms "PartACanonical.Types.p0475"
+#print axioms PartACanonical.Types.p0476
+#partA_axioms "PartACanonical.Types.p0476"
+#print axioms PartACanonical.Types.p0477
+#partA_axioms "PartACanonical.Types.p0477"
+#print axioms PartACanonical.Types.p0478
+#partA_axioms "PartACanonical.Types.p0478"
+#print axioms PartACanonical.Types.p0479
+#partA_axioms "PartACanonical.Types.p0479"
+#print axioms PartACanonical.Types.p0480
+#partA_axioms "PartACanonical.Types.p0480"
+#print axioms PartACanonical.Types.p0481
+#partA_axioms "PartACanonical.Types.p0481"
+#print axioms PartACanonical.Types.p0482
+#partA_axioms "PartACanonical.Types.p0482"
+#print axioms PartACanonical.Types.p0483
+#partA_axioms "PartACanonical.Types.p0483"
+#print axioms PartACanonical.Types.p0484
+#partA_axioms "PartACanonical.Types.p0484"
+#print axioms PartACanonical.Types.p0485
+#partA_axioms "PartACanonical.Types.p0485"
+#print axioms PartACanonical.Types.p0486
+#partA_axioms "PartACanonical.Types.p0486"
+#print axioms PartACanonical.Types.p0487
+#partA_axioms "PartACanonical.Types.p0487"
+#print axioms PartACanonical.Types.p0488
+#partA_axioms "PartACanonical.Types.p0488"
+#print axioms PartACanonical.Types.p0489
+#partA_axioms "PartACanonical.Types.p0489"
+#print axioms PartACanonical.Types.p0490
+#partA_axioms "PartACanonical.Types.p0490"
+#print axioms PartACanonical.Types.p0491
+#partA_axioms "PartACanonical.Types.p0491"
+#print axioms PartACanonical.Types.p0492
+#partA_axioms "PartACanonical.Types.p0492"
+#print axioms PartACanonical.Types.p0493
+#partA_axioms "PartACanonical.Types.p0493"
+#print axioms PartACanonical.Types.p0494
+#partA_axioms "PartACanonical.Types.p0494"
+#print axioms PartACanonical.Types.p0495
+#partA_axioms "PartACanonical.Types.p0495"
+#print axioms PartACanonical.Types.p0496
+#partA_axioms "PartACanonical.Types.p0496"
+#print axioms PartACanonical.Types.p0497
+#partA_axioms "PartACanonical.Types.p0497"
+#print axioms PartACanonical.Types.p0498
+#partA_axioms "PartACanonical.Types.p0498"
+#print axioms PartACanonical.Types.p0499
+#partA_axioms "PartACanonical.Types.p0499"
+#print axioms PartACanonical.Types.p0500
+#partA_axioms "PartACanonical.Types.p0500"
+#print axioms PartACanonical.Types.p0501
+#partA_axioms "PartACanonical.Types.p0501"
+#print axioms PartACanonical.Types.p0502
+#partA_axioms "PartACanonical.Types.p0502"
+#print axioms PartACanonical.Types.p0503
+#partA_axioms "PartACanonical.Types.p0503"
+#print axioms PartACanonical.Types.p0504
+#partA_axioms "PartACanonical.Types.p0504"
+#print axioms PartACanonical.Types.p0505
+#partA_axioms "PartACanonical.Types.p0505"
+#print axioms PartACanonical.Types.p0506
+#partA_axioms "PartACanonical.Types.p0506"
+#print axioms PartACanonical.Types.p0578
+#partA_axioms "PartACanonical.Types.p0578"
+#print axioms PartACanonical.elaboratePrivateABI
+#partA_axioms "PartACanonical.elaboratePrivateABI"
+#print axioms PartACanonical.elaboratePrivateABI.match_1
+#partA_axioms "PartACanonical.elaboratePrivateABI.match_1"
+#print axioms PartACanonical.privateABI
+#partA_axioms "PartACanonical.privateABI"
+#print axioms PartACanonical.privateNameFromString
+#partA_axioms "PartACanonical.privateNameFromString"
+#print axioms PartACanonical.privateNameFromString.match_1
+#partA_axioms "PartACanonical.privateNameFromString.match_1"
+#print axioms Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.loopTape.eq_1
+#partA_axioms "Pnp3.Complexity.Uniform.V1.FixedGammaTargetUnaryCountdown.loopTape.eq_1"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_AcceptedBody_clock_bound
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_AcceptedBody_clock_bound"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_AcceptedBody_concat_eq_append
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_AcceptedBody_concat_eq_append"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_AcceptedBody_exact
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_AcceptedBody_exact"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_AcceptedBody_strict_capacity
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_AcceptedBody_strict_capacity"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_AcceptedBody_table_support
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_AcceptedBody_table_support"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_Edge_after
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_Edge_after"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_Edge_before
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_Edge_before"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_Edge_move
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_Edge_move"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_Edge_row
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_Edge_row"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_Edge_tape
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_Edge_tape"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_Path_append
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_Path_append"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_Path_bounds
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_Path_bounds"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_Path_execute
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_Path_execute"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_carry_frame
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_carry_frame"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_carry_path
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_carry_path"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_carry_reads
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_carry_reads"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_clear_step
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_clear_step"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_extend_read
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_extend_read"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_first_accept_whole
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_first_accept_whole"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_good_of_lt
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_good_of_lt"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_hop
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_hop"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_inc_length
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_inc_length"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_inc_value
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_inc_value"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_install_exact
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_install_exact"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_install_path
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_install_path"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_iter_clock_le
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_iter_clock_le"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_iter_length
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_iter_length"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_put_same
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_put_same"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_raw_counter_parsed
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_raw_counter_parsed"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_raw_repeated_parsed
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_raw_repeated_parsed"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_raw_source_after_header
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_raw_source_after_header"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_reads_cons
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_reads_cons"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_reads_put_outside
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_reads_put_outside"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_repeated_exact
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_repeated_exact"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_round_clock_le
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_round_clock_le"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_round_exact
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_round_exact"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_round_path
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_round_path"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_seed_path
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_seed_path"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_sweep
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_sweep"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_value_lt
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_value_lt"
+#print axioms Pnp3.Tests.PartABodySurfaceTests.check_Body_zero_value
+#partA_axioms "Pnp3.Tests.PartABodySurfaceTests.check_Body_zero_value"
+#print axioms Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_Edge_after
+#partA_axioms "Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_Edge_after"
+#print axioms Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_Edge_before
+#partA_axioms "Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_Edge_before"
+#print axioms Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_Edge_move
+#partA_axioms "Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_Edge_move"
+#print axioms Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_Edge_row
+#partA_axioms "Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_Edge_row"
+#print axioms Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_Edge_tape
+#partA_axioms "Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_Edge_tape"
+#print axioms Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_Path_append
+#partA_axioms "Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_Path_append"
+#print axioms Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_Path_bounds
+#partA_axioms "Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_Path_bounds"
+#print axioms Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_Path_execute
+#partA_axioms "Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_Path_execute"
+#print axioms Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_accepted_cursor
+#partA_axioms "Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_accepted_cursor"
+#print axioms Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_cursor_exact
+#partA_axioms "Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_cursor_exact"
+#print axioms Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_hop
+#partA_axioms "Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_hop"
+#print axioms Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_install_exact
+#partA_axioms "Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_install_exact"
+#print axioms Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_install_path
+#partA_axioms "Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_install_path"
+#print axioms Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_keep
+#partA_axioms "Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_keep"
+#print axioms Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_put_same
+#partA_axioms "Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_put_same"
+#print axioms Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_raw_cursor_parsed
+#partA_axioms "Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_raw_cursor_parsed"
+#print axioms Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_read_path
+#partA_axioms "Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_read_path"
+#print axioms Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_return_path
+#partA_axioms "Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_return_path"
+#print axioms Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_return_rows
+#partA_axioms "Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_return_rows"
+#print axioms Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_seed_path
+#partA_axioms "Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_seed_path"
+#print axioms Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_seek_path
+#partA_axioms "Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_seek_path"
+#print axioms Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_stage_clock
+#partA_axioms "Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_stage_clock"
+#print axioms Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_sweepL
+#partA_axioms "Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_sweepL"
+#print axioms Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_sweepR
+#partA_axioms "Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_sweepR"

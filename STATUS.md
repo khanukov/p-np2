@@ -1,3 +1,47 @@
+<!-- Part A R1 local prefix; publication is coordinator-owned. -->
+
+Current R1 performance/type-pin follow-up (2026-10-24, uncommitted over
+`b92a57ccd7e398d776c76be1aadd71714c9d12a2`): this tuple includes the audit helper,
+cache regression and central batch changes. This narrow follow-up corrects
+documentation and adds literal original-definition type checks; original16 proof,
+machine and clock bytes remain unchanged. The performance parent's targeted
+compiler/metadata results and exact641 roots are scoped local evidence, not this
+child's source approval, full17, CI or release. New exact-head gates remain open,
+including latest-pushed-SHA Qodo, real protected-owner authority and all raw CI.
+Part A remains OPEN; see pnp3/Docs/PART_A_R1_PREFIX.md for evidence limits.
+
+Historical documentation-only child (2026-10-24; present-status wording superseded):
+
+Current R1 documentation correction (2026-10-24, uncommitted): the 2026-10-23
+human authorization restored Qodo prospectively and REQUIRES `/agentic_review`
+on the exact latest pushed SHA before merge, alongside scoped exact-model
+Codex+Claude alignment, kernel/full17, current-head protected-owner attestation
+and raw CI. This child changes documentation only. The e33 implementation-only
+opinions and e33/420 default17 receipts below are historical; they do not approve
+this child tuple. New-head source/docs review, fullgate, CI and release remain open.
+
+Historical implementation/docs status (2026-10-21; earlier phase only):
+
+Part A R1 (Infrastructure) was locally committed on 2026-10-21 at
+`e33fae0fabb930f744366b479d66575c7d6702f7`. This prefix
+adds only InputRead, GammaSupport and ConnectedRead (9 exact original modules,
+815 physical source lines) over the already accepted Body/AcceptedBody seven.
+The actual prefix public API has 213 owner-resolved names and 108 theorem-kind
+entries. Existing full mirrors are reused; missing literal mirrors, independent
+expected-type pins and direct canonical roots are separate finite sets.
+Scoped Codex+Claude source opinions approve that implementation with a chronology
+LOW addressed by this docs-only follow-up; its unchanged default17 has actual
+parent-verified PASS. This follow-up makes no semantic source change or remote release.
+The implementation SHA is a fixed historical referent. New-docs-head source/docs
+closure and default17, exact-head protected-path attestation, raw CI and release
+acceptance remain pending. The ordinary 1500 gross changed Lean LOC /
+10 MODULES policy remains; this prefix uses the already authorized finite
+migration exception for exact sources and measured mechanical integration.
+This is not Part A completion, a lower bound, P != NP or legacy TM bridge closure.
+Historical no-Qodo policy quotation (2026-10-21; superseded prospectively above):
+> Qodo is prohibited for this campaign; scoped exact-model Codex+Claude alignment
+> and the kernel/CI checks remain required before publication.
+
 # Project Status (current)
 
 **Part A Body/AcceptedBody foundation (2026-10-20, Infrastructure only).**

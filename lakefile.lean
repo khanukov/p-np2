@@ -1041,6 +1041,7 @@ lean_lib PnP3 where
     Glob.one `Tests.PartAG2InterfaceTests,
     Glob.one `Tests.PartACanonicalSupport,
     Glob.one `Tests.PartACanonicalAuditSupport,
+    Glob.one `Tests.PartACanonicalAuditCacheTests,
     Glob.one `Tests.PartAR1LiteralPilot,
     Glob.one `Tests.UniformV1BudgetTransportSurfaceTests,
     Glob.one `Tests.UniformV1CombinedMachineSurfaceTests,

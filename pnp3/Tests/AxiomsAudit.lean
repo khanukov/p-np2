@@ -1,3 +1,4 @@
+import Tests.PartACanonicalAuditCacheTests
 import Tests.PartAR1ConsumerTypes
 import Tests.PartACanonicalAuditSupport
 import Tests.PartABodySurfaceTests
@@ -8306,3 +8307,32 @@ end DeprecatedAC0CompatibilityAxiomAudit
 #partA_axioms "Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_sweepL"
 #print axioms Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_sweepR
 #partA_axioms "Pnp3.Tests.PartAInputReadSurfaceTests.check_InputRead_sweepR"
+
+-- Current-environment cache regression: direct roots in this central context.
+#print axioms True.intro
+#partA_axioms "True.intro"
+#print axioms PartACanonical.Audit.CacheRegression.lateIdentity
+#partA_axioms "PartACanonical.Audit.CacheRegression.lateIdentity"
+#print axioms PartACanonical.Audit.CacheRegression.lateIdentity_eq
+#partA_axioms "PartACanonical.Audit.CacheRegression.lateIdentity_eq"
+#print axioms PartACanonical.Audit.CacheRegression.lateIdentity_eq_full
+#partA_axioms "PartACanonical.Audit.CacheRegression.lateIdentity_eq_full"
+#print axioms PartACanonical.Audit.CacheRegression.check_lateIdentity
+#partA_axioms "PartACanonical.Audit.CacheRegression.check_lateIdentity"
+#print axioms PartACanonical.Audit.CacheRegression.check_lateIdentity_eq
+#partA_axioms "PartACanonical.Audit.CacheRegression.check_lateIdentity_eq"
+#print axioms PartACanonical.Audit.CacheRegression.check_lateIdentity_eq_full
+#partA_axioms "PartACanonical.Audit.CacheRegression.check_lateIdentity_eq_full"
+run_cmd Lean.Elab.Command.elabCommand (← `(#print axioms $(Lean.mkIdent
+  ("_private.Tests.PartACanonicalAuditCacheTests.0.PartACanonical.Audit.CacheRegression.privateValue".toName)):ident))
+#partA_axioms "_private.Tests.PartACanonicalAuditCacheTests.0.PartACanonical.Audit.CacheRegression.privateValue"
+#print axioms PartACanonical.Audit.CacheRegression.check_privateValue
+#partA_axioms "PartACanonical.Audit.CacheRegression.check_privateValue"
+#print axioms PartACanonical.Audit.CacheRegression.«7»
+#partA_axioms "PartACanonical.Audit.CacheRegression.«7»"
+#print axioms PartACanonical.Audit.CacheRegression.check_quotedSeven
+#partA_axioms "PartACanonical.Audit.CacheRegression.check_quotedSeven"
+#print axioms PartACanonical.Audit.CacheRegression.«with.dot»
+#partA_axioms "PartACanonical.Audit.CacheRegression.«with.dot»"
+#print axioms PartACanonical.Audit.CacheRegression.check_quotedDot
+#partA_axioms "PartACanonical.Audit.CacheRegression.check_quotedDot"

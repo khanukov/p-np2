@@ -1,5 +1,15 @@
 <!-- Part A R1 local prefix; publication is coordinator-owned. -->
 
+Current R1 documentation correction (2026-10-24, uncommitted): the 2026-10-23
+human authorization restored Qodo prospectively and REQUIRES `/agentic_review`
+on the exact latest pushed SHA before merge, alongside scoped exact-model
+Codex+Claude alignment, kernel/full17, current-head protected-owner attestation
+and raw CI. This child changes documentation only. The e33 implementation-only
+opinions and e33/420 default17 receipts below are historical; they do not approve
+this child tuple. New-head source/docs review, fullgate, CI and release remain open.
+
+Historical implementation/docs status (2026-10-21; earlier phase only):
+
 Part A R1 (Infrastructure) was locally committed on 2026-10-21 at
 `e33fae0fabb930f744366b479d66575c7d6702f7`. This prefix
 adds only InputRead, GammaSupport and ConnectedRead (9 exact original modules,
@@ -16,8 +26,9 @@ acceptance remain pending. The ordinary 1500 gross changed Lean LOC /
 10 MODULES policy remains; this prefix uses the already authorized finite
 migration exception for exact sources and measured mechanical integration.
 This is not Part A completion, a lower bound, P != NP or legacy TM bridge closure.
-Qodo is prohibited for this campaign; scoped exact-model Codex+Claude alignment
-and the kernel/CI checks remain required before publication.
+Historical no-Qodo policy quotation (2026-10-21; superseded prospectively above):
+> Qodo is prohibited for this campaign; scoped exact-model Codex+Claude alignment
+> and the kernel/CI checks remain required before publication.
 
 # TODO / Roadmap (current)
 

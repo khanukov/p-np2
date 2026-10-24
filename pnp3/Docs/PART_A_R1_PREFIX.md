@@ -1,5 +1,46 @@
 # Part A R1 connected reader prefix
 
+Current local correction (2026-10-23, uncommitted): `#partA_axioms` resolves each
+literal against the invoking environment, with exact name roundtrip, membership,
+ambiguity rejection and the existing standard-axiom allowlist. It retains no
+process-global first-environment snapshot. A named same-module regression audits
+an imported root before declaring and auditing late definitions and a literal
+full-proposition mirror, including numeric/private and quoted-name cases.
+Its fixture roots supplement the unchanged prefix inventory below; they do not
+add a Part A theorem or establish private-ABI elaborator usability. Targeted
+results for this correction are separate from prior default17 results. New-head
+source review, fullgate, CI and release remain open. Qodo was restored by the
+2026-10-23 human authorization; earlier no-Qodo phase restrictions below are
+historical. This source-author phase requests no reviews and publishes nothing.
+
+The implementation and docs-only chronology below refers to the preserved prior
+commits, not to acceptance of this uncommitted helper correction.
+
+Current design and evidence limits (2026-10-24, documentation-only correction):
+prospective merge requires `/agentic_review` on the exact latest pushed SHA,
+alongside independent Codex+Claude alignment, kernel/full17, current-head
+protected-owner authority and raw CI. None is newly accepted by this docs child.
+
+`printDirect` retains `for entry in env.constants.toList do` followed by
+`let other := entry.1`. Tuple destructuring (`for (other, _) in ...`) would make
+the equation compiler generate a matcher colliding with the explicit
+`PartACanonical.Audit.printDirect.match_3` ABI shim. Keep the projection form.
+The independent `e0004`/`e0005`/`e0006` pins establish expected type and instance
+identity only, not matcher attributes, reducibility or equation-lemma equivalence.
+No Lean helper bytes are changed by this design note.
+
+The uncached collision scan is linear in the current environment per call and
+materializes its constant list. The preserved parent central compile took
+2368.447952 seconds in total, including legacy native prints; this is not a new
+measurement, a timing of the scan alone or a LOC-based estimate.
+
+The historical option inventory records raw occurrences only of maxHeartbeats,
+maxRecDepth, linter.* and autoImplicit; comment/string matches are possible.
+It is not an inventory of all set_option tokens or effective options across all
+dependencies. No omitted current option/suppression defect is established.
+The retained strict compiler result is modulo the disclosed
+`set_option linter.deprecated false`; no unsuppressed-lint claim is made.
+
 This Infrastructure implementation was locally committed on 2026-10-21 at
 `e33fae0fabb930f744366b479d66575c7d6702f7`. The accepted
 Body/AcceptedBody seven remain unchanged. Only InputRead.Machine/Path/Target/Proof/Raw,

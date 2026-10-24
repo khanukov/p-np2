@@ -1,7 +1,8 @@
 import Tests.PartACanonicalSupport
 
 /-! Infrastructure: direct axiom inspection of one literal FQN in the current
-invoking environment. No process-global environment snapshot is retained; this
+invoking environment. A batch shares one invocation-local index; no index is
+retained across commands or environment replacement. This
 supplies no proofs, proposition types or mathematical premises. -/
 open Lean Elab Command
 namespace PartACanonical.Audit
@@ -24,17 +25,29 @@ def printDirect.match_5.{u} (motive : Option (Std.HashMap String Name) → Sort 
     (noneCase : Unit → motive none) : motive x :=
   Option.casesOn (motive := motive) x (noneCase ()) someCase
 
-def printDirect (text : String) : CommandElabM Unit := do
+private abbrev InvocationIndex := Std.HashMap String (List Name)
+
+/-- Exactly one traversal, private to an atomic command invocation. -/
+private def indexInvocation (env : Environment) : InvocationIndex × Nat := Id.run do
+  let mut index : InvocationIndex := {}
+  let mut visited := 0
+  for entry in env.constants.toList do
+    let name := entry.1
+    let text := name.toString
+    index := index.insert text (name :: (index[text]?.getD []))
+    visited := visited + 1
+  return (index, visited)
+
+private def auditIndexed (index : InvocationIndex) (text : String) : CommandElabM Unit := do
   let env ← getEnv
   let name := text.toName
   unless name.toString == text && env.contains name do
     throwError "Missing or nonexact direct axiom root {text}"
-  -- Name.toString is not injective for every internal Name. Fail closed on a
-  -- collision of the requested literal, without caching any environment.
-  for entry in env.constants.toList do
-    let other := entry.1
-    if other != name && other.toString == text then
-      throwError "Ambiguous exact FQN {text}"
+  let candidates := index[text]?.getD []
+  unless candidates.contains name do
+    throwError "Current root absent from invocation index {text}"
+  if candidates.any (fun other => other != name) then
+    throwError "Ambiguous exact FQN {text}"
   let axioms ← collectAxioms name
   for axiomName in axioms do
     unless [``propext, ``Classical.choice, ``Quot.sound].contains axiomName do
@@ -44,9 +57,30 @@ def printDirect (text : String) : CommandElabM Unit := do
     ("axioms", toJson (axioms.map Name.toString))]
   logInfo m!"PART_A_CANONICAL_AXIOMS|{record.compress}"
 
+/-- Audit a finite batch in one immutable command context. No index escapes this
+invocation, so the next call rebuilds even for equal-size/same-FQN replacements.
+The body only reads the environment: collectAxioms is ReaderT/StateM internally.
+The returned counter counts actual visited declarations, not a cache-hit claim. -/
+def printDirectBatch (texts : Array String) : CommandElabM Nat := do
+  let indexed := indexInvocation (← getEnv)
+  for text in texts do auditIndexed indexed.1 text
+  let record := Json.mkObj [("auditModule", toJson (← getMainModule).toString),
+    ("roots", toJson texts.size), ("visited", toJson indexed.2)]
+  logInfo m!"PART_A_AUDIT_INDEX|{record.compress}"
+  return indexed.2
+
+def printDirect (text : String) : CommandElabM Unit := do
+  discard <| printDirectBatch #[text]
+
 syntax (name := directAxioms) "#partA_axioms " str : command
 @[command_elab directAxioms] def elaborateDirectAxioms : CommandElab := fun stx => do
   let `(#partA_axioms $text:str) := stx | throwUnsupportedSyntax
   printDirect text.getString
+
+syntax (name := directAxiomsBatch) "#partA_axioms_batch" "[" str,* "]" : command
+@[command_elab directAxiomsBatch]
+def elaborateDirectAxiomsBatch : CommandElab := fun stx => do
+  let `(#partA_axioms_batch [$texts:str,*]) := stx | throwUnsupportedSyntax
+  discard <| printDirectBatch (texts.getElems.map fun text => text.getString)
 
 end PartACanonical.Audit

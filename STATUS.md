@@ -1,5 +1,17 @@
 <!-- Part A R1 local prefix; publication is coordinator-owned. -->
 
+Current R1 performance/type-pin follow-up (2026-10-24, uncommitted over
+`b92a57ccd7e398d776c76be1aadd71714c9d12a2`): this tuple includes the audit helper,
+cache regression and central batch changes. This narrow follow-up corrects
+documentation and adds literal original-definition type checks; original16 proof,
+machine and clock bytes remain unchanged. The performance parent's targeted
+compiler/metadata results and exact641 roots are scoped local evidence, not this
+child's source approval, full17, CI or release. New exact-head gates remain open,
+including latest-pushed-SHA Qodo, real protected-owner authority and all raw CI.
+Part A remains OPEN; see pnp3/Docs/PART_A_R1_PREFIX.md for evidence limits.
+
+Historical documentation-only child (2026-10-24; present-status wording superseded):
+
 Current R1 documentation correction (2026-10-24, uncommitted): the 2026-10-23
 human authorization restored Qodo prospectively and REQUIRES `/agentic_review`
 on the exact latest pushed SHA before merge, alongside scoped exact-model

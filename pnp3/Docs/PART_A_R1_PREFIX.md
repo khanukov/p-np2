@@ -1,5 +1,39 @@
 # Part A R1 connected reader prefix
 
+Current local audit-performance change (2026-10-24, uncommitted child of
+`b92a57ccd7e398d776c76be1aadd71714c9d12a2`): a finite batch shares one private
+rendering/collision index inside one immutable command invocation. No index
+survives a command; equal-size or same-FQN body replacements rebuild it. Exact
+literal roundtrip, current membership, collision rejection and actual standard-only
+collectAxioms checks remain. The single-root command delegates to a one-root batch.
+Executable regressions cover late/add/remove, equal-size replacement, changed-body
+axioms and numeric/private/rendering-collision guards.
+
+The current targeted central compile exited 0 in 1043.596829 seconds, including
+legacy native prints and output generation. It printed all 641 canonical direct
+roots (635 preserved plus three new API declarations and three literal type pins).
+Eleven batches of at most 64 roots each visited 402273 declarations once per batch.
+This is not a scan-only benchmark or a speed ratio against the prior full17 run.
+The original16 sources and prefix theorem/mirror contracts remain unchanged.
+The projection loop now lives in private indexInvocation and still uses entry.1;
+the three printDirect matcher ABI shims and their existing type/instance pins remain.
+Those pins do not establish matcher-attribute or equation-lemma equivalence.
+
+Evidence qualification (2026-10-24): the performance parent's 6437 legacy/native
+output rows were checked for standard-only axioms. Equality of their complete
+resolved FQN multiset with literal native source tokens was not established;
+open-namespace resolution and dynamic roots are not inferred from those tokens.
+The exact641 canonical FQN multiset is a separate successful check. The
+1043.596829-second central compile is parent execution evidence, not a fresh
+central run by this documentation/type-pin follow-up.
+The private index uses O(|env|) transient memory. Traversal counters do not measure
+peak memory; no peak-memory measurement or unchanged-memory claim is made.
+
+The b92 correction/design notes below are preserved historical context; their
+per-call scan and loop-location descriptions are superseded by this note. This
+targeted result supplies no new source opinion, full17, CI, protected-owner or
+release approval. Latest-pushed-SHA Qodo remains required. Part A stays OPEN.
+
 Current local correction (2026-10-23, uncommitted): `#partA_axioms` resolves each
 literal against the invoking environment, with exact name roundtrip, membership,
 ambiguity rejection and the existing standard-axiom allowlist. It retains no

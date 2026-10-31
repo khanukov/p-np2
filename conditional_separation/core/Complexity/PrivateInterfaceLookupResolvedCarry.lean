@@ -1,0 +1,131 @@
+import Complexity.PrivateInterfaceLookupResolvedControl
+/- Finite metadata identity, not independently expected full-signature equality.
+   Every batch validates before returning any aliases, preserving order/duplicates. -/
+open Lean Elab Tactic
+namespace PartAPrivateCarry
+private def contracts : List (Name × Name × String) := [
+  (`VirtualReady.Kernel, `VirtualReady.Node, "inductive"),
+  (`VirtualReady.Kernel, `VirtualReady.Node.mk, "constructor"),
+  (`VirtualReady.Kernel, `VirtualReady.Node.state, "definition"),
+  (`VirtualReady.Kernel, `VirtualReady.Node.head, "definition"),
+  (`VirtualReady.Kernel, `VirtualReady.Node.tape, "definition"),
+  (`VirtualReady.Kernel, `VirtualReady.Path, "inductive"),
+  (`VirtualReady.Kernel, `VirtualReady.Path.nil, "constructor"),
+  (`VirtualReady.Kernel, `VirtualReady.Path.cons, "constructor"),
+  (`VirtualReady.Kernel, `VirtualReady.Edge, "inductive"),
+  (`VirtualReady.Kernel, `VirtualReady.Edge.before, "theorem"),
+  (`VirtualReady.Kernel, `VirtualReady.Edge.after, "theorem"),
+  (`VirtualReady.Kernel, `VirtualReady.Edge.row, "theorem"),
+  (`VirtualReady.Kernel, `VirtualReady.Edge.move, "theorem"),
+  (`VirtualReady.Kernel, `VirtualReady.Edge.tape, "theorem"),
+  (`VirtualReady.Kernel, `VirtualReady.put, "definition"),
+  (`VirtualReady.Kernel, `VirtualReady.dest, "definition"),
+  (`CarryWindow.Body, `CarryWindow.code0, "definition"),
+  (`CarryWindow.Body, `CarryWindow.actual_row, "theorem"),
+  (`CarryWindow.Body, `CarryWindow.shiftCode, "definition"),
+  (`CarryWindow.Body, `CarryWindow.shift_dest, "theorem"),
+  (`CarryWindow.Body, `CarryWindow.shift_symbol, "theorem"),
+  (`CarryWindow.Body, `CarryWindow.shift_move, "theorem"),
+  (`CarryWindow.Body, `CarryWindow.action, "definition"),
+  (`CarryWindow.Body, `CarryWindow.checkCodes, "definition"),
+  (`CarryWindow.Body, `CarryWindow.check_get, "theorem"),
+  (`CarryWindow.Body, `CarryWindow.got0, "theorem"),
+  (`CarryWindow.Body, `CarryWindow.tag, "definition"),
+  (`CarryWindow.Body, `CarryWindow.tag_lt, "theorem"),
+  (`CarryWindow.Body, `CarryWindow.base_dead, "theorem"),
+  (`CarryWindow.Body, `CarryWindow.deadBase, "definition"),
+  (`CarryWindow.Body, `CarryWindow.base_bound, "theorem"),
+  (`Cursor.Machine, `Cursor.after, "definition"),
+  (`VirtualLeaf.Body, `VirtualLeaf.Trace, "inductive"),
+  (`VirtualReady.Kernel, `VirtualReady.Path.bounds, "theorem"),
+  (`CarryReadyCompletion.Native, `CarryReadyCompletion.complete_body, "theorem"),
+  (`CarryReadyCompletion.Virtual, `CarryReadyCompletion.virtual_cuts, "theorem"),
+  (`CarryWindow.Transport, `CarryWindow.transport, "theorem"),
+  (`CarryWindow.Raw, `CarryWindow.lift430, "theorem"),
+  (`VirtualLeaf.Raw, `VirtualLeaf.width, "theorem"),
+  (`AllArityBitLength.Raw, `AllArityBitLength.actual_cells, "theorem"),
+  (`AllArityBitLength.Raw, `AllArityBitLength.Cells.arena, "theorem"),
+  (`CarryWindow.Raw, `CarryWindow.normalFrame, "theorem"),
+  (`CarryWindow.Geometry, `CarryWindow.Banks.blank, "theorem"),
+  (`CarryWindow.Geometry, `CarryWindow.Banks.bank1, "theorem"),
+  (`CarryReadyCompletion.Native, `CarryReadyCompletion.complete_frame, "theorem"),
+  (`CarryReadyCompletion.Native, `CarryReadyCompletion.work_safe, "theorem"),
+  (`FullWeight.Raw, `FullWeight.cap_weight, "theorem"),
+  (`Cursor.Machine, `Cursor.after0, "definition"),
+  (`Cursor.Machine, `Cursor.after1, "definition"),
+  (`Cursor.Machine, `Cursor.after2, "definition"),
+  (`Cursor.Machine, `Cursor.after3, "definition"),
+  (`Cursor.Machine, `Cursor.after4, "definition"),
+  (`Cursor.Machine, `Cursor.after5, "definition"),
+  (`Cursor.Machine, `Cursor.after6, "definition"),
+  (`Cursor.Machine, `Cursor.after7, "definition"),
+  (`Cursor.Machine, `Cursor.after8, "definition"),
+  (`Cursor.Machine, `Cursor.after9, "definition"),
+  (`Cursor.Machine, `Cursor.after10, "definition"),
+  (`Cursor.Machine, `Cursor.after11, "definition"),
+  (`Cursor.Machine, `Cursor.after12, "definition"),
+  (`Cursor.Machine, `Cursor.after13, "definition"),
+  (`Cursor.Machine, `Cursor.after14, "definition"),
+  (`Cursor.Machine, `Cursor.after15, "definition"),
+  (`Cursor.Machine, `Cursor.after16, "definition"),
+  (`Cursor.Machine, `Cursor.after17, "definition"),
+  (`Cursor.Machine, `Cursor.after18, "definition"),
+  (`Cursor.Machine, `Cursor.after19, "definition"),
+  (`Cursor.Machine, `Cursor.after20, "definition"),
+  (`Cursor.Machine, `Cursor.after21, "definition"),
+  (`Cursor.Machine, `Cursor.after22, "definition"),
+  (`Cursor.Machine, `Cursor.after23, "definition"),
+  (`Cursor.Machine, `Cursor.after24, "definition"),
+  (`Cursor.Machine, `Cursor.after25, "definition"),
+  (`Cursor.Machine, `Cursor.decode, "definition"),
+  (`Cursor.Machine, `Cursor.program, "definition"),
+  (`VirtualReady.Kernel, `VirtualReady.aft, "definition"),
+  (`PostWeight.Rows, `PostWeight.rowTac, "definition"),
+  (`RawPrelude.Kernel, `RawPrelude.Frame, "definition"),
+  (`RawPrelude.Kernel, `RawPrelude.paint, "definition"),
+  (`RawPrelude.Kernel, `RawPrelude.stage, "definition"),
+  (`RawPrelude.Kernel, `RawPrelude.overlay, "definition"),
+  (`RawPrelude.Kernel, `RawPrelude.overlay_frame, "theorem"),
+  (`RawPrelude.Kernel, `RawPrelude.cleared_overlay, "theorem"),
+  (`RawPrelude.Kernel, `RawPrelude.cleanup_D0, "theorem"),
+  (`RawPrelude.Body, `RawPrelude.computed, "definition"),
+  (`RawPrelude.Body, `RawPrelude.clear_D2, "theorem"),
+  (`RawPrelude.Body, `RawPrelude.clear_D0, "theorem"),
+  (`RawPrelude.Body, `RawPrelude.clock, "theorem"),
+  (`RawPrelude.Body, `RawPrelude.cleanup_price, "theorem"),
+  (`RawPrelude.Body, `RawPrelude.right_run, "theorem"),
+  (`RawPrelude.Body, `RawPrelude.no_verdict, "theorem"),
+  (`CarryReadyCompletion.Surface, `CarryReadyCompletion.D, "definition"),
+  (`CarryReadyCompletion.Surface, `CarryReadyCompletion.Loc, "definition"),
+  (`CarryReadyCompletion.Surface, `CarryReadyCompletion.loc_move, "theorem"),
+  (`CarryReadyCompletion.Surface, `CarryReadyCompletion.active_limits, "theorem"),
+  (`CarryReadyCompletion.Surface, `CarryReadyCompletion.loc_bounds, "theorem"),
+  (`CarryReadyCompletion.Surface, `CarryReadyCompletion.Shape, "definition"),
+  (`CarryReadyCompletion.Surface, `CarryReadyCompletion.shape_put, "theorem"),
+  (`CarryReadyCompletion.Surface, `CarryReadyCompletion.Dead, "definition"),
+  (`CarryReadyCompletion.Surface, `CarryReadyCompletion.q_inj, "theorem"),
+  (`CarryReadyCompletion.Surface, `CarryReadyCompletion.dead_step, "theorem"),
+  (`CarryReadyCompletion.Surface, `CarryReadyCompletion.path_dead, "theorem"),
+  (`CarryReadyCompletion.Surface, `CarryReadyCompletion.not_dead613, "theorem"),
+  (`CarryReadyCompletion.Surface, `CarryReadyCompletion.Good, "definition"),
+  (`CarryReadyCompletion.Surface, `CarryReadyCompletion.good_edge, "theorem"),
+  (`CarryReadyCompletion.Surface, `CarryReadyCompletion.active, "definition"),
+  (`CarryReadyCompletion.Surface, `CarryReadyCompletion.mask, "definition")]
+def key (s : String) : Name := (s.splitOn ".").foldl Name.str Name.anonymous
+def lookup (env : Environment) (owner user : Name) : Except String Name := do
+  let some row := contracts.find? (fun r => r.1 == owner && r.2.1 == user)
+    | throw "carry/domain"
+  PartAPrivateControl.resolve env owner user owner row.2.2 []
+def batch (env : Environment) (rows : List (Name × Name)) : Except String (List Name) :=
+  rows.mapM fun (owner,user) => lookup env owner user
+def select (owner user : Name) : TacticM Name := do
+  ofExcept (lookup (← getEnv) owner user)
+#check (key : String → Name)
+#check (lookup : Environment → Name → Name → Except String Name)
+#check (batch : Environment → List (Name × Name) → Except String (List Name))
+#check (select : Name → Name → TacticM Name)
+#print axioms key
+#print axioms lookup
+#print axioms batch
+#print axioms select
+end PartAPrivateCarry

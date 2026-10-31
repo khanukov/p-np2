@@ -1,0 +1,24 @@
+# Proposal only. Coordinator may install at repository .github/workflows later.
+# Uses no third-party actions; official hosted-action SHA discovery is pending.
+name: conditional-separation-source
+on: [workflow_dispatch]
+jobs:
+  source:
+    # Runner must supply git, pinned Lean/elan and Python >=3.10.
+    runs-on: [self-hosted, conditional-separation]
+    steps:
+      - name: Fetch exact requested source
+        shell: bash
+        run: |
+          git init checkout
+          git -C checkout remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git"
+          git -C checkout fetch --depth=1 origin "$GITHUB_SHA"
+          git -C checkout checkout --detach FETCH_HEAD
+      - name: Source build and workbench tests
+        shell: bash
+        working-directory: checkout/conditional_separation
+        run: |
+          lake build
+          python3 -m unittest discover -s tests -v
+# Native macOS/Windows jobs and negative compiler fixtures require independent CI
+# before claiming those platforms tested. No workflow is installed by this file.

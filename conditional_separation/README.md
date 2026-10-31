@@ -117,7 +117,9 @@ has GitHub's default-branch/prior-run discovery constraints; no main modificatio
 or first-use API availability is assumed. Workflow-definition and tested-head
 identity are separate; PR-head validation does not establish merge compatibility.
 
-Checkout, Python setup and artifact actions use literal source commit pins.
+The proposed source route uses an exact public bare Git fetch and raw package
+blobs without checkout; its materializer is pinned by a literal SHA256.
+Python setup and artifact actions use literal source commit pins.
 The CI driver verifies the selected Elan archive digest/size before extraction
 and execution, then checks the exact Lean 4.22.0-rc2 version. It does not provide
 independent Lean-download digest attestation. Declared external foundations may
@@ -135,8 +137,10 @@ staging/upload altogether; missing executor terminals remain UNKNOWN. Artifact
 existence alone is not native-validation success. Three 330-minute job allowances
 are not a measured runtime, cost or hosted-resource sufficiency guarantee.
 
-From the installed package, the ordinary portable unit command above exercises
-the original workbench tests and both installed CI DATA modules. Native compiler
+For the proposed package, the ordinary portable unit command above exercises
+the original workbench tests and three CI DATA modules:
+`test_portable_ci_data_v1`, `test_completion_v2`, and `test_native_first_run_v1`.
+Native compiler
 rejection tests remain a separate, explicit command; Python DATA is not a native
 platform or kernel result. The original Linux cold-source checkpoint alone does not certify another
 installed revision. Source review, exact-head build/full conditional consumer/cache

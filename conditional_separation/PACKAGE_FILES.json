@@ -53,8 +53,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 9764,
-      "sha256": "ad6952e64de7faf61b1e1bb1924cbc37ced7d58a28eb0ffc90223ee160bdb00c"
+      "bytes": 9975,
+      "sha256": "4b918bff1500c02568c8c59063460e4dbe3182f5e6eab1add3dae5bf55bd8aec"
     },
     {
       "path": "ci/ci_evidence_data_v2.py",
@@ -63,8 +63,8 @@
     },
     {
       "path": "ci/conditional-separation-native-v2.yml",
-      "bytes": 4468,
-      "sha256": "d4b34b4592cdd206320c3bdc4966c363cdc5597941aed86a331dc6b469971002"
+      "bytes": 6704,
+      "sha256": "fc8d39e3c64f36c360a052bd9aa87e9aab2d0bcc4c41913e1e758c11e605a11c"
     },
     {
       "path": "ci/conditional-separation.yml.proposed",
@@ -78,8 +78,8 @@
     },
     {
       "path": "ci/export_ci_evidence_v2.py",
-      "bytes": 1433,
-      "sha256": "1d826ed3d66131f3439141922b2c7e18aa43e7add0ceefaebfc92394834a2e60"
+      "bytes": 1843,
+      "sha256": "dcc359d638ec4212a4370603a90b416016f471706621d07d6883e5150929748d"
     },
     {
       "path": "ci/lean-v4.22.0-rc2.json",
@@ -5418,8 +5418,8 @@
     },
     {
       "path": "lakefile.lean",
-      "bytes": 2303,
-      "sha256": "f50882846177cea04e2295455f4cd7c59f09d365bbb38398bd27ec2bb1920826"
+      "bytes": 2144,
+      "sha256": "4e89917cbe9fbe88a05023ea338b1c048d494b6b04c676b4e76962b5b98cd83a"
     },
     {
       "path": "lean-toolchain",
@@ -5438,13 +5438,13 @@
     },
     {
       "path": "tests/test_completion_v2.py",
-      "bytes": 8933,
-      "sha256": "2e12a0491184b94d38d9c7cd50ef413fb1cb8db7126a4b2db837d5a648fbf65d"
+      "bytes": 9003,
+      "sha256": "1d63994a95964b0eae293ecaecbe6cebde55c1b29c93b3b5600203f412421ab6"
     },
     {
       "path": "tests/test_portable_ci_data_v1.py",
-      "bytes": 11747,
-      "sha256": "de238631e87de03557de2dbc9b1f43b005963ca4456a7980e6ba3b7a6ebdf6d9"
+      "bytes": 11796,
+      "sha256": "4a1621d02d01f3875e9a6bd47796ca12b6001ce2d9721919da8e5cef70026ad3"
     },
     {
       "path": "tests/test_workbench.py",
@@ -5460,6 +5460,16 @@
       "path": "tools/workbench.py",
       "bytes": 20961,
       "sha256": "38e34234666c7ee2a063f88026d397c435d2e0d763b2f11e6c53e3adddd11755"
+    },
+    {
+      "path": "ci/package_source_v1.py",
+      "bytes": 4523,
+      "sha256": "b6d91bfacbaa3ff08857b7cb196fd5f68e912bffcba9af63ffb2c70f787598d3"
+    },
+    {
+      "path": "tests/test_native_first_run_v1.py",
+      "bytes": 12870,
+      "sha256": "67172d6f8e7201bf54831729eff911fd003719716420a40b59065193cf0ad2cb"
     }
   ]
 }

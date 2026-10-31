@@ -21,12 +21,14 @@ class WorkflowCompletion(unittest.TestCase):
         self.assertIn(".github/workflows/conditional-separation-native.yml", text)
         self.assertNotIn("pull_request_target:", text)
         self.assertIn("contents: read", text)
-        self.assertIn("persist-credentials: false", text)
+        self.assertNotIn("uses: actions/checkout@", text)
+        self.assertNotIn("secrets.", text)
 
     def test_exact_PR_head_not_synthetic_merge(self):
         text = WORKFLOW.read_text()
-        self.assertIn("ref: ${{ github.event.pull_request.head.sha || github.sha }}", text)
-        self.assertIn("repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}", text)
+        self.assertIn("CI_EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}", text)
+        self.assertIn("row = event['pull_request']['head']", text)
+        self.assertIn("repo.get('private') is not False", text)
         self.assertIn("CI_EXPECTED_HEAD:", text)
         self.assertIn("github.event.pull_request.head.sha || github.sha", text)
 

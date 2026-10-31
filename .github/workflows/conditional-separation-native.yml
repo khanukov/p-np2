@@ -51,28 +51,54 @@ jobs:
         shell: python
         working-directory: source/conditional_separation
     steps:
-      - name: Package-only source at exact PR head or feature event head
-        uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
-        with:
-          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          path: source
-          fetch-depth: 1
-          persist-credentials: false
-          set-safe-directory: false
-          clean: false
-          submodules: false
-          lfs: false
-          allow-unsafe-pr-checkout: false
-          sparse-checkout-cone-mode: false
-          sparse-checkout: |
-            /conditional_separation/
       - name: Native Python (3.12 series; resolved patch recorded in job)
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: '3.12'
           architecture: ${{ matrix.python-arch }}
           check-latest: false
+      - name: Package-only raw Git blobs at the exact public feature head
+        working-directory: ${{ github.workspace }}
+        run: |
+          import hashlib, json, os, re, subprocess, sys
+          from pathlib import Path
+          if sys.flags.optimize:
+              raise SystemExit('optimized source admission rejected')
+          event = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_bytes())
+          kind = os.environ['GITHUB_EVENT_NAME']
+          if kind == 'pull_request':
+              row = event['pull_request']['head']
+              repo, head = row['repo'], row['sha']
+          elif kind in {'push', 'workflow_dispatch'}:
+              repo, head = event['repository'], os.environ['GITHUB_SHA']
+              ref = os.environ['GITHUB_REF']
+              if not ref.startswith('refs/heads/') or ref in {'refs/heads/main', 'refs/heads/master'}:
+                  raise ValueError('non-main feature ref required')
+          else:
+              raise ValueError('unprivileged event required')
+          if repo.get('private') is not False or any(p in {'.', '..'} for p in repo['full_name'].split('/')) or not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', repo['full_name']):
+              raise ValueError('public GitHub source repository required')
+          if not re.fullmatch('[0-9a-f]{40}', head) or head == '0'*40 or head != os.environ['CI_EXPECTED_HEAD']:
+              raise ValueError('exact relevant nonzero head required')
+          work = Path(os.environ['GITHUB_WORKSPACE']).resolve()
+          temp = Path(os.environ['RUNNER_TEMP']).resolve()
+          bare, source = temp/'conditional-source-v1.git', work/'source'
+          if bare.exists() or bare.is_symlink() or source.exists() or source.is_symlink():
+              raise ValueError('fresh private source roots required')
+          def git(*args):
+              return subprocess.run(['git', '--git-dir', str(bare), *args], check=True, stdout=subprocess.PIPE).stdout
+          subprocess.run(['git', 'init', '--bare', str(bare)], check=True)
+          git('fetch', '--depth=1', '--no-tags', '--no-recurse-submodules', 'https://github.com/'+repo['full_name']+'.git', head)
+          if git('rev-parse', 'FETCH_HEAD^{commit}').decode().strip() != head:
+              raise ValueError('fetched commit mismatch')
+          git('update-ref', '--no-deref', 'HEAD', head)
+          code = git('cat-file', 'blob', head+':conditional_separation/ci/package_source_v1.py')
+          if hashlib.sha256(code).hexdigest() != 'b6d91bfacbaa3ff08857b7cb196fd5f68e912bffcba9af63ffb2c70f787598d3':
+              raise ValueError('materializer differs from workflow-reviewed source')
+          helper = temp/'conditional-package-source-v1.py'
+          with helper.open('xb') as stream:
+              stream.write(code)
+          subprocess.run([sys.executable, '-B', str(helper), str(bare), head, str(source)], check=True)
       - name: Verified Elan asset and exact Lean toolchain
         run: |
           import subprocess, sys

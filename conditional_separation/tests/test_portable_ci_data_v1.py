@@ -201,12 +201,13 @@ class PortableDataTests(unittest.TestCase):
         text = path.read_text(encoding="utf-8")
         actual = dict(re.findall(r"- runner: ([\w.-]+)\n\s+python-arch: (\w+)", text))
         self.assertEqual(actual, {k: m.RUNNERS[k][2] for k in ("ubuntu-24.04", "macos-15", "windows-2022")})
-        self.assertIn("ref: ${{ github.event.pull_request.head.sha || github.sha }}", text)
-        self.assertIn("persist-credentials: false", text)
+        self.assertIn("CI_EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}", text)
+        self.assertIn("FETCH_HEAD^{commit}", text)
+        self.assertNotIn("uses: actions/checkout@", text)
+        self.assertNotIn("core.protectNTFS=false", text)
         self.assertIn("contents: read", text)
         self.assertNotIn("pull_request_target:", text)
         self.assertEqual(re.findall(r"uses: ([^\n]+)", text), [
-            "actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a",
             "actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0",
             "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9"])
 
@@ -216,9 +217,9 @@ class PortableDataTests(unittest.TestCase):
             self.skipTest("workflow source-location check applies in prospective author bundle")
         text = path.read_text(encoding="utf-8")
         blocks = re.findall(r"        run: \|\n((?:          [^\n]*\n)+)", text)
-        self.assertEqual(len(blocks), 5)
+        self.assertEqual(len(blocks), 6)
         phases = []
-        for block in blocks[:4]:
+        for block in blocks[1:5]:
             tree = ast.parse("\n".join(line[10:] for line in block.splitlines()))
             call = tree.body[-1].value
             self.assertEqual(ast.unparse(call.func), "subprocess.run")
@@ -228,7 +229,7 @@ class PortableDataTests(unittest.TestCase):
             phases.append(ast.literal_eval(call.args[0].elts[3]))
             self.assertTrue(any(k.arg == "check" and ast.literal_eval(k.value) for k in call.keywords))
         self.assertEqual(phases, ["bootstrap", "foundations", "build", "consumers"])
-        export = ast.parse("\n".join(line[10:] for line in blocks[4].splitlines())).body[-1].value
+        export = ast.parse("\n".join(line[10:] for line in blocks[5].splitlines())).body[-1].value
         self.assertEqual(ast.literal_eval(export.args[0].elts[2]), "ci/export_ci_evidence_v2.py")
         self.assertEqual(len(export.args[0].elts), 3)
 

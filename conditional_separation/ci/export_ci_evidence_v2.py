@@ -19,6 +19,12 @@ def main():
     path = work / "HEAD_IDENTITY.json"
     if path.is_file() and not path.is_symlink():
         identity["head_admission_record"] = json.loads(path.read_bytes())
+    path = package.parent / "SOURCE_MATERIALIZATION.json"
+    if path.is_file() and not path.is_symlink():
+        record = json.loads(path.read_bytes())
+        if record.get("schema") != "package-source-blobs-v1" or record.get("head") != os.environ.get("CI_EXPECTED_HEAD"):
+            raise ValueError("materialization/head evidence disagreement")
+        identity["source_materialization_record"] = record
     result = stage_evidence(work, package, temp / "conditional-separation-evidence-v2", identity)
     print(json.dumps({"export_complete": result["export_complete"], "files": len(result["files"]),
                       "omissions": len(result["omissions"]), "phase_states": result["phase_states"],

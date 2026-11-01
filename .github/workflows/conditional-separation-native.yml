@@ -44,7 +44,6 @@ jobs:
     defaults:
       run:
         shell: python
-        working-directory: ${{ runner.temp }}/s/p
     steps:
       - name: Native Python (3.12 series; resolved patch recorded in job)
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
@@ -95,22 +94,27 @@ jobs:
               stream.write(code)
           subprocess.run([sys.executable, '-B', str(helper), str(bare), head, str(source), '--short-layout-v1'], check=True)
       - name: Verified Elan asset and exact Lean toolchain
+        working-directory: ${{ runner.temp }}/s/p
         run: |
           import subprocess, sys
           subprocess.run([sys.executable, '-B', 'ci/native_ci_v1.py', 'bootstrap'], check=True)
       - name: Exact external foundations only (no project cache)
+        working-directory: ${{ runner.temp }}/s/p
         run: |
           import subprocess, sys
           subprocess.run([sys.executable, '-B', 'ci/native_ci_v1.py', 'foundations'], check=True)
       - name: Fresh project source build, root audit and real unit tests
+        working-directory: ${{ runner.temp }}/s/p
         run: |
           import subprocess, sys
           subprocess.run([sys.executable, '-B', 'ci/native_ci_v1.py', 'build'], check=True)
       - name: External attempts, exact R rejections and conditional consumer
+        working-directory: ${{ runner.temp }}/s/p
         run: |
           import subprocess, sys
           subprocess.run([sys.executable, '-B', 'ci/native_ci_v1.py', 'consumers'], check=True)
       - name: Stage bounded owned evidence even on failure
+        working-directory: ${{ runner.temp }}/s/p
         if: ${{ always() }}
         run: |
           import subprocess, sys

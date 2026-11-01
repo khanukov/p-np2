@@ -89,6 +89,24 @@ class Materialization(unittest.TestCase):
         self.assertEqual((out/'conditional_separation/core/Tiny.lean').read_bytes(),b'-- INERT DATA ONLY\n')
         self.assertFalse((out/'p').exists());self.assertFalse((self.bare/'index').exists())
     def test_short_head_source_and_custody(self):
+        lines=(ROOT/'ci/conditional-separation-native-v2.yml').read_text(encoding='utf-8').splitlines()
+        defaults=lines.index('    defaults:');steps=lines.index('    steps:')
+        self.assertEqual(lines[defaults:steps],['    defaults:','      run:','        shell: python'])
+        starts=[i for i,line in enumerate(lines) if line.startswith('      - name: ')]
+        blocks=[lines[start:stop] for start,stop in zip(starts,starts[1:]+[len(lines)])]
+        runs=[block for block in blocks if '        run: |' in block]
+        self.assertEqual([block[0].removeprefix('      - name: ') for block in runs],[
+            'Package-only raw Git blobs at the exact public feature head',
+            'Verified Elan asset and exact Lean toolchain',
+            'Exact external foundations only (no project cache)',
+            'Fresh project source build, root audit and real unit tests',
+            'External attempts, exact R rejections and conditional consumer',
+            'Stage bounded owned evidence even on failure'])
+        for index,block in enumerate(runs):
+            with self.subTest(run_step=index):
+                expected='${{ github.workspace }}' if index==0 else '${{ runner.temp }}/s/p'
+                self.assertEqual([line for line in block if line.startswith('        working-directory:')],
+                                 ['        working-directory: '+expected])
         receipt=self.short();package=self.temp/'s/p'
         report=self.m.checked_layout(package,self.temp,self.head)
         self.assertEqual(receipt['layout'],'runner-private-short-v1')

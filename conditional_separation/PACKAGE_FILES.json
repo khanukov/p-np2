@@ -63,8 +63,8 @@
     },
     {
       "path": "ci/conditional-separation-native-v2.yml",
-      "bytes": 6536,
-      "sha256": "4a28f4ca6cddf7db111dd87616d8197e3a173216d963d6358fd0e1a81cacb1cb"
+      "bytes": 6736,
+      "sha256": "c393755e252eba025b03539158fab19ef57e1e42b353b271b7a7accd7733635d"
     },
     {
       "path": "ci/conditional-separation.yml.proposed",
@@ -5483,8 +5483,8 @@
     },
     {
       "path": "tests/test_windows_layout_v1.py",
-      "bytes": 10116,
-      "sha256": "3659d0f052bd9b6b53fe9fadfe79287d2b74fa96306e235ef40ba827bcbe636a"
+      "bytes": 11515,
+      "sha256": "76a936c845b01ead9dd3452f60425e84c7452387a253e8ad33557a227dbc5ce2"
     },
     {
       "path": "tests/test_locked_evidence_v1.py",

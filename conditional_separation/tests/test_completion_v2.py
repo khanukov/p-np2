@@ -45,10 +45,11 @@ class WorkflowCompletion(unittest.TestCase):
         self.assertIn("CI_EXPECTED_HEAD:", text)
         self.assertIn("github.event.pull_request.head.sha || github.sha", text)
 
-    def test_three_native_rows_parallel_three(self):
+    def test_two_native_rows_parallel_two(self):
         text = WORKFLOW.read_text()
-        self.assertEqual(re.findall(r"- runner: ([\w.-]+)", text), ["ubuntu-24.04", "macos-15", "windows-2022"])
-        self.assertIn("max-parallel: 3", text)
+        self.assertEqual(re.findall(r"- runner: ([\w.-]+)", text), ["ubuntu-24.04", "macos-15"])
+        self.assertIn("max-parallel: 2", text)
+        self.assertNotIn("windows-", text)
         self.assertNotIn("-large\n", text)
 
     def test_always_owned_upload_and_retention(self):

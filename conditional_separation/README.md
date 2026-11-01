@@ -37,9 +37,9 @@ foundations, eight public roots with standard axioms, the installed full
 conditional consumer, three generic True successes and nineteen rejected invalid
 attempts without a core rebuild. The original resumed objects matched the cold
 objects byte-for-byte. These completed ORIGINAL-tuple results do not certify
-this new installed/head tuple or native macOS/Windows. No build occurs as part
-of this local source-installation invocation. On Windows use the installed
-Python launcher (for example `py -3`) in place of `python3`.
+this new installed/head tuple or native macOS. No build occurs as part
+of this local source-installation invocation. Windows is not a CI or release-validation target;
+native Windows support is not claimed.
 
 ## Independent attempts
 
@@ -108,8 +108,8 @@ locally. Installing or presenting these workflow sources alone establishes neith
 executed GitHub workflow, exact-head kernel/native validation nor PR/release
 acceptance.
 
-The standard matrix is Ubuntu 24.04 x64, macOS 15 ARM64 and Windows 2022 x64,
-up to three jobs in parallel. Pure asset-selection tests additionally cover
+The standard matrix is Ubuntu 24.04 x64 and macOS 15 ARM64,
+up to two jobs in parallel. Pure asset-selection tests additionally cover
 Linux ARM64 and macOS Intel metadata; those extra native jobs are deferred.
 Automatic native validation uses normal unprivileged PR events and selects
 the exact PR head, with package/necessary-workflow path filters. Feature pushes
@@ -134,17 +134,17 @@ is not a proof of R.
 The proposed native layout uses genuinely short runner-private `s/p` source,
 `g` bare Git and `w` work directories under `RUNNER_TEMP`, with no source alias or
 registry change. Before compiler dispatch it checks physical source/head pins and
-all 1146 prospective owned module paths (the original 1069 plus the separately owned audit additions). On Windows a conservative 248 UTF-16-unit path budget
-includes a separate 16-unit engineering allowance for unknown temporary names;
-this is not a theorem about Windows APIs or a proven diagnosis of the earlier
-file-creation failure. The real native result remains a separate exact-head gate.
+all 1146 prospective owned module paths (the original 1069 plus the separately owned audit additions).
+Shared offline path and archive-safety fixtures retain foreign-path rejection cases;
+these do not create a Windows job or a Windows release requirement.
+The real Linux/macOS native result remains a separate exact-head gate.
 
 Only explicitly owned receipts/source pins/compiler identity metadata are staged
 for best-effort always-on artifact transfer, with seven-day retention. Whole
 temporary directories, environments, credentials/config, Git, toolchains,
 dependencies, caches and binaries are not uploaded. A killed runner can prevent
 staging/upload altogether; missing executor terminals remain UNKNOWN. Artifact
-existence alone is not native-validation success. Three 330-minute job allowances
+existence alone is not native-validation success. Two 330-minute job allowances
 are not a measured runtime, cost or hosted-resource sufficiency guarantee.
 
 For the proposed package, the ordinary portable unit command above exercises
@@ -155,7 +155,7 @@ Native compiler
 rejection tests remain a separate, explicit command; Python DATA is not a native
 platform or kernel result. The original Linux cold-source checkpoint alone does not certify another
 installed revision. Source review, exact-head build/full conditional consumer/cache
-verification, actual native Linux/macOS/Windows CI, owner, latest-head Qodo,
+verification, actual native Linux/macOS CI, owner, latest-head Qodo,
 raw CI and release acceptance remain separately scoped evidence. No assumption-free P-versus-NP separation, standard-class equivalence, ease or novelty
 claim follows. R remains UNPROVED and the legacy bridge remains unfilled.
 

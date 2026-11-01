@@ -53,8 +53,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 11783,
-      "sha256": "823dba66fab6567acab3341d030bde8fb6582ca7c7c435eaead906bb884cedfb"
+      "bytes": 11675,
+      "sha256": "bbae0ae17d9fcbb4b55f16c051c42638292a921b0412cab7a13368686a61655c"
     },
     {
       "path": "ci/ci_evidence_data_v2.py",
@@ -63,8 +63,8 @@
     },
     {
       "path": "ci/conditional-separation-native-v2.yml",
-      "bytes": 6736,
-      "sha256": "c393755e252eba025b03539158fab19ef57e1e42b353b271b7a7accd7733635d"
+      "bytes": 6675,
+      "sha256": "2d1cd5829091c665e1a35514c001bad5bc10c2cf743a7e7cf6183586ccb7230b"
     },
     {
       "path": "ci/conditional-separation.yml.proposed",
@@ -5438,13 +5438,13 @@
     },
     {
       "path": "tests/test_completion_v2.py",
-      "bytes": 11142,
-      "sha256": "c08e734b9dad9ea6113d54be4514de034c84ff7bf90dae5a0352b823757438b5"
+      "bytes": 11165,
+      "sha256": "27b3b22ec4107d86848bf97c9bf63e20bdc2b268ccbccb87024fa7225254ea7d"
     },
     {
       "path": "tests/test_portable_ci_data_v1.py",
-      "bytes": 11796,
-      "sha256": "4a1621d02d01f3875e9a6bd47796ca12b6001ce2d9721919da8e5cef70026ad3"
+      "bytes": 11823,
+      "sha256": "6ee8b00780056b33368d2fe0f43fa8b59c6ccecd56b6a6a630a9d79355e4dce3"
     },
     {
       "path": "tests/test_workbench.py",

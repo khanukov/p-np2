@@ -1,0 +1,11 @@
+import Pnp4.Frontier.ContractExpansion.SingleResearchGap
+import ConditionalSeparation.AuditLiteralData
+open ConditionalSeparation.AuditSupport
+namespace Pnp4.Tests.FullPublicSurface.M069
+#check (@(checked_const% "[\"literal-ref-v1\",\"ConditionalSeparation.AuditLiteralData\",1398,\"Pnp4.Frontier.ContractExpansion.exists_ordinaryNP_and_not_PpolyDAG_treePoly\"]") : frozen_type% "[\"literal-ref-v1\",\"ConditionalSeparation.AuditLiteralData\",1398,\"Pnp4.Frontier.ContractExpansion.exists_ordinaryNP_and_not_PpolyDAG_treePoly\"]")
+theorem check_330455b04a7a60a5 : frozen_type% "[\"literal-ref-v1\",\"ConditionalSeparation.AuditLiteralData\",1398,\"Pnp4.Frontier.ContractExpansion.exists_ordinaryNP_and_not_PpolyDAG_treePoly\"]" := @(checked_const% "[\"literal-ref-v1\",\"ConditionalSeparation.AuditLiteralData\",1398,\"Pnp4.Frontier.ContractExpansion.exists_ordinaryNP_and_not_PpolyDAG_treePoly\"]")
+#check (@(checked_const% "[\"literal-ref-v1\",\"ConditionalSeparation.AuditLiteralData\",3254,\"Pnp4.Tests.FullPublicSurface.M069.check_330455b04a7a60a5\"]") : frozen_type% "[\"literal-ref-v1\",\"ConditionalSeparation.AuditLiteralData\",1398,\"Pnp4.Frontier.ContractExpansion.exists_ordinaryNP_and_not_PpolyDAG_treePoly\"]")
+#check (@(checked_const% "[\"literal-ref-v1\",\"ConditionalSeparation.AuditLiteralData\",1545,\"Pnp4.Frontier.ContractExpansion.ordinaryNP_and_not_PpolyDAG_treePoly\"]") : frozen_type% "[\"literal-ref-v1\",\"ConditionalSeparation.AuditLiteralData\",1545,\"Pnp4.Frontier.ContractExpansion.ordinaryNP_and_not_PpolyDAG_treePoly\"]")
+theorem check_c6ef8925218b64bd : frozen_type% "[\"literal-ref-v1\",\"ConditionalSeparation.AuditLiteralData\",1545,\"Pnp4.Frontier.ContractExpansion.ordinaryNP_and_not_PpolyDAG_treePoly\"]" := @(checked_const% "[\"literal-ref-v1\",\"ConditionalSeparation.AuditLiteralData\",1545,\"Pnp4.Frontier.ContractExpansion.ordinaryNP_and_not_PpolyDAG_treePoly\"]")
+#check (@(checked_const% "[\"literal-ref-v1\",\"ConditionalSeparation.AuditLiteralData\",3255,\"Pnp4.Tests.FullPublicSurface.M069.check_c6ef8925218b64bd\"]") : frozen_type% "[\"literal-ref-v1\",\"ConditionalSeparation.AuditLiteralData\",1545,\"Pnp4.Frontier.ContractExpansion.ordinaryNP_and_not_PpolyDAG_treePoly\"]")
+end Pnp4.Tests.FullPublicSurface.M069

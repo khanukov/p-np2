@@ -1,0 +1,133 @@
+# Locally installed source only; server/native runs and exact-head acceptance pending.
+# Integrate the companion files under conditional_separation/ci and its tests;
+# reconcile PACKAGE_FILES.json before this workflow can verify source identity.
+name: conditional-separation-native-prospective-v2
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'conditional_separation/**'
+      - '.github/workflows/conditional-separation-native.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: conditional-separation-native-v2-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  native-source:
+    if: ${{ github.event_name == 'pull_request' || (github.ref_type == 'branch' && github.ref_name != 'main' && github.ref_name != 'master') }}
+    # Explicit standard labels; neither -large nor -xlarge is allocated.
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            python-arch: x64
+          - runner: macos-15
+            python-arch: arm64
+
+    env:
+      CI_RUNNER_LABEL: ${{ matrix.runner }}
+      CI_PYTHON_ARCH: ${{ matrix.python-arch }}
+      CI_EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      PYTHONDONTWRITEBYTECODE: '1'
+      LEAN_NUM_THREADS: '2'
+    defaults:
+      run:
+        shell: python
+    steps:
+      - name: Native Python (3.12 series; resolved patch recorded in job)
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+          architecture: ${{ matrix.python-arch }}
+          check-latest: false
+      - name: Package-only raw Git blobs at the exact public feature head
+        working-directory: ${{ github.workspace }}
+        run: |
+          import hashlib, json, os, re, subprocess, sys
+          from pathlib import Path
+          if sys.flags.optimize:
+              raise SystemExit('optimized source admission rejected')
+          event = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_bytes())
+          kind = os.environ['GITHUB_EVENT_NAME']
+          if kind == 'pull_request':
+              row = event['pull_request']['head']
+              repo, head = row['repo'], row['sha']
+          elif kind in {'push', 'workflow_dispatch'}:
+              repo, head = event['repository'], os.environ['GITHUB_SHA']
+              ref = os.environ['GITHUB_REF']
+              if not ref.startswith('refs/heads/') or ref in {'refs/heads/main', 'refs/heads/master'}:
+                  raise ValueError('non-main feature ref required')
+          else:
+              raise ValueError('unprivileged event required')
+          if repo.get('private') is not False or any(p in {'.', '..'} for p in repo['full_name'].split('/')) or not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', repo['full_name']):
+              raise ValueError('public GitHub source repository required')
+          if not re.fullmatch('[0-9a-f]{40}', head) or head == '0'*40 or head != os.environ['CI_EXPECTED_HEAD']:
+              raise ValueError('exact relevant nonzero head required')
+          work = Path(os.environ['GITHUB_WORKSPACE']).resolve()
+          temp = Path(os.environ['RUNNER_TEMP']).resolve()
+          bare, source = temp/'g', temp/'s'
+          if bare.exists() or bare.is_symlink() or source.exists() or source.is_symlink():
+              raise ValueError('fresh private source roots required')
+          def git(*args):
+              return subprocess.run(['git', '--git-dir', str(bare), *args], check=True, stdout=subprocess.PIPE).stdout
+          subprocess.run(['git', 'init', '--bare', str(bare)], check=True)
+          git('fetch', '--depth=1', '--no-tags', '--no-recurse-submodules', 'https://github.com/'+repo['full_name']+'.git', head)
+          if git('rev-parse', 'FETCH_HEAD^{commit}').decode().strip() != head:
+              raise ValueError('fetched commit mismatch')
+          git('update-ref', '--no-deref', 'HEAD', head)
+          code = git('cat-file', 'blob', head+':conditional_separation/ci/package_source_v1.py')
+          if hashlib.sha256(code).hexdigest() != 'ffdd862bfadf3845ae86373eb806a6f2b99192abfe0e00d860533aae9c053b2f':
+              raise ValueError('materializer differs from workflow-reviewed source')
+          helper = temp/'conditional-package-source-v1.py'
+          with helper.open('xb') as stream:
+              stream.write(code)
+          subprocess.run([sys.executable, '-B', str(helper), str(bare), head, str(source), '--short-layout-v1'], check=True)
+      - name: Verified Elan asset and exact Lean toolchain
+        working-directory: ${{ runner.temp }}/s/p
+        run: |
+          import subprocess, sys
+          subprocess.run([sys.executable, '-B', 'ci/native_ci_v1.py', 'bootstrap'], check=True)
+      - name: Exact external foundations only (no project cache)
+        working-directory: ${{ runner.temp }}/s/p
+        run: |
+          import subprocess, sys
+          subprocess.run([sys.executable, '-B', 'ci/native_ci_v1.py', 'foundations'], check=True)
+      - name: Fresh project source build, root audit and real unit tests
+        working-directory: ${{ runner.temp }}/s/p
+        run: |
+          import subprocess, sys
+          subprocess.run([sys.executable, '-B', 'ci/native_ci_v1.py', 'build'], check=True)
+      - name: External attempts, exact R rejections and conditional consumer
+        working-directory: ${{ runner.temp }}/s/p
+        run: |
+          import subprocess, sys
+          subprocess.run([sys.executable, '-B', 'ci/native_ci_v1.py', 'consumers'], check=True)
+      - name: Stage bounded owned evidence even on failure
+        working-directory: ${{ runner.temp }}/s/p
+        if: ${{ always() }}
+        run: |
+          import subprocess, sys
+          subprocess.run([sys.executable, '-B', 'ci/export_ci_evidence_v2.py'], check=True)
+      - name: Transfer only the bounded evidence tree
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: conditional-ci-${{ matrix.runner }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ runner.temp }}/conditional-separation-evidence-v2
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 6
+          overwrite: false
+          include-hidden-files: false
+      # Best effort on cancellation/timeouts; no stage or upload can run after a
+      # killed runner. Missing executor terminals remain UNKNOWN in evidence.

@@ -9,11 +9,6 @@ on:
     paths:
       - 'conditional_separation/**'
       - '.github/workflows/conditional-separation-native.yml'
-  push:
-    branches-ignore: [main, master]
-    paths:
-      - 'conditional_separation/**'
-      - '.github/workflows/conditional-separation-native.yml'
   workflow_dispatch:
 
 permissions:
@@ -49,7 +44,7 @@ jobs:
     defaults:
       run:
         shell: python
-        working-directory: source/conditional_separation
+        working-directory: ${{ runner.temp }}/s/p
     steps:
       - name: Native Python (3.12 series; resolved patch recorded in job)
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
@@ -82,7 +77,7 @@ jobs:
               raise ValueError('exact relevant nonzero head required')
           work = Path(os.environ['GITHUB_WORKSPACE']).resolve()
           temp = Path(os.environ['RUNNER_TEMP']).resolve()
-          bare, source = temp/'conditional-source-v1.git', work/'source'
+          bare, source = temp/'g', temp/'s'
           if bare.exists() or bare.is_symlink() or source.exists() or source.is_symlink():
               raise ValueError('fresh private source roots required')
           def git(*args):
@@ -93,12 +88,12 @@ jobs:
               raise ValueError('fetched commit mismatch')
           git('update-ref', '--no-deref', 'HEAD', head)
           code = git('cat-file', 'blob', head+':conditional_separation/ci/package_source_v1.py')
-          if hashlib.sha256(code).hexdigest() != 'b6d91bfacbaa3ff08857b7cb196fd5f68e912bffcba9af63ffb2c70f787598d3':
+          if hashlib.sha256(code).hexdigest() != 'ffdd862bfadf3845ae86373eb806a6f2b99192abfe0e00d860533aae9c053b2f':
               raise ValueError('materializer differs from workflow-reviewed source')
           helper = temp/'conditional-package-source-v1.py'
           with helper.open('xb') as stream:
               stream.write(code)
-          subprocess.run([sys.executable, '-B', str(helper), str(bare), head, str(source)], check=True)
+          subprocess.run([sys.executable, '-B', str(helper), str(bare), head, str(source), '--short-layout-v1'], check=True)
       - name: Verified Elan asset and exact Lean toolchain
         run: |
           import subprocess, sys

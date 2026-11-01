@@ -21,6 +21,7 @@ from portable_ci_data_v1 import (TOOLCHAIN, asset_for, consumer_source, install_
                                   load_assets, require, unpack_installer, unpack_source,
                                   validate_lock, validate_runner)
 from ci_evidence_data_v2 import resolve_head
+from package_source_v1 import checked_layout
 
 PACKAGE = Path(__file__).resolve().parents[1]
 WORK = None
@@ -150,6 +151,12 @@ def bootstrap():
 
 def foundations():
     rows = exact_source()
+    lock_before = digest(PACKAGE / "lake-manifest.json")
+    require(not own_objects(), "no project object admitted before dependency acquisition")
+    # Lake 4.22 loads locked manifest entries for `env`; no `lake update`.
+    command("locked-dependency-materialization", ["lake", "env", sys.executable, "-c", "pass"], PACKAGE)
+    require(digest(PACKAGE / "lake-manifest.json") == lock_before, "locked manifest changed during acquisition")
+    require(not own_objects(), "dependency acquisition introduced project objects")
     version = command("lean-version", ["lake", "env", "lean", "--version"], PACKAGE)
     require("version 4.22.0-rc2" in version, "actual Lean version differs")
     require(not own_objects(), "no project object admitted before source build")
@@ -159,10 +166,9 @@ def foundations():
         require(directory.is_dir() and not directory.is_symlink(), "fresh declared external dependency directory")
         head = command("dependency-" + row["name"], ["git", "rev-parse", "HEAD"], directory).strip()
         require(head == row["rev"], "declared external dependency commit mismatch")
-    mathlib = PACKAGE / ".lake/packages/mathlib"
-    # Runs in the EXTERNAL Mathlib workspace, not the project. No actions/cache,
-    # no project output download, no previous project build/cache admission.
-    command("external-foundation-cache", ["lake", "exe", "cache", "get"], mathlib)
+    # Use the package's locked workspace and its external dependency directories.
+    # No actions/cache or project output download/build-cache admission.
+    command("external-foundation-cache", ["lake", "exe", "cache", "get"], PACKAGE)
     require(not own_objects(), "foundation retrieval introduced project objects")
     exact_source()
     save(WORK / "FOUNDATIONS.json", {"role": "REUSED_EXTERNAL_FOUNDATIONAL_OBJECTS_ONLY",
@@ -192,7 +198,7 @@ def external_consumers():
     save(WORK / "CORE_CACHE.before-consumers.json", before)
     archive = WORK / "source-package.zip"
     command("source-archive", [sys.executable, "-B", "tools/workbench.py", "archive", "--core", str(PACKAGE), "--output", str(archive)], PACKAGE)
-    copied = unpack_source(archive.read_bytes(), WORK / "unpacked-source-only")
+    copied = unpack_source(archive.read_bytes(), WORK / "u")
     command("unpacked-source-identity", [sys.executable, "-B", str(copied / "tools/workbench.py"), "verify-core", "--core", str(copied)], copied)
     attempt = WORK / "native-rejection-attempt"
     command("new-external-rejection-attempt", [sys.executable, "-B", "tools/workbench.py", "new", str(attempt), "--core", str(PACKAGE)], PACKAGE)
@@ -241,13 +247,18 @@ def main():
     require(os.environ.get("GITHUB_ACTIONS") == "true" and os.environ.get("CI") == "true", "future native Actions context required; not a local operational launcher")
     require(len(sys.argv) == 2 and sys.argv[1] in {"bootstrap", "foundations", "build", "consumers"}, "explicit reviewed phase required")
     phase = sys.argv[1]
-    temp = Path(os.environ["RUNNER_TEMP"]).resolve()
-    WORK = temp / "conditional-separation-native-v2"
+    layout = checked_layout(PACKAGE, os.environ["RUNNER_TEMP"], os.environ["CI_EXPECTED_HEAD"])
+    temp = Path(os.environ["RUNNER_TEMP"]).resolve(strict=True)
+    WORK = temp / "w"
     if phase == "bootstrap":
         WORK.mkdir()
     else:
         require(WORK.is_dir() and not WORK.is_symlink(), "bootstrap outputs required")
-    require(PACKAGE.name == "conditional_separation" and PACKAGE.is_relative_to(Path(os.environ["GITHUB_WORKSPACE"]).resolve()), "package-only checkout identity")
+    require(layout["owned_modules"] == 1146, "complete prospective owned-module path domain")
+    if phase == "bootstrap":
+        save(WORK / "LAYOUT.json", layout)
+    else:
+        require(json.loads((WORK / "LAYOUT.json").read_bytes()) == layout, "physical source/layout binding changed")
     unit_data = WORK / "unit-data"
     unit_data.mkdir(exist_ok=True)
     os.environ["CI_DATA_ROOT"] = str(unit_data)

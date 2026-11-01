@@ -19,6 +19,6 @@ jobs:
         working-directory: checkout/conditional_separation
         run: |
           lake build
-          python3 -m unittest discover -s tests -v
+          python3 -B ci/run_data_tests_v2.py
 # Native macOS/Windows jobs and negative compiler fixtures require independent CI
 # before claiming those platforms tested. No workflow is installed by this file.

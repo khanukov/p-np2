@@ -26,7 +26,7 @@ pinned by `lake-manifest.json`; initial dependency acquisition needs network
 access or an independently verified external cache. No monorepo source/object
 path is a package dependency. `ConditionalSeparation.LightAudit` checks the exact
 problem equivalence without importing the heavy final theorem;
-`ConditionalSeparation.KernelAudit` checks all public transitive axiom roots. `core/` preserves original module names, private
+`ConditionalSeparation.KernelAudit` checks eight named endpoint roots. Its imported `Pnp4.Tests.AxiomsAudit` retains the four bridge mirrors and imports `Pnp4.Tests.FullPublicSurfaceTests`: 72 separately owned audit modules cover the 2093 public logical constants in the original 72 Pnp4 modules, including generated auxiliaries, with literal complete type pins and direct axiom roots. It adds 1157 full-proposition theorem mirrors and reuses the existing matched bridge/final mirrors without an infinite mirror-of-mirror obligation. Twelve public audit-support definitions have separate complete type pins and direct roots. A transparent topologically ordered shared literal table reconstructs every independently frozen complete contract; reference notation never looks up a target type as its expectation. Compiler-generated literal types preserve binders, universe arrays, private constant identities and full proof-dependent premises; generated mirror authorship is not an independent semantic reproof. `core/` preserves original module names, private
 identities and source bytes. PROVENANCE.json contains relative SHA256 provenance.
 LICENSE is copied verbatim from the donor; extraction creates no new licensing
 permission. Copied, newly authored and retired source are accounted separately. The task-specific source-size limits were prospectively removed; historical HOLD records are preserved.
@@ -111,8 +111,10 @@ acceptance.
 The standard matrix is Ubuntu 24.04 x64, macOS 15 ARM64 and Windows 2022 x64,
 up to three jobs in parallel. Pure asset-selection tests additionally cover
 Linux ARM64 and macOS Intel metadata; those extra native jobs are deferred.
-Normal unprivileged PR and feature-push events select the exact PR head or
-feature event head, with package/necessary-workflow path filters. Manual dispatch
+Automatic native validation uses normal unprivileged PR events and selects
+the exact PR head, with package/necessary-workflow path filters. Feature pushes
+without a PR do not automatically run this matrix; opening or updating a PR
+provides the non-main first-use route without changing main. Optional manual dispatch
 has GitHub's default-branch/prior-run discovery constraints; no main modification
 or first-use API availability is assumed. Workflow-definition and tested-head
 identity are separate; PR-head validation does not establish merge compatibility.
@@ -129,6 +131,14 @@ attempts and an installed-source conditional consumer/cache-identity check.
 No positive proof of R is supplied or expected. Generic True validator success
 is not a proof of R.
 
+The proposed native layout uses genuinely short runner-private `s/p` source,
+`g` bare Git and `w` work directories under `RUNNER_TEMP`, with no source alias or
+registry change. Before compiler dispatch it checks physical source/head pins and
+all 1146 prospective owned module paths (the original 1069 plus the separately owned audit additions). On Windows a conservative 248 UTF-16-unit path budget
+includes a separate 16-unit engineering allowance for unknown temporary names;
+this is not a theorem about Windows APIs or a proven diagnosis of the earlier
+file-creation failure. The real native result remains a separate exact-head gate.
+
 Only explicitly owned receipts/source pins/compiler identity metadata are staged
 for best-effort always-on artifact transfer, with seven-day retention. Whole
 temporary directories, environments, credentials/config, Git, toolchains,
@@ -138,8 +148,9 @@ existence alone is not native-validation success. Three 330-minute job allowance
 are not a measured runtime, cost or hosted-resource sufficiency guarantee.
 
 For the proposed package, the ordinary portable unit command above exercises
-the original workbench tests and three CI DATA modules:
-`test_portable_ci_data_v1`, `test_completion_v2`, and `test_native_first_run_v1`.
+the original workbench tests and six CI DATA modules:
+`test_portable_ci_data_v1`, `test_completion_v2`, `test_native_first_run_v1`,
+`test_windows_layout_v1`, `test_locked_foundations_v1`, and `test_locked_evidence_v1`.
 Native compiler
 rejection tests remain a separate, explicit command; Python DATA is not a native
 platform or kernel result. The original Linux cold-source checkpoint alone does not certify another
@@ -149,7 +160,7 @@ raw CI and release acceptance remain separately scoped evidence. No assumption-f
 claim follows. R remains UNPROVED and the legacy bridge remains unfilled.
 
 The portable Python unit runner supplies a fresh private `CI_DATA_ROOT` without
-weakening either CI DATA suite's guard. Its default temporary directory follows
+weakening the CI DATA suites' guards. Its default temporary directory follows
 the platform's normal temporary-directory configuration. To retain fixtures,
 pass `--data-root /path/to/new/private-data`; the path must not already exist.
 It never runs Lean, Lake or the native operational driver and rejects Python

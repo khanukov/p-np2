@@ -13,7 +13,7 @@ def main():
         raise SystemExit("future native Actions context required")
     package = Path(__file__).resolve().parents[1]
     temp = Path(os.environ["RUNNER_TEMP"]).resolve()
-    work = temp / "conditional-separation-native-v2"
+    work = temp / "w"
     identity = {"event": os.environ.get("GITHUB_EVENT_NAME"), "expected_head": os.environ.get("CI_EXPECTED_HEAD"),
                 "native_validation_status": "UNKNOWN_UNTIL_ACTUAL_RECEIPTS_AND_JOB_RESULTS_VERIFIED"}
     path = work / "HEAD_IDENTITY.json"

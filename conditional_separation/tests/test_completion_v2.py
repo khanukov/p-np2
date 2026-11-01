@@ -11,12 +11,25 @@ P = A / ("ci" if (A / "ci").is_dir() else "proposal")
 WORKFLOW = P / "conditional-separation-native-v2.yml"
 
 
+def evidence_symlink_capability(path, target):
+    import errno
+    try:
+        path.symlink_to(target)
+    except OSError as error:
+        permitted = {errno.EPERM, errno.EACCES, errno.ENOSYS, errno.ENOTSUP,
+                     getattr(errno, "EOPNOTSUPP", errno.ENOTSUP)}
+        if error.errno not in permitted and getattr(error, "winerror", None) not in {50, 1314}:
+            raise
+        return {"available": False, "errno": error.errno, "winerror": getattr(error, "winerror", None)}
+    return {"available": True, "errno": None, "winerror": None}
+
+
 class WorkflowCompletion(unittest.TestCase):
-    def test_unprivileged_feature_and_PR_events(self):
+    def test_unprivileged_PR_and_manual_events(self):
         text = WORKFLOW.read_text()
         self.assertIn("  pull_request:", text)
-        self.assertIn("  push:", text)
-        self.assertIn("branches-ignore: [main, master]", text)
+        self.assertIn("  workflow_dispatch:", text)
+        self.assertNotIn("\n  push:", text)
         self.assertIn("conditional_separation/**", text)
         self.assertIn(".github/workflows/conditional-separation-native.yml", text)
         self.assertNotIn("pull_request_target:", text)
@@ -116,13 +129,40 @@ class EvidenceCompletion(unittest.TestCase):
         path.parent.mkdir()
         target = self.root / "outside-DATA"
         target.write_text("NOT TO COPY")
-        try:
-            path.symlink_to(target)
-        except OSError:
-            self.skipTest("native symlink permission unavailable; no privilege change")
+        capability = evidence_symlink_capability(path, target)
+        (self.root / "symlink-capability.json").write_text(json.dumps(capability))
+        if not capability["available"]:
+            self.skipTest("recognized native symlink capability denial: " + str(capability))
         result = self.m.stage_evidence(self.work, self.package, self.root / "evidence", self.identity)
         self.assertFalse(result["export_complete"])
         self.assertFalse((self.root / "evidence/commands/project-source-build/stdout.txt").exists())
+
+    def test_mocked_production_symlink_refusal_always(self):
+        from unittest.mock import patch
+        path = self.write("project-source-build/stdout.txt", "MUST NOT COPY")
+        original = Path.is_symlink
+        with patch.object(Path, "is_symlink", new=lambda p: p == path or original(p)):
+            result = self.m.stage_evidence(self.work, self.package, self.root / "evidence", self.identity)
+        self.assertFalse(result["export_complete"])
+        self.assertFalse(result["native_validation_pass"])
+        self.assertFalse((self.root / "evidence/commands/project-source-build/stdout.txt").exists())
+
+    def test_forced_recognized_symlink_capability_denial(self):
+        import errno
+        from unittest.mock import patch
+        path = self.root / "not-created"
+        with patch.object(Path, "symlink_to", side_effect=PermissionError(errno.EPERM, "forced DATA denial")):
+            capability = evidence_symlink_capability(path, self.root)
+        self.assertFalse(capability["available"])
+        self.assertEqual(capability["errno"], errno.EPERM)
+        self.assertFalse(path.exists())
+
+    def test_unexpected_symlink_EIO_propagates(self):
+        import errno
+        from unittest.mock import patch
+        with patch.object(Path, "symlink_to", side_effect=OSError(errno.EIO, "forced DATA I/O failure")):
+            with self.assertRaises(OSError):
+                evidence_symlink_capability(self.root / "not-created", self.root)
 
     def test_size_budget_records_incomplete_export(self):
         self.write("project-source-build/stdout.txt", "x" * 2000)

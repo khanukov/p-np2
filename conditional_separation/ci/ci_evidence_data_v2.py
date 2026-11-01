@@ -7,12 +7,13 @@ import re
 
 PHASES = ("bootstrap", "foundations", "build", "consumers")
 COMMANDS = {
+    "locked-dependency-materialization",
     "checked-feature-head", "elan-installer-help", "elan-install", "lean-toolchain-install",
     "lean-version", "source-identity", "external-foundation-cache", "project-source-build",
     "fresh-public-root-audit", "public-unit-tests", "post-build-source-identity", "source-archive",
     "unpacked-source-identity", "new-external-rejection-attempt", "native-exact-R-rejections",
 } | {"dependency-" + name for name in ("mathlib", "plausible", "LeanSearchClient", "importGraph", "proofwidgets", "aesop", "Qq", "batteries", "Cli")}
-TOP = {"BOOTSTRAP.json", "FOUNDATIONS.json", "OWNED_OBJECTS.source-build.json",
+TOP = {"LAYOUT.json", "BOOTSTRAP.json", "FOUNDATIONS.json", "OWNED_OBJECTS.source-build.json",
        "CORE_CACHE.before-consumers.json", "CORE_CACHE.after-consumers.json", "CONSUMERS.json", "HEAD_IDENTITY.json"}
 RECORDS = {"launch.json", "process.json", "terminal.json", "stdout.txt", "stderr.txt"}
 BLOCKED = {".git", "packages", "elan", "toolchains", "bin", "cache", "__pycache__"}
@@ -119,7 +120,11 @@ def stage_evidence(work, package, output, identity, *, max_file_bytes=8*1024**2,
             continue
         for name in sorted(RECORDS):
             capture(root / name, work, "commands/" + label + "/" + name)
-        command_states[label] = ("TERMINAL_PRESENT_UNINTERPRETED" if (root / "terminal.json").is_file()
+        terminal_name = "commands/" + label + "/terminal.json"
+        terminal_staged = any(row["path"] == terminal_name for row in files)
+        if not terminal_staged:
+            omit(terminal_name, "executor terminal not staged: UNKNOWN")
+        command_states[label] = ("TERMINAL_PRESENT_UNINTERPRETED" if terminal_staged
                                  else "STARTED_NO_TERMINAL_UNKNOWN")
     for owner in ("native-rejection-attempt", "conditional-surface-consumer"):
         for subtree in ("conditional-check", "rejection-suite", "native-conditional-consumer"):
@@ -148,7 +153,7 @@ def stage_evidence(work, package, output, identity, *, max_file_bytes=8*1024**2,
         capture(package / name, package, "source-pins/" + name)
     if not (package / "PACKAGE_FILES.json").is_file():
         omit("source-pins/PACKAGE_FILES.json", "source inventory absent")
-    for relative in ("ci/native_ci_v1.py", "ci/portable_ci_data_v1.py", "ci/ci_evidence_data_v2.py",
+    for relative in ("ci/package_source_v1.py", "ci/native_ci_v1.py", "ci/portable_ci_data_v1.py", "ci/ci_evidence_data_v2.py",
                      "ci/export_ci_evidence_v2.py", "ConditionalSeparation/OpenProblem.lean", "ConditionalSeparation/Conditional.lean"):
         capture(package / relative, package, "control-sources/" + relative)
     result = {"schema": "bounded-native-ci-evidence-v2", "identity": identity,

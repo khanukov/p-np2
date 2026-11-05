@@ -53,13 +53,13 @@
     },
     {
       "path": "README.md",
-      "bytes": 11675,
-      "sha256": "bbae0ae17d9fcbb4b55f16c051c42638292a921b0412cab7a13368686a61655c"
+      "bytes": 11711,
+      "sha256": "e9c507104547736278f8fe6506f657d450fe7e0dea293c29410821a4ab029024"
     },
     {
       "path": "ci/ci_evidence_data_v2.py",
-      "bytes": 9269,
-      "sha256": "21ecb0fe56e2a1f1c3dfe8e8c3fed10105876a977180bebf4fbc719462bd4586"
+      "bytes": 18405,
+      "sha256": "c690d946f7231ea8f62dd5c3b60c576b2728e59693671dd4c20c494feb0859ee"
     },
     {
       "path": "ci/conditional-separation-native-v2.yml",
@@ -93,8 +93,8 @@
     },
     {
       "path": "ci/portable_ci_data_v1.py",
-      "bytes": 9711,
-      "sha256": "d178f75d027f3a1208ce18aa08c9717df91903e9fe26c71961d5e99d748029fd"
+      "bytes": 11391,
+      "sha256": "e926a4764d441f4eae5bac6a9f9caffc512d27f923432f4bf1119a1631b028cf"
     },
     {
       "path": "ci/run_data_tests_v2.py",
@@ -5433,13 +5433,13 @@
     },
     {
       "path": "tests/lean_rejections.py",
-      "bytes": 10120,
-      "sha256": "815f6a87e63a6853ba6bbbee120a1c4234c98340794e684208c2b40822acaddb"
+      "bytes": 15469,
+      "sha256": "18e47cf9c784bf235ce107311f9dc98e516e42e4e5f1308374374e96e2abad32"
     },
     {
       "path": "tests/test_completion_v2.py",
-      "bytes": 11165,
-      "sha256": "27b3b22ec4107d86848bf97c9bf63e20bdc2b268ccbccb87024fa7225254ea7d"
+      "bytes": 23744,
+      "sha256": "db1fe0eb0fc9314ffea503c3dffd03b04974bc28e2c552bf806a9ef3fbd43751"
     },
     {
       "path": "tests/test_portable_ci_data_v1.py",
@@ -5448,8 +5448,8 @@
     },
     {
       "path": "tests/test_workbench.py",
-      "bytes": 2079,
-      "sha256": "5cf052f1eea89c2421dae2ed165daf5539d133186902a7c6482eb1047590ce1b"
+      "bytes": 4814,
+      "sha256": "822969f9d5d6751252a0a3ce3148515c469704798a0324963e0ba091a74cc1b1"
     },
     {
       "path": "tools/SourceImports.lean",
@@ -5458,8 +5458,8 @@
     },
     {
       "path": "tools/workbench.py",
-      "bytes": 20961,
-      "sha256": "38e34234666c7ee2a063f88026d397c435d2e0d763b2f11e6c53e3adddd11755"
+      "bytes": 24659,
+      "sha256": "8cf153fa3c5eff7b6ec3c358007e72a41cf7be29eb016fbfda98030bb4359f92"
     },
     {
       "path": "ci/package_source_v1.py",
@@ -5468,8 +5468,8 @@
     },
     {
       "path": "tests/test_native_first_run_v1.py",
-      "bytes": 12870,
-      "sha256": "67172d6f8e7201bf54831729eff911fd003719716420a40b59065193cf0ad2cb"
+      "bytes": 28512,
+      "sha256": "b6a667f5644a61c9002b2c04da384f0bfdd1e361714bb4da1265ffa4526c360e"
     },
     {
       "path": "core/Pnp4/Tests/AxiomsAudit.lean",
@@ -5870,6 +5870,11 @@
       "path": "ConditionalSeparation/AuditLiteralData.lean",
       "bytes": 1621059,
       "sha256": "519f4e48b673bc651b886902a8c098f8e2e171b95ae8d4fe3153594a23f51309"
+    },
+    {
+      "path": "tests/test_path_archive_hardening_v1.py",
+      "bytes": 9972,
+      "sha256": "7d731d68257f26e5de2276db4c4a653b0fd3428d95347a38628086b6660d675f"
     }
   ]
 }

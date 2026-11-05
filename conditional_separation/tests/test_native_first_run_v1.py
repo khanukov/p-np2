@@ -184,4 +184,195 @@ class AdmissionPrefix(unittest.TestCase):
         for args in [{'private':True},{'private':None},{'expected':'b'*40},{'head':'0'*40},{'head':'not-sha'},{'repo':'../fixture'},{'repo':'fixture/x:y'},{'kind':'pull_request_target'},{'kind':'push','ref':'refs/heads/main'},{'kind':'workflow_dispatch','ref':'refs/tags/v1'}]:
             with self.subTest(args=args),self.assertRaises(ValueError):self.run_prefix(**args)
 
+
+class UTF8OperationalIO(unittest.TestCase):
+    """Finite exact-expression DATA; never executes the native rejection driver."""
+    def prepared(self,write_newline=None):
+        import ast,re,types
+        from unittest.mock import patch
+        source=(ROOT/'tests/lean_rejections.py').read_text(encoding='utf-8')
+        tree=ast.parse(source)
+        calls=sorted((n for n in ast.walk(tree) if isinstance(n,ast.Call) and isinstance(n.func,ast.Attribute) and n.func.attr in {'read_text','write_text'}),key=lambda n:n.lineno)
+        self.assertEqual(len(calls),12)
+        work=(ROOT/'tools/workbench.py').read_text(encoding='utf-8')
+        functions=[n for n in ast.parse(work).body if isinstance(n,ast.FunctionDef) and n.name in {'name','guard_source'}]
+        self.assertEqual([n.name for n in functions],['name','guard_source'])
+        allowed={'isinstance','re.fullmatch','ValueError','name'}
+        for n in ast.walk(ast.Module(body=functions,type_ignores=[])):
+            if isinstance(n,ast.Call):self.assertIn(ast.unparse(n.func),allowed)
+        pure={'__builtins__':{'isinstance':isinstance,'str':str,'ValueError':ValueError},'re':re}
+        exec(compile(ast.Module(body=functions,type_ignores=[]),'literal-pure-guard-DATA','exec'),pure)
+        data=Path(os.environ['CI_DATA_ROOT']).resolve()
+        base=Path(tempfile.mkdtemp(prefix='utf8-boundary-data-',dir=data))
+        for part in ['attempt','package/template','receipts/axiom-guard-compile','receipts/type-guard-compile','suite']:(base/part).mkdir(parents=True,exist_ok=True)
+        wrong=next(ast.literal_eval(n.value) for n in tree.body if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='wrong' for t in n.targets))
+        sample=pure['guard_source']('Attempt.unit','True')+wrong
+        self.assertIn('\u2190',sample);self.assertIn('\u2200',sample);self.assertIn('\u2203',sample);self.assertIn('\u00ac',sample)
+        scope={'__builtins__':{},'A':base/'attempt','P':base/'package','C':base/'suite','root':base/'receipts','p':base/'source.lean','shadow':base/'shadow.lean','helper':base/'helper.lean','consumer':base/'Consumer.lean','m':types.SimpleNamespace(guard_source=pure['guard_source']),'text':sample,'result':{'qualification':sample},'json':json}
+        original=Path.open
+        def cp1252(path,mode='r',buffering=-1,encoding=None,errors=None,newline=None):
+            if 'b' not in mode and encoding in (None,'locale'):encoding='cp1252'
+            if 'b' not in mode and any(c in mode for c in 'wax') and newline is None:newline=write_newline
+            return original(path,mode,buffering,encoding,errors,newline)
+        return ast,calls,scope,sample,patch.object(Path,'open',new=cp1252)
+    def evaluate(self,ast,node,scope):
+        return eval(compile(ast.Expression(body=node),'literal-rejection-expression-DATA','eval'),scope)
+    def assert_utf8_text_write(self,path,text,write_newline=None):
+        import io
+        # None preserves the ordinary platform default, including Windows CRLF.
+        translation=os.linesep if write_newline is None else write_newline
+        with io.TextIOWrapper(io.BytesIO(),encoding='utf-8',newline=translation) as model:
+            model.write(text);model.flush();physical=model.buffer.getvalue()
+        raw=path.read_bytes()
+        self.assertEqual(raw,physical)
+        with io.TextIOWrapper(io.BytesIO(raw),encoding='utf-8',newline=None) as reader:
+            self.assertEqual(reader.read(),text.replace('\r\n','\n').replace('\r','\n'))
+    def test_actual_write_expressions_both_newline_modes(self):
+        for mode in ('\n','\r\n'):
+            ast,calls,scope,sample,locale=self.prepared(write_newline=mode)
+            selected=[n for n in calls if n.func.attr=='write_text']
+            self.assertEqual(len(selected),7)
+            for node in selected:
+                with self.subTest(newline=repr(mode),line=node.lineno):
+                    expected=self.evaluate(ast,node.args[0],scope)
+                    path=self.evaluate(ast,node.func.value,scope)
+                    with locale:self.evaluate(ast,node,scope)
+                    self.assert_utf8_text_write(path,expected,write_newline=mode)
+                    self.assertIn('\n',expected)
+                    wrong=expected.replace('\n','\r\n' if mode=='\n' else '\n').encode('utf-8')
+                    with self.assertRaises(AssertionError):self.assertEqual(path.read_bytes(),wrong)
+    def test_actual_guard_writes_with_cp1252_default(self):
+        ast,calls,scope,sample,locale=self.prepared()
+        selected=[n for n in calls if n.func.attr=='write_text' and isinstance(n.func.value,ast.Name) and n.func.value.id=='consumer']
+        self.assertEqual(len(selected),2)
+        for node in selected:
+            with self.subTest(line=node.lineno):
+                expected=self.evaluate(ast,node.args[0],scope)
+                with locale:self.evaluate(ast,node,scope)
+                self.assert_utf8_text_write(scope['consumer'],expected)
+    def test_metadata_template_and_log_reads_with_cp1252_default(self):
+        ast,calls,scope,sample,locale=self.prepared()
+        selected=[n for n in calls if n.func.attr=='read_text']
+        self.assertEqual(len(selected),5)
+        for node in selected:
+            with self.subTest(line=node.lineno):
+                path=self.evaluate(ast,node.func.value,scope);path.write_bytes(sample.encode('utf-8'))
+                with locale:self.assertEqual(self.evaluate(ast,node,scope),sample)
+                path.write_bytes(b'\xff')
+                with locale,self.assertRaises(UnicodeDecodeError):self.evaluate(ast,node,scope)
+    def test_all_text_boundaries_explicit_strict_utf8(self):
+        ast,calls,scope,sample,locale=self.prepared()
+        for node in calls:
+            with self.subTest(line=node.lineno):
+                keywords={k.arg:k.value for k in node.keywords}
+                self.assertIn('encoding',keywords)
+                self.assertEqual(ast.literal_eval(keywords['encoding']),'utf-8')
+                self.assertNotIn('errors',keywords)
+    def test_source_and_receipt_writes_with_cp1252_default(self):
+        ast,calls,scope,sample,locale=self.prepared()
+        selected=[n for n in calls if n.func.attr=='write_text']
+        self.assertEqual(len(selected),7)
+        for node in selected:
+            with self.subTest(line=node.lineno):
+                expected=self.evaluate(ast,node.args[0],scope)
+                path=self.evaluate(ast,node.func.value,scope)
+                with locale:self.evaluate(ast,node,scope)
+                self.assert_utf8_text_write(path,expected)
+
+class AssemblyNegativeDATA(unittest.TestCase):
+    """Inert receipt-protocol DATA; fake compiler callbacks NEVER execute Lean."""
+    def fixture(self, mutation=None):
+        import ast,datetime,types
+        from unittest.mock import patch
+        tree=ast.parse((ROOT/'tests/lean_rejections.py').read_bytes())
+        fixture=next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name=='assembly_negative')
+        work=ast.parse((ROOT/'tools/workbench.py').read_bytes())
+        names={'name','guard_source','guard_body','check'}
+        functions=[n for n in work.body if isinstance(n,ast.FunctionDef) and n.name in names]
+        self.assertEqual({n.name for n in functions},names)
+        with tempfile.TemporaryDirectory(prefix='FAKE_DATA_NOT_LEAN-',dir=os.environ['CI_DATA_ROOT']) as temporary:
+            base=Path(temporary);attempt=base/'attempt';core=base/'core';suite=base/'suite'
+            for p in (attempt,core,suite):p.mkdir()
+            runs=attempt/'.lake/conditional-check/runs';calls=[];records=[]
+            def save(path,value):path.write_bytes((json.dumps(value)+'\n').encode('utf-8'))
+            def fresh(a):
+                run=runs/'FAKE_DATA_NOT_AN_OS_RECEIPT';run.mkdir(parents=True);return run
+            def output(path,text):path.write_bytes(text.encode('utf-8'))
+            def compile_data(a,run,label,source,module,overrides):
+                self.assertEqual(a,attempt);calls.append(label)
+                self.assertIn(label,{'own-0','exact-closed-guard','final-assembly'})
+                directory=run/(label+'-compile');directory.mkdir()
+                setup=dict(name=module,isModule=False,options={},plugins=[],dynlibs=[],importArts=overrides)
+                save(run/(label+'.setup.json'),setup)
+                (run/(label+'.source.lean.txt')).write_bytes(source.read_bytes())
+                argv=['lake','env','lean','-DwarningAsError=true','--root='+str(attempt),
+                      '--setup='+str(run/(label+'.setup.json')),'-o',str(run/(module+'.olean')),str(source)]
+                save(directory/'launch.json',dict(argv=argv,cwd=str(core),start='2020-01-01T00:00:00+00:00'))
+                save(directory/'process.json',dict(pid=1,pgid=1))  # Explicit inert values, no OS observation.
+                code=1 if label=='final-assembly' else 0
+                if label=='exact-closed-guard' and mutation=='guard_failure':code=1
+                if label=='final-assembly' and mutation=='accepted':code=0
+                save(directory/'terminal.json',dict(OS_exit=code,end='2020-01-01T00:00:00+00:00'))
+                log='[CS_ROOT] Attempt.unit\n'
+                if label=='final-assembly':log=f'{source}:9:1: error: Application type mismatch: Attempt.unit has type\n  True\nbut is expected to have type\n  ConditionalSeparation.OpenProblem.R\n'
+                (directory/'stdout.txt').write_bytes(log.encode('utf-8'));(directory/'stderr.txt').write_bytes(b'')
+                if label=='final-assembly':
+                    if mutation=='missing_terminal':(directory/'terminal.json').unlink()
+                    if mutation=='bool_terminal':save(directory/'terminal.json',dict(OS_exit=True,end='2020-01-01T00:00:00+00:00'))
+                    if mutation=='wrong_exit':save(directory/'terminal.json',dict(OS_exit=2,end='2020-01-01T00:00:00+00:00'))
+                    if mutation=='unexpected_error':(directory/'stdout.txt').write_bytes(b'error: unknown module')
+                    if mutation=='wrong_R':(directory/'stdout.txt').write_bytes(log.replace('ConditionalSeparation.OpenProblem.R','Decoy.R').encode('utf-8'))
+                    if mutation=='expected_recovery':(directory/'stdout.txt').write_bytes((log+f'{source}:20:1: error: nonallowed axiom sorryAx\n{source}:30:1: error: nonallowed axiom sorryAx\n').encode('utf-8'))
+                    if mutation=='extra_error':(directory/'stdout.txt').write_bytes((log+f'{source}:10:1: error: unrelated error\n').encode('utf-8'))
+                    if mutation=='stderr':(directory/'stderr.txt').write_bytes(b'FAKE unexpected stderr')
+                    if mutation=='wrong_guard_root':(run/'exact-closed-guard-compile/stdout.txt').write_bytes(b'[CS_ROOT] Other.unit\n')
+                    if mutation=='extra_axiom':(run/'exact-closed-guard-compile/stdout.txt').write_bytes(b'[CS_ROOT] Attempt.unit\n[CS_AXIOM] Fake.bad\n')
+                    if mutation=='wrong_context':setup['importArts']={};save(run/(label+'.setup.json'),setup)
+                    if mutation=='wrong_argv':argv.append('--unexpected');save(directory/'launch.json',dict(argv=argv,cwd=str(core),start='2020-01-01T00:00:00+00:00'))
+                    if mutation=='wrong_cwd':save(directory/'launch.json',dict(argv=argv,cwd=str(base),start='2020-01-01T00:00:00+00:00'))
+                    if mutation=='wrong_source':(run/(label+'.source.lean.txt')).write_bytes(b'FAKE altered source')
+                    if mutation=='wrong_guard_source':(run/'exact-closed-guard.source.lean.txt').write_bytes(b'FAKE altered guard')
+                    if mutation=='wrong_attempt_source':(run/'own-0.source.lean.txt').write_bytes(b'FAKE altered attempt')
+                    if mutation=='unknown_exception':raise RuntimeError('FAKE unrelated runtime error')
+                    if mutation=='extra_run':(runs/'EXTRA_FAKE_RUN').mkdir()
+                if code:raise RuntimeError(f'{label} rejected or failed (exit {code}); see {directory}')
+                return [str(run/(module+'.olean'))]  # No object is created or represented as genuine.
+            scope=dict(Path=Path,json=json,re=re,ALLOWED={'propext','Classical.choice','Quot.sound'},
+                       read_json=lambda path:{'core':str(core)},verify_core=lambda p:'a'*64,
+                       fresh_check_run=fresh,write_new_output=output,module_sources=lambda a,r:[('Attempt',attempt/'Attempt.lean')],compile_source=compile_data)
+            exec(compile(ast.Module(body=functions,type_ignores=[]),'OWN_CHECK_BODY_FAKE_COMPILER_DATA','exec'),scope)
+            def check(a,proof,**kwargs):
+                self.assertEqual((a,proof),(attempt,'Attempt.unit'));self.assertEqual(kwargs,{'expected':'True','assemble':True})
+                return scope['check'](a,proof,**kwargs)
+            native=dict(A=attempt,P=core,C=suite,records=records,header='import ConditionalSeparation.OpenProblem\nnamespace Attempt\n',
+                        body=lambda text:(attempt/'Attempt.lean').write_bytes(text.encode('utf-8')),hashlib=hashlib,json=json,
+                        m=types.SimpleNamespace(check=check,guard_source=scope['guard_source'],ALLOWED=scope['ALLOWED']))
+            exec(compile(ast.Module(body=[fixture],type_ignores=[]),'OWN_G10_RECEIPT_PROTOCOL_DATA','exec'),native)
+            with patch.object(subprocess,'Popen',side_effect=AssertionError('NO compiler/process DATA effect')),patch.object(subprocess,'run',side_effect=AssertionError('NO operational DATA effect')):
+                native['assembly_negative']()
+            self.assertEqual(calls,['own-0','exact-closed-guard','final-assembly'])
+            self.assertEqual(len(records),1);self.assertIs(records[0]['PASS'],True)
+            self.assertEqual((records[0]['guard_OS_exit'],records[0]['assembly_OS_exit']),(0,1))
+            return records
+    def test_native_entry_registers_exact_assembly_fixture(self):
+        import ast
+        tree=ast.parse((ROOT/'tests/lean_rejections.py').read_bytes())
+        fn=next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name=='assembly_negative')
+        calls=[n for n in ast.walk(fn) if isinstance(n,ast.Call) and ast.unparse(n.func)=='m.check']
+        self.assertEqual(len(calls),1)
+        self.assertEqual({k.arg:ast.literal_eval(k.value) for k in calls[0].keywords},{'expected':'True','assemble':True})
+        self.assertTrue(any(isinstance(n,ast.Expr) and isinstance(n.value,ast.Call) and ast.unparse(n.value.func)=='assembly_negative' for n in tree.body))
+    def test_closed_true_then_specific_assembly_failure_data(self):self.fixture()
+    def test_expected_assembly_guard_recovery_is_still_rejected(self):self.fixture('expected_recovery')
+    def test_guard_failure_or_assembly_acceptance_rejects(self):
+        for change in ('guard_failure','accepted','missing_terminal','bool_terminal','wrong_exit','unknown_exception','extra_run'):
+            with self.subTest(change=change),self.assertRaises((RuntimeError,OSError)):self.fixture(change)
+    def test_unrelated_diagnostics_never_count_as_assembly_negative(self):
+        for change in ('unexpected_error','wrong_R','extra_error','stderr','wrong_guard_root','extra_axiom'):
+            with self.subTest(change=change),self.assertRaises(RuntimeError):self.fixture(change)
+    def test_source_setup_command_context_mismatch_rejects(self):
+        for change in ('wrong_context','wrong_argv','wrong_cwd','wrong_source','wrong_guard_source','wrong_attempt_source'):
+            with self.subTest(change=change),self.assertRaises(RuntimeError):self.fixture(change)
+
+
 if __name__=='__main__':unittest.main()

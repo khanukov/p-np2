@@ -83,9 +83,16 @@ def asset_for(rows, system, machine):
 def safe_name(name):
     require(isinstance(name, str) and name and "\\" not in name and ":" not in name and "\x00" not in name, "archive name")
     pure = PurePosixPath(name)
-    require(not pure.is_absolute() and pure.as_posix() == name and ".." not in pure.parts, "canonical relative archive path")
-    require(all(part not in {".git", ".lake", "__pycache__", "reports"} for part in pure.parts), "excluded source component")
-    require(pure.suffix.lower() not in {".olean", ".ilean", ".pyc", ".log", ".o", ".so", ".dll", ".dylib"}, "derived object in source")
+    require(pure.parts and not pure.is_absolute() and pure.as_posix() == name and ".." not in pure.parts, "canonical relative archive path")
+    reserved = {'CON', 'PRN', 'AUX', 'NUL'} | {f'{p}{i}' for p in ('COM', 'LPT') for i in range(1, 10)}
+    for part in pure.parts:
+        lower = part.casefold()
+        require(re.fullmatch(r'[A-Za-z0-9_.+-]+', part) is not None and part not in {'.', '..'}
+                and not part.endswith(('.', ' ')) and part.split('.')[0].upper() not in reserved, "portable source component")
+        require(lower not in {'.git', '.lake', '__pycache__', 'reports', 'cache', '.cache',
+                              '.aws', '.ssh', '.gnupg', '.env', 'credentials', 'credentials.json'}, "excluded source component")
+        require(not lower.endswith(('.olean', '.olean.private', '.olean.server', '.olean.trace',
+                '.ilean', '.setup.json', '.pyc', '.log', '.o', '.obj', '.so', '.dll', '.dylib')), "derived object in source")
     return pure
 
 
@@ -141,11 +148,31 @@ def validate_lock(data):
     return rows
 
 
+def source_name_set(names):
+    seen = set()
+    directories = {}
+    for value in names:
+        path = safe_name(value)
+        key = path.as_posix().casefold()
+        require(key not in seen, 'source name collision')
+        seen.add(key)
+        for i in range(1, len(path.parts)):
+            prefix = '/'.join(path.parts[:i])
+            folded = prefix.casefold()
+            require(directories.get(folded, prefix) == prefix, 'source directory spelling collision')
+            directories[folded] = prefix
+    for key in seen:
+        parts = key.split('/')
+        require(not any('/'.join(parts[:i]) in seen for i in range(1, len(parts))), 'source file/directory collision')
+
+
 def source_payloads(data):
     result = {}
     try:
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
-            for member in archive.infolist():
+            members = archive.infolist()
+            source_name_set([member.filename for member in members])
+            for member in members:
                 path = safe_name(member.filename)
                 require(not member.is_dir() and not stat.S_ISLNK(member.external_attr >> 16), "source regular files only")
                 require(str(path) not in result and member.file_size <= 16 * 1024 * 1024, "source duplicate/oversize")
@@ -155,6 +182,10 @@ def source_payloads(data):
     require("PACKAGE_FILES.json" in result, "source inventory absent")
     inventory = read_json(result["PACKAGE_FILES.json"])
     require(set(inventory) == {"schema", "files"} and inventory["schema"] == "conditional-separation-source-files-v1", "source inventory schema")
+    require(isinstance(inventory["files"], list), "source inventory file list")
+    for row in inventory["files"]:
+        require(isinstance(row, dict) and set(row) == {"path", "bytes", "sha256"}, "source pin schema")
+    source_name_set(["PACKAGE_FILES.json"] + [row["path"] for row in inventory["files"]])
     wanted = {"PACKAGE_FILES.json"}
     for row in inventory["files"]:
         require(isinstance(row, dict) and set(row) == {"path", "bytes", "sha256"}, "source pin schema")

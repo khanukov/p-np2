@@ -42,4 +42,48 @@ class WorkbenchTests(unittest.TestCase):
   self.assertIn(json.dumps(str(ROOT.resolve()), ensure_ascii=False), (p/"lakefile.lean").read_text())
   self.assertNotIn("../..",(p/"lakefile.lean").read_text())
 
+
+class LexicalLiteralTests(unittest.TestCase):
+ def test_banned_after_character_literals(self):
+  literals = ["'\"'", "'"+"\\"+"'"+"'", "'\\\\'", "'a'", "'\u03bb'", "'\\n'", "'\\x22'", "'\\u0022'"]
+  declarations = {'axiom':'axiom hidden : True', 'sorry':'theorem hidden : True := by sorry',
+   'admit':'theorem hidden : True := by admit', 'native_decide':'theorem hidden : True := by native_decide',
+   'unsafe':'unsafe def hidden : Nat := 0'}
+  for literal in literals:
+   for token, declaration in declarations.items():
+    with self.subTest(literal=literal, token=token):
+     self.assertEqual(workbench.forbidden('def q : Char := '+literal+'\n'+declaration), [token])
+ def test_banned_after_raw_strings(self):
+  for literal in ['r"plain"', 'r#"a"b"#', 'r##"a"#b\\c"##', 'r#####"a"####b"#####']:
+   for token in ['axiom','sorry','admit','native_decide','unsafe']:
+    with self.subTest(literal=literal, token=token):
+     self.assertEqual(workbench.forbidden('def q := '+literal+'\n'+token+' hidden'), [token])
+ def test_literal_and_comment_contents_are_not_active(self):
+  words = 'axiom sorry admit native_decide unsafe'
+  texts = ['"'+words+'"', '"a\\\"'+words+'\\\\b"',
+   'r#"'+words+' " inside"#', 'r###"'+words+' "## inside"###',
+   '-- '+words+'\n', '/- '+words+' /- '+words+' -/ -/',
+   "'\"' '\\\\' '\\n'", '-- '+words+'\rdef ok := 0']
+  for text in texts:
+   with self.subTest(text=text): self.assertEqual(workbench.forbidden(text), [])
+   for token in ['axiom','sorry','admit','native_decide','unsafe']:
+    with self.subTest(text=text, following=token):
+     self.assertEqual(workbench.forbidden(text+' '+token), [token])
+ def test_identifier_apostrophes_and_word_boundaries(self):
+  for text in ["def x' := 1", "def foo'' := x'", "def \u03b1' := 0", "def axiom' := 0",
+   'my_axiom unsafeName sorry2 _admit native_decideX']:
+   with self.subTest(text=text): self.assertEqual(workbench.forbidden(text), [])
+  self.assertEqual(workbench.forbidden("def x' := 1; unsafe def hidden := 0"), ['unsafe'])
+  self.assertEqual(workbench.forbidden('sorry/- gap -/admit'), ['admit','sorry'])
+ def test_malformed_literals_fail_closed(self):
+  texts = ['"unfinished', '"escape'+"\\", 'r#"unfinished"', 'r###"wrong"##',
+   'r##not_a_literal', "'", "''", "'ab'", "'a", "'\\q'", '"\\uD800"',
+   '"\\x0"', '/- unfinished /- nested -/']
+  for text in texts:
+   with self.subTest(text=text):
+    with self.assertRaises(ValueError): workbench.forbidden(text+'\nunsafe def hidden := 0')
+ def test_matching_raw_delimiter_not_embedded_quote(self):
+  self.assertEqual(workbench.forbidden('r###"unsafe "# sorry "## axiom"### admit'), ['admit'])
+  self.assertEqual(workbench.forbidden('"escaped \\\" unsafe" native_decide'), ['native_decide'])
+
 if __name__=="__main__":unittest.main()

@@ -37,26 +37,96 @@ def name(value):
 
 
 def forbidden(source):
-    """Lexical convenience guard; kernel type/axiom checking is separate."""
+    """Lexical convenience guard; kernel type/axiom checking is separate.
+
+    Literal/comment errors fail closed. This is not a Lean parser or sandbox.
+    """
     clean = []
-    i = depth = 0
-    while i < len(source):
+    i = 0
+    n = len(source)
+
+    def escaped(pos):
+        if pos + 1 >= n:
+            raise ValueError('unfinished literal escape')
+        code = source[pos + 1]
+        if code in "abfnrtv0\\'\"":
+            return pos + 2
+        if code in 'xuU':
+            start = pos + 2
+            if code == 'u' and start < n and source[start] == '{':
+                end = source.find('}', start + 1)
+                digits = source[start + 1:end] if end >= 0 else ''
+                after = end + 1
+                if not 1 <= len(digits) <= 6:
+                    raise ValueError('malformed Unicode literal escape')
+            else:
+                width = {'x': 2, 'u': 4, 'U': 8}[code]
+                digits = source[start:start + width]
+                after = start + width
+                if len(digits) != width:
+                    raise ValueError('truncated literal escape')
+            if any(c not in '0123456789abcdefABCDEF' for c in digits):
+                raise ValueError('malformed literal escape')
+            value = int(digits, 16)
+            if value > 0x10ffff or 0xd800 <= value <= 0xdfff:
+                raise ValueError('invalid Unicode scalar escape')
+            return after
+        raise ValueError('unsupported literal escape')
+
+    while i < n:
         if source.startswith('/-', i):
-            clean.append(' '); depth += 1; i += 2
-        elif depth and source.startswith('-/', i):
-            depth -= 1; i += 2
-        elif depth:
-            i += 1
-        elif source.startswith('--', i):
+            depth = 1
+            i += 2
+            while i < n and depth:
+                if source.startswith('/-', i):
+                    depth += 1; i += 2
+                elif source.startswith('-/', i):
+                    depth -= 1; i += 2
+                else:
+                    i += 1
+            if depth:
+                raise ValueError('unfinished block comment')
             clean.append(' ')
-            end = source.find('\n', i)
-            i = len(source) if end < 0 else end
+        elif source.startswith('--', i):
+            ends = [p for p in (source.find('\n', i), source.find('\r', i)) if p >= 0]
+            i = min(ends) if ends else n
+            clean.append(' ')
+        elif source[i] == 'r' and i + 1 < n and source[i + 1] in '#"':
+            end = i + 1
+            while end < n and source[end] == '#':
+                end += 1
+            if end == n or source[end] != '"':
+                raise ValueError('malformed raw string opening')
+            delimiter = '"' + source[i + 1:end]
+            close = source.find(delimiter, end + 1)
+            if close < 0:
+                raise ValueError('unfinished raw string')
+            i = close + len(delimiter)
+            clean.append(' ')
         elif source[i] == '"':
             i += 1
-            while i < len(source):
-                if source[i] == '\\': i += 2
-                elif source[i] == '"': i += 1; break
-                else: i += 1
+            while i < n and source[i] != '"':
+                i = escaped(i) if source[i] == '\\' else i + 1
+            if i == n:
+                raise ValueError('unfinished string')
+            i += 1
+            clean.append(' ')
+        elif source[i].isalpha() or source[i] == '_':
+            start = i
+            i += 1
+            while i < n and (source[i].isalnum() or source[i] in "_'" or
+                              '\u0300' <= source[i] <= '\u036f'):
+                i += 1
+            clean.append(source[start:i])
+        elif source[i] == "'":
+            i += 1
+            if i == n or source[i] in "'\r\n":
+                raise ValueError('malformed character literal')
+            i = escaped(i) if source[i] == '\\' else i + 1
+            if i == n or source[i] != "'":
+                raise ValueError('unfinished or multi-character literal')
+            i += 1
+            clean.append(' ')
         else:
             clean.append(source[i]); i += 1
     words = set(re.findall(r"[A-Za-z_][A-Za-z0-9_']*", ''.join(clean)))
@@ -307,19 +377,44 @@ def guard_body(proof, expected):
     return source[len(header):]
 
 
+def reject_output_alias(path):
+    path = Path(path)
+    if path.is_symlink() or getattr(path, 'is_junction', lambda: False)() or path.resolve() != path:
+        raise ValueError('checker output symlink/junction/alias rejected: '+str(path))
+    return path
+
+
+def fresh_check_run(attempt):
+    parent = attempt
+    for part in ('.lake', 'conditional-check', 'runs'):
+        parent = reject_output_alias(parent/part)
+        parent.mkdir(exist_ok=True)
+        reject_output_alias(parent)
+        if not parent.is_dir(): raise ValueError('checker output directory required')
+    root = reject_output_alias(parent/str(uuid.uuid4()))
+    root.mkdir()  # Exclusive fresh run; never reuse a previous receipt directory.
+    return reject_output_alias(root)
+
+
+def write_new_output(path, text):
+    path = reject_output_alias(path)
+    reject_output_alias(path.parent)
+    with path.open('x', encoding='utf-8') as stream:
+        stream.write(text)
+
+
 def check(attempt, proof, *, expected='ConditionalSeparation.OpenProblem.R', assemble=True):
     """`expected=True`-style internal fixtures test validation, never prove R."""
     attempt = Path(attempt).resolve()
     core = Path(read_json(attempt/'attempt.json')['core']).resolve()
     fingerprint = verify_core(core)
-    root = attempt/'.lake/conditional-check/runs'/str(uuid.uuid4())
-    root.mkdir(parents=True)
-    (root/'STATUS.json').write_text(json.dumps({'status':'STARTED_NOT_PASS','core_source_inventory_sha256':fingerprint})+'\n')
+    root = fresh_check_run(attempt)
+    write_new_output(root/'STATUS.json', json.dumps({'status':'STARTED_NOT_PASS','core_source_inventory_sha256':fingerprint})+'\n')
     overrides = {}
     for i,(module,source) in enumerate(module_sources(attempt,root)):
         overrides[module] = compile_source(attempt,root,'own-'+str(i),source,module,overrides)
-    consumer = attempt/'.lake/conditional-check/Consumer.lean'
-    consumer.write_text(guard_source(proof,expected),encoding='utf-8')
+    consumer = root/'Consumer.lean'
+    write_new_output(consumer, guard_source(proof,expected))
     compile_source(attempt,root,'exact-closed-guard',consumer,'Consumer',overrides)
     log = (root/'exact-closed-guard-compile/stdout.txt').read_text(encoding='utf-8')
     roots = re.findall(r'\[CS_ROOT\] ([^\s]+)',log)
@@ -327,7 +422,7 @@ def check(attempt, proof, *, expected='ConditionalSeparation.OpenProblem.R', ass
     if roots != [proof] or not set(axioms) <= ALLOWED:
         raise RuntimeError('exact direct-root/axiom protocol differs')
     if assemble:
-        assembly = attempt/'.lake/conditional-check/Assembly.lean'
+        assembly = root/'Assembly.lean'
         proposition = '''∃ k : Nat,
   UniformClassBridgeClosure.Ordinary.UniformNP
     (ContentPrefixExtensionLanguage (treeCircuitWitnessCodec (thresholdPoly k))) ∧
@@ -340,11 +435,11 @@ def check(attempt, proof, *, expected='ConditionalSeparation.OpenProblem.R', ass
         body += f'theorem check_complete : {proposition} := complete\nend AttemptAssembly\n'
         body += guard_body('AttemptAssembly.complete',proposition)
         body += guard_body('AttemptAssembly.check_complete',proposition)
-        assembly.write_text(body,encoding='utf-8')
+        write_new_output(assembly, body)
         compile_source(attempt,root,'final-assembly',assembly,'Assembly',overrides)
     result = {'status':'CLOSED_R_AND_ASSEMBLY' if assemble else 'INTERNAL_GENERIC_VALIDATOR_ONLY',
               'proof':proof,'axioms':axioms,'core_source_inventory_sha256':fingerprint,'receipts':str(root)}
-    (root/'RESULT.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
+    write_new_output(root/'RESULT.json', json.dumps(result,indent=2)+'\n')
     return result
 
 

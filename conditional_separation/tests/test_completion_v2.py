@@ -64,6 +64,14 @@ class WorkflowCompletion(unittest.TestCase):
         self.assertNotIn("path: ${{ runner.temp }}\n", text)
 
 
+    def test_installed_root_workflow_matches_package(self):
+        root = A.parent / '.github/workflows/conditional-separation-native.yml'
+        if not root.exists() and not root.is_symlink():
+            self.skipTest('standalone package: monorepo root workflow absent')
+        self.assertEqual(root.read_bytes(), WORKFLOW.read_bytes(),
+                         'installed root workflow differs from packaged workflow')
+
+
 class EvidenceCompletion(unittest.TestCase):
     def setUp(self):
         path = P / "ci_evidence_data_v2.py"
@@ -203,3 +211,190 @@ class EvidenceCompletion(unittest.TestCase):
         self.assertTrue(any(n.endswith("own-0.parts.json") for n in names))
         self.assertTrue(any(n.endswith("own-0.source.lean.txt") for n in names))
         self.assertFalse(any(n.endswith(".olean") or "private-key" in n for n in names))
+    def test_oversized_stdout_lossless_default_limits(self):
+        import hashlib
+        payload = b'x' * (8 * 1024**2) + b'y'
+        source = self.write('project-source-build/stdout.txt', '')
+        source.write_bytes(payload)
+        self.write('project-source-build/terminal.json', '{"fixture":"DATA only"}')
+        out = self.root / 'evidence'
+        result = self.m.stage_evidence(self.work, self.package, out, self.identity)
+        self.assertTrue(result['export_complete'], result['omissions'])
+        records = result['fragmented_text']
+        self.assertEqual(len(records), 1)
+        record = records[0]
+        self.assertEqual(record['path'], 'commands/project-source-build/stdout.txt')
+        self.assertEqual(record['bytes'], len(payload))
+        self.assertEqual(record['sha256'], hashlib.sha256(payload).hexdigest())
+        self.assertEqual(record['parts'], [record['path'] + '.parts/' + f'{i:08d}.txt' for i in range(2)])
+        pieces = [(out / name).read_bytes() for name in record['parts']]
+        for piece in pieces:
+            self.assertLessEqual(len(piece), 8 * 1024**2)
+            piece.decode('utf-8')
+        self.assertEqual(b''.join(pieces), payload)
+        self.assertEqual(result['payload_bytes'], sum(row['bytes'] for row in result['files']))
+        physical = result['physical_export']
+        self.assertEqual(physical['files'], len(result['files']) + 1)
+        self.assertEqual(physical['manifest_bytes'], (out / 'EVIDENCE_MANIFEST.json').stat().st_size)
+        self.assertEqual(physical['total_bytes'], result['payload_bytes'] + physical['manifest_bytes'])
+        self.assertFalse(result['native_validation_pass'])
+    def test_same_size_source_change_rejected_before_fragment_writes(self):
+        from unittest.mock import patch
+        source = self.write('project-source-build/stdout.txt', 'a' * 200)
+        self.write('project-source-build/terminal.json', '{"fixture":"DATA"}')
+        original_read = Path.read_bytes
+        def changed(path):
+            data = original_read(path)
+            if path == source:
+                path.write_bytes(b'b' * len(data))
+            return data
+        out = self.root / 'evidence'
+        with patch.object(Path, 'read_bytes', new=changed):
+            with self.assertRaisesRegex(ValueError, 'evidence changed while read'):
+                self.m.stage_evidence(self.work, self.package, out, self.identity, max_file_bytes=64)
+        self.assertFalse((out / 'commands/project-source-build/stdout.txt.parts').exists())
+    def test_payload_caps_cannot_be_raised(self):
+        for i, limits in enumerate(({'max_file_bytes': 8*1024**2+1},
+                                    {'max_total_bytes': 64*1024**2+1},
+                                    {'max_files': 4097})):
+            with self.subTest(limits=limits), self.assertRaises(ValueError):
+                self.m.stage_evidence(self.work, self.package, self.root / ('raised-' + str(i)), self.identity, **limits)
+    def test_multibyte_fragment_roundtrip_and_small_file_compatibility(self):
+        import hashlib
+        payload = b'a' * 63 + '😀αβ'.encode('utf-8') * 30
+        source = self.write('project-source-build/stdout.txt', '')
+        self.write('project-source-build/terminal.json', '{"fixture":"DATA"}')
+        source.write_bytes(payload)
+        for limit in (64, 65, 66, 67):
+            out = self.root / ('evidence-' + str(limit))
+            result = self.m.stage_evidence(self.work, self.package, out, self.identity, max_file_bytes=limit)
+            self.assertTrue(result['export_complete'])
+            actual = self.m.reconstruct_text_export(out, result, 'commands/project-source-build/stdout.txt')
+            self.assertEqual(actual, payload)
+            record = result['fragmented_text'][0]
+            self.assertEqual(record['sha256'], hashlib.sha256(payload).hexdigest())
+            for name in record['parts']:
+                (out / name).read_bytes().decode('utf-8')
+            self.assertEqual(result['payload_bytes'], sum(r['bytes'] for r in result['files']))
+        source.write_bytes(b'small\r\nLF\n')
+        out = self.root / 'small'
+        result = self.m.stage_evidence(self.work, self.package, out, self.identity)
+        self.assertTrue(result['export_complete'])
+        self.assertNotIn('fragmented_text', result)
+        self.assertEqual((out / 'commands/project-source-build/stdout.txt').read_bytes(), source.read_bytes())
+        self.assertEqual(self.m.reconstruct_text_export(out, result, 'commands/project-source-build/stdout.txt'), source.read_bytes())
+
+    def test_fragment_integrity_mutations_are_rejected(self):
+        import copy
+        payload = ('😀αβ' * 40).encode('utf-8')
+        source = self.write('project-source-build/stdout.txt', '')
+        source.write_bytes(payload)
+        self.write('project-source-build/terminal.json', '{"fixture":"DATA"}')
+        out = self.root / 'evidence'
+        result = self.m.stage_evidence(self.work, self.package, out, self.identity, max_file_bytes=64)
+        original = 'commands/project-source-build/stdout.txt'
+        self.assertEqual(self.m.reconstruct_text_export(out, result, original), payload)
+        def rejected(label, change):
+            value = copy.deepcopy(result)
+            change(value)
+            (self.root / (label + '.mutation.json')).write_text(json.dumps(value))
+            with self.subTest(mutation=label), self.assertRaises((ValueError, UnicodeError)):
+                self.m.reconstruct_text_export(out, value, original)
+        rejected('order', lambda m: m['fragmented_text'][0]['parts'].reverse())
+        rejected('original_hash', lambda m: m['fragmented_text'][0].update(sha256='0' * 64))
+        rejected('original_size', lambda m: m['fragmented_text'][0].update(bytes=len(payload) + 1))
+        rejected('duplicate_record', lambda m: m['fragmented_text'].append(copy.deepcopy(m['fragmented_text'][0])))
+        rejected('duplicate_pin', lambda m: m['files'].append(copy.deepcopy(m['files'][0])))
+        rejected('missing_pin', lambda m: m['files'].pop(0))
+        rejected('part_hash', lambda m: m['files'][0].update(sha256='0' * 64))
+        rejected('part_size', lambda m: m['files'][0].update(bytes=m['files'][0]['bytes'] + 1))
+        rejected('bool_size', lambda m: m['files'][0].update(bytes=True))
+        rejected('extra_reference', lambda m: m['fragmented_text'][0]['parts'].append('commands/project-source-build/stdout.txt.parts/99999999.txt'))
+        rejected('missing_record', lambda m: m.pop('fragmented_text'))
+        rejected('payload_total', lambda m: m.update(payload_bytes=m['payload_bytes'] + 1))
+        rejected('path_escape', lambda m: m['files'][0].update(path='../outside'))
+        rejected('physical_count', lambda m: m['physical_export'].update(files=999))
+        rejected('descriptor_size', lambda m: m['physical_export'].update(manifest_bytes=999))
+        rejected('physical_total', lambda m: m['physical_export'].update(total_bytes=999))
+    def test_fragment_missing_extra_and_aliased_files_rejected(self):
+        import shutil
+        from unittest.mock import patch
+        source = self.write('project-source-build/stdout.txt', 'x' * 200)
+        self.write('project-source-build/terminal.json', '{"fixture":"DATA"}')
+        out = self.root / 'evidence'
+        result = self.m.stage_evidence(self.work, self.package, out, self.identity, max_file_bytes=64)
+        name = result['fragmented_text'][0]['path']
+        first = result['fragmented_text'][0]['parts'][0]
+        missing = self.root / 'missing'
+        shutil.copytree(out, missing, ignore=lambda parent, names: [Path(first).name] if Path(parent) == (out / first).parent else [])
+        with self.assertRaises(ValueError):
+            self.m.reconstruct_text_export(missing, result, name)
+        extra = self.root / 'extra'
+        shutil.copytree(out, extra)
+        (extra / 'unlisted.txt').write_text('unlisted DATA')
+        with self.assertRaises(ValueError):
+            self.m.reconstruct_text_export(extra, result, name)
+        original = Path.is_symlink
+        target = out / first
+        with patch.object(Path, 'is_symlink', new=lambda p: p == target or original(p)):
+            with self.assertRaises(ValueError):
+                self.m.reconstruct_text_export(out, result, name)
+
+    def test_total_count_and_codepoint_budgets_are_atomic(self):
+        source = self.write('project-source-build/stdout.txt', 'x' * 200)
+        self.write('project-source-build/terminal.json', '{"fixture":"DATA"}')
+        for label, limits in [('total', {'max_file_bytes':64, 'max_total_bytes':100}),
+                              ('count', {'max_file_bytes':64, 'max_files':2})]:
+            out = self.root / label
+            result = self.m.stage_evidence(self.work, self.package, out, self.identity, **limits)
+            self.assertFalse(result['export_complete'])
+            self.assertFalse((out / 'commands/project-source-build/stdout.txt.parts').exists())
+            self.assertNotIn('fragmented_text', result)
+            self.assertLessEqual(result['payload_bytes'], result['limits']['payload_bytes'])
+            self.assertLessEqual(len(result['files']), result['limits']['files'])
+        with self.assertRaises(ValueError):
+            self.m._utf8_chunks('😀'.encode('utf-8'), 3, 10)
+
+    def test_fragmented_missing_terminal_is_still_UNKNOWN(self):
+        self.write('project-source-build/stdout.txt', 'x' * 200)
+        out = self.root / 'evidence'
+        result = self.m.stage_evidence(self.work, self.package, out, self.identity, max_file_bytes=64)
+        self.assertFalse(result['export_complete'])
+        self.assertEqual(result['command_states']['project-source-build'], 'STARTED_NO_TERMINAL_UNKNOWN')
+        self.assertFalse((out / 'commands/project-source-build/terminal.json').exists())
+        self.assertEqual(self.m.reconstruct_text_export(out, result, 'commands/project-source-build/stdout.txt'), b'x' * 200)
+
+    def test_invalid_UTF8_nonregular_and_hardlinked_source_rejected(self):
+        import errno
+        source = self.write('project-source-build/stdout.txt', '')
+        source.write_bytes(b'x' * 200 + b'\xff')
+        self.write('project-source-build/terminal.json', '{"fixture":"DATA"}')
+        out = self.root / 'invalid'
+        result = self.m.stage_evidence(self.work, self.package, out, self.identity, max_file_bytes=64)
+        self.assertFalse(result['export_complete'])
+        self.assertTrue(any(r['reason'] == 'not UTF8 text evidence' for r in result['omissions']))
+        source.write_bytes(b'x' * 200)
+        alias = self.root / 'hardlink'
+        try:
+            os.link(source, alias)
+        except OSError as error:
+            if error.errno not in {errno.EPERM, errno.EACCES, errno.ENOSYS, errno.ENOTSUP, getattr(errno, 'EOPNOTSUPP', errno.ENOTSUP)}:
+                raise
+            (self.root / 'hardlink-capability.json').write_text(json.dumps({'available':False, 'errno':error.errno}))
+        else:
+            result = self.m.stage_evidence(self.work, self.package, self.root / 'linked', self.identity, max_file_bytes=64)
+            self.assertFalse(result['export_complete'])
+            self.assertTrue(any('hardlink' in r['reason'] for r in result['omissions']))
+        directory = self.work / 'lean-version/stdout.txt'
+        directory.mkdir(parents=True)
+        result = self.m.stage_evidence(self.work, self.package, self.root / 'nonregular', self.identity, max_file_bytes=64)
+        self.assertFalse(result['export_complete'])
+        self.assertTrue(any(r['path'] == 'commands/lean-version/stdout.txt' and 'nonregular' in r['reason'] for r in result['omissions']))
+    def test_outer_descriptor_counts_against_hard_export_budgets(self):
+        for label, value in (
+            ('count', {'files':[{}] * 4096, 'payload_bytes':0}),
+            ('total', {'files':[], 'payload_bytes':64*1024**2}),
+            ('descriptor', {'files':[], 'payload_bytes':0, 'identity':'x' * (8*1024**2+1)}),
+        ):
+            with self.subTest(case=label), self.assertRaises(ValueError):
+                self.m._evidence_descriptor(value)

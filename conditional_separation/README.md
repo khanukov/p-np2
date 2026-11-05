@@ -148,9 +148,9 @@ existence alone is not native-validation success. Two 330-minute job allowances
 are not a measured runtime, cost or hosted-resource sufficiency guarantee.
 
 For the proposed package, the ordinary portable unit command above exercises
-the original workbench tests and six CI DATA modules:
+the original workbench tests and seven CI DATA modules:
 `test_portable_ci_data_v1`, `test_completion_v2`, `test_native_first_run_v1`,
-`test_windows_layout_v1`, `test_locked_foundations_v1`, and `test_locked_evidence_v1`.
+`test_windows_layout_v1`, `test_locked_foundations_v1`, `test_locked_evidence_v1`, and `test_path_archive_hardening_v1`.
 Native compiler
 rejection tests remain a separate, explicit command; Python DATA is not a native
 platform or kernel result. The original Linux cold-source checkpoint alone does not certify another

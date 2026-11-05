@@ -154,35 +154,94 @@ class GitExport(unittest.TestCase):
         self.assertFalse(dest.exists())
 
 class AdmissionPrefix(unittest.TestCase):
-    """Execute only the literal metadata prefix, before any Git/process root."""
-    def prefix(self):
+    """Literal metadata DATA; external reviewed-C/current-PR-H/owner joins remain external."""
+    def prefix(self,text=None):
         import ast
-        text=(ROOT/'ci/conditional-separation-native-v2.yml').read_text()
-        block=re.findall(r'        run: \|\n((?:          [^\n]*\n)+)',text)[0]
-        tree=ast.parse('\n'.join(line[10:] for line in block.splitlines()))
-        body=[]
-        for node in tree.body:
-            if isinstance(node,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='work' for t in node.targets):break
-            body.append(node)
-        self.assertTrue(body)
+        if text is None:text=(ROOT/'ci/conditional-separation-native-v2.yml').read_text(encoding='utf-8')
+        blocks=re.findall(r'        run: \|\n((?:          [^\n]*\n)+)',text)
+        self.assertEqual(len(blocks),6)
+        tree=ast.parse('\n'.join(line[10:] for line in blocks[0].splitlines()))
+        boundaries=[i for i,n in enumerate(tree.body) if isinstance(n,ast.Assign)
+                    and any(isinstance(t,ast.Name) and t.id=='temp' for t in n.targets)]
+        self.assertEqual(len(boundaries),1,'one literal pre-acquisition boundary required')
+        boundary=tree.body[boundaries[0]]
+        self.assertEqual(ast.unparse(boundary.value),"Path(os.environ['RUNNER_TEMP']).resolve(strict=True)")
+        body=tree.body[:boundaries[0]]
+        self.assertEqual([type(n) for n in body],
+                         [ast.Import,ast.ImportFrom,ast.If,ast.Assign,ast.Assign,ast.Assign,
+                          ast.If,ast.If,ast.Assign,ast.If,ast.If,ast.If])
+        self.assertEqual(ast.unparse(body[0]),'import hashlib, json, os, re, subprocess, sys')
+        self.assertEqual(ast.unparse(body[1]),'from pathlib import Path')
+        self.assertEqual(ast.unparse(body[-1].test),"kind == 'push'")
+        allowed={'Path','json.loads',"Path(os.environ['GITHUB_EVENT_PATH']).read_bytes",
+                 'repo.get','event.get','ref.startswith','any','re.fullmatch','ValueError','SystemExit'}
         for node in ast.walk(ast.Module(body=body,type_ignores=[])):
-            if isinstance(node,ast.Call):self.assertNotEqual(ast.unparse(node.func),'subprocess.run')
-        return compile(ast.Module(body=body,type_ignores=[]),'literal-admission-prefix-DATA','exec')
-    def run_prefix(self,kind='pull_request',private=False,head=None,expected=None,ref='refs/heads/feature',repo='fixture/public'):
+            if isinstance(node,ast.Call):self.assertIn(ast.unparse(node.func),allowed)
+        return compile(ast.Module(body=body,type_ignores=[]),'literal-metadata-prefix-DATA','exec')
+
+    def run_prefix(self,kind='push',private=False,head=None,controller=None,
+                   ref='refs/heads/infrastructure/conditional-separation-package-docfix-20261031',
+                   repo='khanukov/p-np2',event_sha=None,workflow_sha=None,inputs=...,
+                   missing_env=None,text=None):
+        import socket,urllib.request
         from unittest.mock import patch
         data=Path(os.environ['CI_DATA_ROOT']);p=Path(tempfile.mkdtemp(prefix='admission-',dir=data))/'event.json'
-        head=head or 'a'*40;expected=expected or head
-        row={'full_name':repo,'private':private}
-        event={'pull_request':{'head':{'sha':head,'repo':row}},'repository':row}
-        p.write_text(json.dumps(event))
-        env={'GITHUB_EVENT_PATH':str(p),'GITHUB_EVENT_NAME':kind,'GITHUB_SHA':head,'GITHUB_REF':ref,'CI_EXPECTED_HEAD':expected}
-        with patch.dict(os.environ,env):exec(self.prefix(),{})
+        controller='a'*40 if controller is None else controller
+        head=controller if head is None else head
+        event={'repository':{'full_name':repo,'private':private}}
+        if kind=='workflow_dispatch':
+            event['inputs']={'controller_sha':controller,'source_sha':head} if inputs is ... else inputs
+        p.write_text(json.dumps(event),encoding='utf-8')
+        env={'GITHUB_EVENT_PATH':str(p),'GITHUB_EVENT_NAME':kind,'GITHUB_REF':ref,
+             'GITHUB_SHA':controller if event_sha is None else event_sha,
+             'GITHUB_WORKFLOW_SHA':controller if workflow_sha is None else workflow_sha,
+             'CI_CONTROLLER_SHA':controller,'CI_EXPECTED_HEAD':head}
+        if missing_env:env.pop(missing_env)
+        code=self.prefix(text);scope={}
+        denied=AssertionError('metadata prefix attempted a process/network/acquisition effect')
+        with patch.dict(os.environ,env,clear=True),patch.object(subprocess,'run',side_effect=denied), \
+             patch.object(subprocess,'Popen',side_effect=denied),patch.object(os,'system',side_effect=denied), \
+             patch.object(socket,'create_connection',side_effect=denied), \
+             patch.object(urllib.request,'urlopen',side_effect=denied),patch.object(Path,'resolve',side_effect=denied):
+            exec(code,scope)
+        self.assertEqual((scope['controller'],scope['head']),(controller,head))
+        self.assertNotIn('temp',scope);self.assertNotIn('git',scope)
+
     def test_public_exact_head_prefix(self):
-        for kind in ['pull_request','push','workflow_dispatch']:
-            with self.subTest(kind=kind):self.run_prefix(kind=kind)
+        for args in ({},{'kind':'workflow_dispatch'},
+                     {'kind':'workflow_dispatch','head':'b'*40,'ref':'refs/heads/reviewed-controller'}):
+            with self.subTest(args=args):self.run_prefix(**args)
+
     def test_invalid_admission_prefix(self):
-        for args in [{'private':True},{'private':None},{'expected':'b'*40},{'head':'0'*40},{'head':'not-sha'},{'repo':'../fixture'},{'repo':'fixture/x:y'},{'kind':'pull_request_target'},{'kind':'push','ref':'refs/heads/main'},{'kind':'workflow_dispatch','ref':'refs/tags/v1'}]:
+        cases=[{'private':True},{'private':None},{'repo':'fixture/public'},{'repo':'../fixture'},
+               {'repo':'fixture/x:y'},{'head':'0'*40},{'head':'not-sha'},{'controller':'0'*40},
+               {'controller':'A'*40},{'head':'b'*40},{'event_sha':'b'*40},{'workflow_sha':'b'*40},
+               {'kind':'pull_request'},{'kind':'pull_request_target'},
+               {'ref':'refs/heads/main'},{'ref':'refs/heads/master'},{'ref':'refs/tags/v1'},
+               {'ref':'refs/heads/infrastructure/conditional-separation-package-parallel-20261101'},
+               {'ref':'refs/heads/foreign'}, {'kind':'workflow_dispatch','ref':'refs/tags/v1'},
+               {'kind':'workflow_dispatch','inputs':None},{'kind':'workflow_dispatch','inputs':{}},
+               {'kind':'workflow_dispatch','inputs':{'controller_sha':'b'*40,'source_sha':'a'*40}},
+               {'kind':'workflow_dispatch','inputs':{'controller_sha':'a'*40,'source_sha':'b'*40}},
+               {'kind':'workflow_dispatch','inputs':{'controller_sha':'a'*40,'source_sha':'a'*40,'extra':'DATA'}}]
+        for args in cases:
             with self.subTest(args=args),self.assertRaises(ValueError):self.run_prefix(**args)
+
+    def test_required_environment_is_not_inherited_from_host(self):
+        for key in ('GITHUB_EVENT_PATH','GITHUB_EVENT_NAME','GITHUB_REF','GITHUB_SHA',
+                    'GITHUB_WORKFLOW_SHA','CI_CONTROLLER_SHA','CI_EXPECTED_HEAD'):
+            with self.subTest(key=key),self.assertRaises(KeyError):self.run_prefix(missing_env=key)
+
+    def test_prefix_extraction_rejects_effects_and_boundary_drift(self):
+        text=(ROOT/'ci/conditional-separation-native-v2.yml').read_text(encoding='utf-8')
+        boundary="          temp = Path(os.environ['RUNNER_TEMP']).resolve(strict=True)\n"
+        drift=(text.replace(boundary,boundary.replace('temp =','work ='),1),
+               text.replace(boundary,boundary+boundary,1),
+               text.replace(boundary,"          subprocess.run(['INERT_DATA_NEVER_EXECUTE'])\n"+boundary,1),
+               text.replace("          if sys.flags.optimize:\n              raise SystemExit('optimized source admission rejected')\n",'',1))
+        for changed in drift:
+            with self.subTest(change=hashlib.sha256(changed.encode()).hexdigest()),self.assertRaises(AssertionError):
+                self.prefix(changed)
 
 
 class UTF8OperationalIO(unittest.TestCase):

@@ -27,17 +27,27 @@ def require(value, message):
 
 def resolve_head(event_name, event, event_sha, actual_head, ref):
     require(event_name in {"pull_request", "push", "workflow_dispatch"}, "unprivileged event required")
+    controller = event_sha if event_name == "push" else None
+    dispatch_source = False
     if event_name == "pull_request":
         expected = event.get("pull_request", {}).get("head", {}).get("sha")
     else:
         require(ref.startswith("refs/heads/") and ref not in {"refs/heads/main", "refs/heads/master"}, "non-main feature branch required")
         expected = event_sha
+        if event_name == "workflow_dispatch" and event.get("inputs"):
+            inputs = event["inputs"]
+            require(type(inputs) is dict and set(inputs) == {"controller_sha", "source_sha"}, "dispatch input domain")
+            require(inputs["controller_sha"] == event_sha, "dispatch controller differs from actual workflow revision")
+            controller, expected = event_sha, inputs["source_sha"]
+            dispatch_source = True
     for value in (expected, event_sha, actual_head):
         require(isinstance(value, str) and re.fullmatch("[0-9a-f]{40}", value) and value != "0" * 40, "literal nonzero commit SHA required")
     require(actual_head == expected, "checked-out HEAD is not exact relevant head")
     return {"event": event_name, "event_sha": event_sha, "tested_head": actual_head,
             "event_sha_is_tested_head": event_sha == actual_head,
-            "scope": "PR head only, not synthetic merge" if event_name == "pull_request" else "exact feature event head"}
+            "controller_input_sha": controller,
+            "scope": ("PR head only, not synthetic merge" if event_name == "pull_request" else
+                      "exact dispatch source; parent must join to current PR head" if dispatch_source else "exact feature event head")}
 
 
 def phase_states(work):
@@ -295,7 +305,8 @@ def stage_evidence(work, package, output, identity, *, max_file_bytes=8*1024**2,
     if not (package / "PACKAGE_FILES.json").is_file():
         omit("source-pins/PACKAGE_FILES.json", "source inventory absent")
     for relative in ("ci/package_source_v1.py", "ci/native_ci_v1.py", "ci/portable_ci_data_v1.py", "ci/ci_evidence_data_v2.py",
-                     "ci/export_ci_evidence_v2.py", "ConditionalSeparation/OpenProblem.lean", "ConditionalSeparation/Conditional.lean"):
+                     "ci/export_ci_evidence_v2.py", "ci/trusted_controls_v1.py", "ci/TRUSTED_NATIVE_CONTROLS_V1.json",
+                     "ConditionalSeparation/OpenProblem.lean", "ConditionalSeparation/Conditional.lean"):
         capture(package / relative, package, "control-sources/" + relative)
     result = {"schema": "bounded-native-ci-evidence-v2", "identity": identity,
               "files": files, "payload_bytes": total, "omissions": omissions,

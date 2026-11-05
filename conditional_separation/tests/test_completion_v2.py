@@ -25,11 +25,12 @@ def evidence_symlink_capability(path, target):
 
 
 class WorkflowCompletion(unittest.TestCase):
-    def test_unprivileged_PR_and_manual_events(self):
+    def test_reviewed_feature_push_and_dispatch_events(self):
         text = WORKFLOW.read_text()
-        self.assertIn("  pull_request:", text)
+        self.assertNotIn("  pull_request:", text)
         self.assertIn("  workflow_dispatch:", text)
-        self.assertNotIn("\n  push:", text)
+        self.assertIn("\n  push:", text)
+        self.assertIn("branches: ['infrastructure/conditional-separation-package-docfix-20261031']", text)
         self.assertIn("conditional_separation/**", text)
         self.assertIn(".github/workflows/conditional-separation-native.yml", text)
         self.assertNotIn("pull_request_target:", text)
@@ -39,11 +40,12 @@ class WorkflowCompletion(unittest.TestCase):
 
     def test_exact_PR_head_not_synthetic_merge(self):
         text = WORKFLOW.read_text()
-        self.assertIn("CI_EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}", text)
-        self.assertIn("row = event['pull_request']['head']", text)
+        self.assertIn("CI_EXPECTED_HEAD: ${{ inputs.source_sha || github.sha }}", text)
+        self.assertIn("CI_CONTROLLER_SHA: ${{ inputs.controller_sha || github.sha }}", text)
+        self.assertIn("controller != os.environ['GITHUB_WORKFLOW_SHA']", text)
         self.assertIn("repo.get('private') is not False", text)
         self.assertIn("CI_EXPECTED_HEAD:", text)
-        self.assertIn("github.event.pull_request.head.sha || github.sha", text)
+        self.assertIn("'PR-controlled workflow definitions are not trusted controllers'", text)
 
     def test_two_native_rows_parallel_two(self):
         text = WORKFLOW.read_text()

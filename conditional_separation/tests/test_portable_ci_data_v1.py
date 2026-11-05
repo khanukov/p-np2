@@ -202,7 +202,15 @@ class PortableDataTests(unittest.TestCase):
         actual = dict(re.findall(r"- runner: ([\w.-]+)\n\s+python-arch: (\w+)", text))
         self.assertEqual(actual, {k: m.RUNNERS[k][2] for k in ("ubuntu-24.04", "macos-15")})
         self.assertNotIn("windows-", text)
-        self.assertIn("CI_EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}", text)
+        self.assertIn("CI_EXPECTED_HEAD: ${{ inputs.source_sha || github.sha }}", text)
+        self.assertIn("CI_CONTROLLER_SHA: ${{ inputs.controller_sha || github.sha }}", text)
+        self.assertIn("branches: ['infrastructure/conditional-separation-package-docfix-20261031']", text)
+        self.assertNotIn("pull_request:", text)
+        self.assertNotIn("github.event.pull_request.head.sha", text)
+        self.assertIn("github.repository == 'khanukov/p-np2'", text)
+        self.assertIn("github.ref_name != 'main' && github.ref_name != 'master'", text)
+        self.assertIn("max-parallel: 2", text)
+        self.assertIn("controller != os.environ['GITHUB_WORKFLOW_SHA']", text)
         self.assertIn("FETCH_HEAD^{commit}", text)
         self.assertNotIn("uses: actions/checkout@", text)
         self.assertNotIn("core.protectNTFS=false", text)
@@ -212,27 +220,60 @@ class PortableDataTests(unittest.TestCase):
             "actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0",
             "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9"])
 
+    def assert_workflow_dispatch(self,block,entry,phase=None):
+        """Parse the literal argv; never execute the stub, dispatcher or a child."""
+        tree=ast.parse('\n'.join(line[10:] for line in block.splitlines()))
+        self.assertEqual([type(n) for n in tree.body],
+                         [ast.Import,ast.ImportFrom,ast.Assign,ast.Assign,ast.Assign,ast.Expr])
+        self.assertEqual(ast.unparse(tree.body[0]),'import os, subprocess, sys')
+        self.assertEqual(ast.unparse(tree.body[1]),'from pathlib import Path')
+        self.assertEqual([ast.unparse(n.targets[0]) for n in tree.body[2:5]],['helper','anchor','stub'])
+        self.assertEqual(ast.unparse(tree.body[2].value),"Path(os.environ['RUNNER_TEMP']) / 'trusted-native-controls-v1.py'")
+        anchor=hashlib.sha256((SUPPORT/'trusted_controls_v1.py').read_bytes()).hexdigest()
+        self.assertEqual(ast.literal_eval(tree.body[3].value),anchor)
+        stub=("import hashlib,pathlib,sys; p=pathlib.Path(sys.argv[1]); b=p.read_bytes(); "
+              "assert hashlib.sha256(b).hexdigest()==sys.argv[2], 'dispatcher hash'; "
+              "sys.argv=[str(p),*sys.argv[3:]]; "
+              "exec(compile(b,str(p),'exec'),{'__name__':'__main__','__file__':str(p)})")
+        self.assertEqual(ast.literal_eval(tree.body[4].value),stub)
+        call=tree.body[-1].value
+        self.assertIsInstance(call,ast.Call)
+        self.assertEqual(ast.unparse(call.func),'subprocess.run')
+        self.assertEqual(len(call.args),1)
+        expected="[sys.executable, '-I', '-S', '-B', '-c', stub, str(helper), anchor, '--run', anchor, str(Path.cwd()), "+repr(entry)
+        if phase is not None:expected+=', '+repr(phase)
+        expected+=']'
+        self.assertEqual(ast.dump(call.args[0]),ast.dump(ast.parse(expected,mode='eval').body))
+        self.assertEqual([(k.arg,ast.literal_eval(k.value)) for k in call.keywords],[('check',True)])
+
     def test_workflow_python_phase_binding_is_data(self):
-        path = SUPPORT / "conditional-separation-native-v2.yml"
-        if not path.exists():
-            self.skipTest("workflow source-location check applies in prospective author bundle")
-        text = path.read_text(encoding="utf-8")
-        blocks = re.findall(r"        run: \|\n((?:          [^\n]*\n)+)", text)
-        self.assertEqual(len(blocks), 6)
-        phases = []
-        for block in blocks[1:5]:
-            tree = ast.parse("\n".join(line[10:] for line in block.splitlines()))
-            call = tree.body[-1].value
-            self.assertEqual(ast.unparse(call.func), "subprocess.run")
-            self.assertEqual(ast.unparse(call.args[0].elts[0]), "sys.executable")
-            self.assertEqual(ast.literal_eval(call.args[0].elts[1]), "-B")
-            self.assertEqual(ast.literal_eval(call.args[0].elts[2]), "ci/native_ci_v1.py")
-            phases.append(ast.literal_eval(call.args[0].elts[3]))
-            self.assertTrue(any(k.arg == "check" and ast.literal_eval(k.value) for k in call.keywords))
-        self.assertEqual(phases, ["bootstrap", "foundations", "build", "consumers"])
-        export = ast.parse("\n".join(line[10:] for line in blocks[5].splitlines())).body[-1].value
-        self.assertEqual(ast.literal_eval(export.args[0].elts[2]), "ci/export_ci_evidence_v2.py")
-        self.assertEqual(len(export.args[0].elts), 3)
+        text=(SUPPORT/'conditional-separation-native-v2.yml').read_text(encoding='utf-8')
+        blocks=re.findall(r'        run: \|\n((?:          [^\n]*\n)+)',text)
+        self.assertEqual(len(blocks),6)
+        for block,phase in zip(blocks[1:5],['bootstrap','foundations','build','consumers']):
+            with self.subTest(phase=phase):self.assert_workflow_dispatch(block,'ci/native_ci_v1.py',phase)
+        self.assert_workflow_dispatch(blocks[5],'ci/export_ci_evidence_v2.py')
+        self.assertIn('if: ${{ always() }}',text.split('- name: Stage bounded owned evidence even on failure',1)[1])
+
+    def test_workflow_dispatch_mutations_are_rejected(self):
+        text=(SUPPORT/'conditional-separation-native-v2.yml').read_text(encoding='utf-8')
+        blocks=re.findall(r'        run: \|\n((?:          [^\n]*\n)+)',text)
+        self.assertEqual(len(blocks),6)
+        block=blocks[1]
+        mutations=[("'-I', ",''),("'-S', ",''),("'-B', ",''),('check=True','check=False'),
+                   ("'--run'","'--check'"),("'bootstrap'","'consumers'"),
+                   ("'ci/native_ci_v1.py'","'ci/UNTRUSTED.py'"),
+                   ("'trusted-native-controls-v1.py'","'untrusted.py'"),
+                   ("assert hashlib.sha256(b).hexdigest()==sys.argv[2]","assert True"),
+                   ('anchor, str(Path.cwd())',"'0'*64, str(Path.cwd())")]
+        for old,new in mutations:
+            self.assertIn(old,block)
+            with self.subTest(old=old),self.assertRaises(AssertionError):
+                self.assert_workflow_dispatch(block.replace(old,new,1),'ci/native_ci_v1.py','bootstrap')
+        with self.subTest(export='wrong entry'),self.assertRaises(AssertionError):
+            self.assert_workflow_dispatch(blocks[5].replace('ci/export_ci_evidence_v2.py','ci/native_ci_v1.py'),
+                                          'ci/export_ci_evidence_v2.py')
+
 
     def test_future_driver_is_syntax_checked_only(self):
         text = (SUPPORT / "native_ci_v1.py").read_text(encoding="utf-8")

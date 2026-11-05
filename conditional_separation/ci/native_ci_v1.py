@@ -22,6 +22,7 @@ from portable_ci_data_v1 import (TOOLCHAIN, asset_for, consumer_source, install_
                                   validate_lock, validate_runner)
 from ci_evidence_data_v2 import resolve_head
 from package_source_v1 import checked_layout
+from trusted_controls_v1 import control_argv, require_control_context
 
 PACKAGE = Path(__file__).resolve().parents[1]
 WORK = None
@@ -49,6 +50,7 @@ def reserve():
 
 def command(label, argv, cwd):
     """Future native execution only; complete waited receipts, no module timeout."""
+    argv = control_argv(PACKAGE, argv)
     reserve()
     root = WORK / label
     root.mkdir()
@@ -116,6 +118,8 @@ def bootstrap():
     require(identity["tested_head"] == os.environ["CI_EXPECTED_HEAD"], "workflow/head admission disagreement")
     identity["workflow_definition_ref"] = os.environ.get("GITHUB_WORKFLOW_REF")
     identity["workflow_definition_sha"] = os.environ.get("GITHUB_WORKFLOW_SHA")
+    require(identity["controller_input_sha"] == os.environ["CI_CONTROLLER_SHA"], "controller/source context disagreement")
+    identity["trusted_controls"] = require_control_context(PACKAGE)
     identity["package_source_inventory_sha256"] = digest(PACKAGE / "PACKAGE_FILES.json")
     save(WORK / "HEAD_IDENTITY.json", identity)
     system, machine = platform.system(), platform.machine()
@@ -244,6 +248,7 @@ def external_consumers():
 
 def main():
     global WORK
+    require_control_context(PACKAGE)
     require(os.environ.get("GITHUB_ACTIONS") == "true" and os.environ.get("CI") == "true", "future native Actions context required; not a local operational launcher")
     require(len(sys.argv) == 2 and sys.argv[1] in {"bootstrap", "foundations", "build", "consumers"}, "explicit reviewed phase required")
     phase = sys.argv[1]

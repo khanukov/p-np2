@@ -111,17 +111,38 @@ acceptance.
 The standard matrix is Ubuntu 24.04 x64 and macOS 15 ARM64,
 up to two jobs in parallel. Pure asset-selection tests additionally cover
 Linux ARM64 and macOS Intel metadata; those extra native jobs are deferred.
-Automatic native validation uses normal unprivileged PR events and selects
-the exact PR head, with package/necessary-workflow path filters. Feature pushes
-without a PR do not automatically run this matrix; opening or updating a PR
-provides the non-main first-use route without changing main. Optional manual dispatch
-has GitHub's default-branch/prior-run discovery constraints; no main modification
-or first-use API availability is assumed. Workflow-definition and tested-head
-identity are separate; PR-head validation does not establish merge compatibility.
+The proposed trusted-control route uses a push only on the existing remote feature
+`infrastructure/conditional-separation-package-docfix-20261031` in khanukov/p-np2,
+after independent exact control/workflow review and
+publication admission. It does not execute a PR-supplied workflow definition as
+a trusted controller. The same two native jobs and their resource limits remain.
+Optional workflow_dispatch accepts exact controller_sha and source_sha inputs;
+the controller must equal both GITHUB_SHA and GITHUB_WORKFLOW_SHA. Its source
+head may differ, but must be in this same public repository. The parent must
+independently join it to current PR1821; a job name or user input is not that join.
+No main modification or default-branch dispatch discovery is assumed: the
+explicit reviewed feature-push route is available without that prerequisite.
+This replaces the old automatic PR-event policy; it is not a new required local
+691 build or another executor. Root17/fullrepo and all existing final gates remain.
+The publisher, independently reviewed immutable controller SHA and workflow
+policy are trust roots. A PR-context job with the same name is not this gate.
 
-The proposed source route uses an exact public bare Git fetch and raw package
-blobs without checkout; its materializer is pinned by a literal SHA256.
-Python setup and artifact actions use literal source commit pins.
+The controller fetches its two authenticated admission helpers from its exact
+controller revision, then independently fetches the exact tested source head.
+The raw-blob materializer and Python/artifact actions remain hash/commit pinned.
+ci/trusted_controls_v1.py has an external workflow SHA256 anchor; its literal
+manifest digest authenticates the complete helper/test/configuration input set.
+A PR-supplied PACKAGE_FILES.json or trust manifest cannot promote new controls.
+Unknown/missing/aliased/hardlinked controls and bytecode directories reject.
+Every Python control is executed from authenticated byte snapshots, including
+normal imports, explicit file imports, native subprocess entries and the exporter.
+Original __file__/filename semantics keep the tested package bound to its own
+source head. Native child ownership/reaping remains the original command runner.
+All theorem bytes, registered roots, source options and R/type/axiom guards stay
+unchanged; the trusted tuple also pins public/audit inputs and existing provenance.
+Updating those frozen control/model inputs requires a newly reviewed tuple.
+This assumes a trusted interpreter/stdlib and no hostile concurrent host mutation;
+it is not a general OS sandbox/attestation for arbitrary native code.
 The CI driver verifies the selected Elan archive digest/size before extraction
 and execution, then checks the exact Lean 4.22.0-rc2 version. It does not provide
 independent Lean-download digest attestation. Declared external foundations may
@@ -148,9 +169,9 @@ existence alone is not native-validation success. Two 330-minute job allowances
 are not a measured runtime, cost or hosted-resource sufficiency guarantee.
 
 For the proposed package, the ordinary portable unit command above exercises
-the original workbench tests and seven CI DATA modules:
+the original workbench tests and eight CI DATA modules:
 `test_portable_ci_data_v1`, `test_completion_v2`, `test_native_first_run_v1`,
-`test_windows_layout_v1`, `test_locked_foundations_v1`, `test_locked_evidence_v1`, and `test_path_archive_hardening_v1`.
+`test_windows_layout_v1`, `test_locked_foundations_v1`, `test_locked_evidence_v1`, `test_path_archive_hardening_v1`, and `test_trusted_controls_v1`.
 Native compiler
 rejection tests remain a separate, explicit command; Python DATA is not a native
 platform or kernel result. The original Linux cold-source checkpoint alone does not certify another

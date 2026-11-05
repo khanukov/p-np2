@@ -287,9 +287,12 @@ class AssemblyNegativeDATA(unittest.TestCase):
         tree=ast.parse((ROOT/'tests/lean_rejections.py').read_bytes())
         fixture=next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name=='assembly_negative')
         work=ast.parse((ROOT/'tools/workbench.py').read_bytes())
-        names={'name','guard_source','guard_body','check'}
+        names={'name','guard_source','guard_body','check','command'}
         functions=[n for n in work.body if isinstance(n,ast.FunctionDef) and n.name in names]
         self.assertEqual({n.name for n in functions},names)
+        compiler=next(n for n in work.body if isinstance(n,ast.FunctionDef) and n.name=='compile_source')
+        command_call=next(n.value for n in compiler.body if isinstance(n,ast.Expr) and isinstance(n.value,ast.Call) and ast.unparse(n.value.func)=='command')
+        command_expression=compile(ast.Expression(body=command_call),'OWN_PRODUCTION_COMPILE_COMMAND_DATA','eval')
         with tempfile.TemporaryDirectory(prefix='FAKE_DATA_NOT_LEAN-',dir=os.environ['CI_DATA_ROOT']) as temporary:
             base=Path(temporary);attempt=base/'attempt';core=base/'core';suite=base/'suite'
             for p in (attempt,core,suite):p.mkdir()
@@ -301,23 +304,38 @@ class AssemblyNegativeDATA(unittest.TestCase):
             def compile_data(a,run,label,source,module,overrides):
                 self.assertEqual(a,attempt);calls.append(label)
                 self.assertIn(label,{'own-0','exact-closed-guard','final-assembly'})
-                directory=run/(label+'-compile');directory.mkdir()
+                directory=run/(label+'-compile')
                 setup=dict(name=module,isModule=False,options={},plugins=[],dynlibs=[],importArts=overrides)
                 save(run/(label+'.setup.json'),setup)
                 (run/(label+'.source.lean.txt')).write_bytes(source.read_bytes())
                 argv=['lake','env','lean','-DwarningAsError=true','--root='+str(attempt),
                       '--setup='+str(run/(label+'.setup.json')),'-o',str(run/(module+'.olean')),str(source)]
-                save(directory/'launch.json',dict(argv=argv,cwd=str(core),start='2020-01-01T00:00:00+00:00'))
-                save(directory/'process.json',dict(pid=1,pgid=1))  # Explicit inert values, no OS observation.
                 code=1 if label=='final-assembly' else 0
                 if label=='exact-closed-guard' and mutation=='guard_failure':code=1
                 if label=='final-assembly' and mutation=='accepted':code=0
-                save(directory/'terminal.json',dict(OS_exit=code,end='2020-01-01T00:00:00+00:00'))
                 log='[CS_ROOT] Attempt.unit\n'
                 if label=='final-assembly':log=f'{source}:9:1: error: Application type mismatch: Attempt.unit has type\n  True\nbut is expected to have type\n  ConditionalSeparation.OpenProblem.R\n'
-                (directory/'stdout.txt').write_bytes(log.encode('utf-8'));(directory/'stderr.txt').write_bytes(b'')
+                class InertProcess:
+                    pid=1  # DATA only, never an OS observation.
+                    def __init__(self,actual,*,cwd,stdout,stderr,**options):
+                        self.rc=code
+                        self_waits.append(False)
+                        self.index=len(self_waits)-1
+                        self_outer.assertEqual(actual,argv);self_outer.assertEqual(cwd,core)
+                        stdout.write(log.encode('utf-8'))
+                    def wait(self):self_waits[self.index]=True;return self.rc
+                self_outer=self;self_waits=[]
+                scope['subprocess']=types.SimpleNamespace(Popen=InertProcess)
+                failure=None
+                try:
+                    eval(command_expression,{'__builtins__':{},'command':scope['command'],'root':run,'label':label,'attempt':a,
+                         'setup_path':run/(label+'.setup.json'),'output':run/(module+'.olean'),'source':source,'core':core,'str':str})
+                except RuntimeError as error:failure=error
+                self.assertEqual(self_waits,[True])
                 if label=='final-assembly':
                     if mutation=='missing_terminal':(directory/'terminal.json').unlink()
+                    if mutation=='unknown_terminal':save(directory/'terminal.json',dict(OS_exit=None,end='2020-01-01T00:00:00+00:00'))
+                    if mutation=='wrong_label':failure=RuntimeError(f'final-assembly rejected or failed (exit 1); see {directory}')
                     if mutation=='bool_terminal':save(directory/'terminal.json',dict(OS_exit=True,end='2020-01-01T00:00:00+00:00'))
                     if mutation=='wrong_exit':save(directory/'terminal.json',dict(OS_exit=2,end='2020-01-01T00:00:00+00:00'))
                     if mutation=='unexpected_error':(directory/'stdout.txt').write_bytes(b'error: unknown module')
@@ -335,9 +353,9 @@ class AssemblyNegativeDATA(unittest.TestCase):
                     if mutation=='wrong_attempt_source':(run/'own-0.source.lean.txt').write_bytes(b'FAKE altered attempt')
                     if mutation=='unknown_exception':raise RuntimeError('FAKE unrelated runtime error')
                     if mutation=='extra_run':(runs/'EXTRA_FAKE_RUN').mkdir()
-                if code:raise RuntimeError(f'{label} rejected or failed (exit {code}); see {directory}')
+                if failure is not None:raise failure
                 return [str(run/(module+'.olean'))]  # No object is created or represented as genuine.
-            scope=dict(Path=Path,json=json,re=re,ALLOWED={'propext','Classical.choice','Quot.sound'},
+            scope=dict(Path=Path,json=json,re=re,datetime=datetime,os=types.SimpleNamespace(name='posix',getpgid=lambda pid:1),ALLOWED={'propext','Classical.choice','Quot.sound'},
                        read_json=lambda path:{'core':str(core)},verify_core=lambda p:'a'*64,
                        fresh_check_run=fresh,write_new_output=output,module_sources=lambda a,r:[('Attempt',attempt/'Attempt.lean')],compile_source=compile_data)
             exec(compile(ast.Module(body=functions,type_ignores=[]),'OWN_CHECK_BODY_FAKE_COMPILER_DATA','exec'),scope)
@@ -363,9 +381,13 @@ class AssemblyNegativeDATA(unittest.TestCase):
         self.assertEqual({k.arg:ast.literal_eval(k.value) for k in calls[0].keywords},{'expected':'True','assemble':True})
         self.assertTrue(any(isinstance(n,ast.Expr) and isinstance(n.value,ast.Call) and ast.unparse(n.value.func)=='assembly_negative' for n in tree.body))
     def test_closed_true_then_specific_assembly_failure_data(self):self.fixture()
+    def test_actual_compile_command_suffix_is_the_rejection_boundary(self):
+        self.assertIn('final-assembly-compile rejected or failed (exit 1);',self.fixture()[0]['error'])
+    def test_unsuffixed_fake_exception_is_not_the_production_boundary(self):
+        with self.assertRaises(RuntimeError):self.fixture('wrong_label')
     def test_expected_assembly_guard_recovery_is_still_rejected(self):self.fixture('expected_recovery')
     def test_guard_failure_or_assembly_acceptance_rejects(self):
-        for change in ('guard_failure','accepted','missing_terminal','bool_terminal','wrong_exit','unknown_exception','extra_run'):
+        for change in ('guard_failure','accepted','missing_terminal','unknown_terminal','bool_terminal','wrong_exit','unknown_exception','extra_run'):
             with self.subTest(change=change),self.assertRaises((RuntimeError,OSError)):self.fixture(change)
     def test_unrelated_diagnostics_never_count_as_assembly_negative(self):
         for change in ('unexpected_error','wrong_R','extra_error','stderr','wrong_guard_root','extra_axiom'):

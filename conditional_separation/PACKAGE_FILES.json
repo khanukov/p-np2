@@ -5433,8 +5433,8 @@
     },
     {
       "path": "tests/lean_rejections.py",
-      "bytes": 15469,
-      "sha256": "18e47cf9c784bf235ce107311f9dc98e516e42e4e5f1308374374e96e2abad32"
+      "bytes": 15477,
+      "sha256": "cbecc88e21c782af840212eee57fe88bc2e26132f0a2bdae3573141f0006f945"
     },
     {
       "path": "tests/test_completion_v2.py",
@@ -5468,8 +5468,8 @@
     },
     {
       "path": "tests/test_native_first_run_v1.py",
-      "bytes": 28512,
-      "sha256": "b6a667f5644a61c9002b2c04da384f0bfdd1e361714bb4da1265ffa4526c360e"
+      "bytes": 30183,
+      "sha256": "823c7d1dcdaf8a31c19a2809a13dc3d6bd0b0107f3cd86e11d439e19e5ec56ad"
     },
     {
       "path": "core/Pnp4/Tests/AxiomsAudit.lean",

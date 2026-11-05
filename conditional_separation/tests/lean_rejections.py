@@ -87,7 +87,7 @@ def assembly_negative():
  if (run/'own-0.source.lean.txt').read_bytes()!=source.encode('utf-8'):raise RuntimeError("G10: compiled attempt source differs")
  assembly=(run/'Assembly.lean').read_bytes()
  if (run/'final-assembly.source.lean.txt').read_bytes()!=assembly or assembly.count(b'ConditionalSeparation.close Attempt.unit')!=1:raise RuntimeError("G10: final Assembly source differs")
- if rejection!=f'final-assembly rejected or failed (exit 1); see {run/"final-assembly-compile"}' or (run/'RESULT.json').exists():raise RuntimeError("G10: wrong rejection boundary or accepted result")
+ if rejection!=f'final-assembly-compile rejected or failed (exit 1); see {run/"final-assembly-compile"}' or (run/'RESULT.json').exists():raise RuntimeError("G10: wrong rejection boundary or accepted result")
  errors=re.findall(r'^.*?:\d+:\d+: error: (.*)',final_log,re.M)
  primary=[e for e in errors if re.search(r'(?i)^(?:application )?type mismatch',e)]
  # Lean may recover the failed declaration with sorryAx; the two unchanged

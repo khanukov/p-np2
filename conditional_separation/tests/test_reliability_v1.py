@@ -1,4 +1,4 @@
-"""Finite DATA: actual CLI validation and literal proposed shell; no native build/fetch."""
+"""Finite DATA: actual CLI validation and retired proposal refusal; no native build/fetch."""
 import datetime
 import errno
 import hashlib
@@ -27,18 +27,39 @@ sys.argv=[source,'check',attempt]
 runpy.run_path(source,run_name='__main__')
 '''
 SHELL_TRAPS = r'''
-git() {
-  printf 'git\t%s\t' "$PWD" >> "$COMMAND_LOG"
-  printf '%s\t' "$@" >> "$COMMAND_LOG"; printf '\n' >> "$COMMAND_LOG"
-  if [[ "$1" == init || ( "$1" == -C && "$3" == remote ) ]]; then
-    command git "$@" # Real local init/remote-add only, confined to this DATA root.
-  elif [[ "$1" == -C && ( "$3" == fetch || "$3" == checkout ) ]]; then
-    return 0 # Inert argv observation; never execute fetch or checkout.
-  else return 97; fi
-}
-lake() { printf 'lake\t%s\t%s\n' "$PWD" "$*" >> "$COMMAND_LOG"; }
-python3() { printf 'python3\t%s\t%s\n' "$PWD" "$*" >> "$COMMAND_LOG"; }
+forbidden_source() { printf 'FORBIDDEN DATA source command: %s\n' "$*" >> "$COMMAND_LOG"; return 97; }
+git() { forbidden_source git "$@"; }
+lake() { forbidden_source lake "$@"; }
+python3() { forbidden_source python3 "$@"; }
+elan() { forbidden_source elan "$@"; }
+lean() { forbidden_source lean "$@"; }
+curl() { forbidden_source curl "$@"; }
+wget() { forbidden_source wget "$@"; }
 '''
+RETIRED_HEADER = '''# Retired proposal only; not an installed native workflow.
+# No dispatched source, checkout, bootstrap, installer or tests are executed.
+# The supported route is the independently admitted conditional-separation-native.yml.
+name: conditional-separation-unadmitted-source-refused
+on: [workflow_dispatch]
+permissions: {}
+jobs:
+  refuse-unadmitted-source:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Refuse unadmitted source execution
+        shell: bash
+        run: |
+'''
+RETIRED_BODY = "set -euo pipefail\nprintf '%s\\n' 'unadmitted-source-refused: use the independently admitted native controller workflow' >&2\nexit 1\n"
+
+
+def retired_body(text):
+    # Fixed, deliberately tiny refusal policy; unknown steps/keys/commands reject
+    # BEFORE the DATA shell is allowed to execute any supplied recipe body.
+    expected = RETIRED_HEADER + ''.join('          '+line+'\n' for line in RETIRED_BODY.splitlines())
+    if text != expected: raise AssertionError('exact retired no-source-execution recipe required')
+    return shell_blocks(text)[0]
+
 
 
 def snapshot(root):
@@ -56,7 +77,7 @@ def shell_blocks(text):
                 if not value.startswith('          '): break
                 body.append(value[10:])
             blocks.append('\n'.join(body)+'\n')
-    if len(blocks) != 2: raise AssertionError('exact two proposed shell blocks')
+    if len(blocks) != 1: raise AssertionError('exact one refusal shell block')
     return blocks
 
 
@@ -145,122 +166,82 @@ class ReliabilityData(unittest.TestCase):
         (self.data/'attempt.json').write_text('{"core":"a","core":"b"}')
         with self.assertRaisesRegex(ValueError,'duplicate JSON key'): wb.attempt_core(self.data)
 
-    def source_destination(self, run_id):
-        text = WORKFLOW.read_text()
-        value = re.search(r'^      SOURCE_RUN: (.+)$',text,re.M).group(1)
-        values = {'runner.temp':str(self.data), 'github.run_id':run_id,
-                  'github.run_attempt':'1', 'github.job':'source'}
-        for key, replacement in values.items(): value = value.replace('${{ '+key+' }}',replacement)
-        self.assertNotIn('${{', value)
-        destination = self.data/value
-        self.assertEqual(destination.parent, self.data)
-        return destination
+    def refusal(self, extra=None):
+        log = self.data/('refusal-'+str(self.sequence)+'.calls')
+        env = dict(COMMAND_LOG=str(log), RUNNER_TEMP=str(self.data), SOURCE_RUN='legacy-selected-source',
+                   GITHUB_REPOSITORY='FAKE/DATA', GITHUB_SHA='d'*40)
+        env.update(extra or {})
+        body = retired_body(WORKFLOW.read_text())
+        result = self.child(['bash','--noprofile','--norc','-e','-o','pipefail','-c',SHELL_TRAPS+body],env=env)
+        self.assertEqual(result.returncode,1,result.stderr.decode())
+        self.assertIn(b'unadmitted-source-refused',result.stderr)
+        self.assertFalse(log.exists(),'no source command may run')
+        return result
 
-    def fetch(self, destination):
-        log = self.data/('fetch-'+str(self.sequence)+'.calls')
-        result = self.child(['bash','--noprofile','--norc','-e','-o','pipefail','-c',SHELL_TRAPS+shell_blocks(WORKFLOW.read_text())[0]],
-                            env=dict(RUNNER_TEMP=str(self.data), SOURCE_RUN=destination.name, COMMAND_LOG=str(log),
-                                     GITHUB_SERVER_URL='https://example.invalid',
-                                     GITHUB_REPOSITORY='FAKE/DATA', GITHUB_SHA='d'*40))
-        return result, log
+    def test_retired_recipe_has_no_persistent_source_executor(self):
+        body = retired_body(WORKFLOW.read_text())
+        self.assertEqual(body,RETIRED_BODY)
+        self.assertNotIn('self-hosted',WORKFLOW.read_text())
+        self.assertNotIn('uses:',WORKFLOW.read_text())
+        self.refusal()
 
-    def test_fresh_runs_preserve_reused_workspace_and_build_same_path(self):
+    def test_every_selected_head_is_refused_and_prior_workspace_survives(self):
         old = self.data/'checkout';old.mkdir();(old/'previous.DATA').write_text('PRESERVE FAKE DATA')
-        for run_id in ['100','101']:
-            destination = self.source_destination(run_id)
-            result, log = self.fetch(destination)
-            self.assertEqual(result.returncode, 0, result.stderr.decode())
-            self.assertTrue((destination/'.git').is_dir())
-            calls = [line.split('\t') for line in log.read_text().splitlines()]
-            self.assertEqual([c[2:-1] for c in calls], [
-                ['init',str(destination)],
-                ['-C',str(destination),'remote','add','origin','https://example.invalid/FAKE/DATA.git'],
-                ['-C',str(destination),'fetch','--depth=1','origin','d'*40],
-                ['-C',str(destination),'checkout','--detach','FETCH_HEAD']])
-            text = WORKFLOW.read_text()
-            binding = 'SOURCE_DEST="${RUNNER_TEMP:?}/${SOURCE_RUN:?}"'
-            self.assertTrue(all(block.count(binding)==1 for block in shell_blocks(text)))
-            build = destination/'conditional_separation'
-            build.mkdir() # Synthetic package directory; no fetched source/build exists.
-            build_log = self.data/('build-'+run_id+'.calls')
-            result = self.child(['bash','--noprofile','--norc','-e','-o','pipefail','-c',SHELL_TRAPS+shell_blocks(text)[1]],
-                                cwd=self.data,env={'COMMAND_LOG':str(build_log),'RUNNER_TEMP':str(self.data),'SOURCE_RUN':destination.name})
-            self.assertEqual(result.returncode,0)
-            self.assertEqual(build_log.read_text().splitlines(),[
-                'lake\t'+str(build)+'\tbuild',
-                'python3\t'+str(build)+'\t-B ci/run_data_tests_v2.py'])
-        self.assertEqual((old/'previous.DATA').read_text(),'PRESERVE FAKE DATA')
-        self.assertFalse((old/'.git').exists())
+        before = snapshot(old)
+        for head in ['a'*40,'b'*40]:
+            with self.subTest(selected_head=head):self.refusal({'GITHUB_SHA':head})
+        self.assertEqual(snapshot(old),before)
+        self.assertFalse((self.data/'legacy-selected-source').exists())
 
     def test_git_environment_cannot_redirect_fixture_repository(self):
-        outside = self.data/'outside-INERT-DATA';outside.mkdir()
-        init = self.child(['git','init',str(outside)])
-        self.assertEqual(init.returncode,0)
+        outside = self.data/'outside-INERT-DATA';(outside/'.git').mkdir(parents=True)
+        config = outside/'.git/config';config.write_text('[core]\n bare = false\n')
         (outside/'sentinel.DATA').write_text('PRESERVE OUTSIDE DATA')
-        config = outside/'.git/config';original_config = config.read_bytes()
         before = snapshot(outside)
-        destination = self.source_destination('500')
-        ambient = dict(GIT_DIR=str(outside/'.git'), GIT_WORK_TREE=str(outside),
-                       GIT_COMMON_DIR=str(outside/'.git'))
-        with mock.patch.dict(os.environ,ambient):
-            result,log = self.fetch(destination)
-        after = snapshot(outside)
-        (self.data/'outside-comparison.DATA.json').write_text(json.dumps(dict(
-            scope='own inert repositories only',before=before,after=after,
-            fetch_OS_exit=result.returncode),indent=2)+'\n')
-        self.assertEqual(after,before)
-        self.assertEqual(config.read_bytes(),original_config)
-        self.assertEqual(result.returncode,0,result.stderr.decode())
-        self.assertTrue((destination/'.git').is_dir())
-        extra = dict(ambient,GIT_INDEX_FILE=str(outside/'index.DATA'),
-                     GIT_OBJECT_DIRECTORY=str(outside/'.git/objects'),
-                     GIT_ALTERNATE_OBJECT_DIRECTORIES=str(outside/'.git/objects'),
-                     GIT_CONFIG_COUNT='1',GIT_CONFIG_KEY_0='core.bare',GIT_CONFIG_VALUE_0='true',
-                     GIT_CONFIG_PARAMETERS="'core.bare=true'",GIT_CONFIG=str(config),
-                     GIT_CONFIG_GLOBAL=str(config),GIT_CONFIG_SYSTEM=str(config),
-                     GIT_NAMESPACE='FAKE',GIT_CEILING_DIRECTORIES=str(self.data),
-                     GIT_EXEC_PATH=str(outside/'nonexistent-helpers'),
-                     GIT_TEMPLATE_DIR=str(outside/'nonexistent-template'),
-                     GIT_TRACE=str(outside/'trace.DATA'))
-        identity = self.child(['git','-C',str(destination),'rev-parse','--absolute-git-dir'],env=extra)
-        self.assertEqual(identity.returncode,0,identity.stderr.decode())
-        self.assertEqual(identity.stdout.decode().strip(),str(destination/'.git'))
+        injected = dict(GIT_DIR=str(outside/'.git'),GIT_WORK_TREE=str(outside),GIT_COMMON_DIR=str(outside/'.git'),
+            GIT_INDEX_FILE=str(outside/'index'),GIT_OBJECT_DIRECTORY=str(outside/'.git/objects'),
+            GIT_CONFIG_COUNT='1',GIT_CONFIG_KEY_0='core.bare',GIT_CONFIG_VALUE_0='true',
+            GIT_EXEC_PATH=str(outside/'absent'),GIT_TRACE=str(outside/'trace'),GIT_CONFIG_GLOBAL=str(config))
+        script = "import json,os; print(json.dumps({k:v for k,v in os.environ.items() if k.upper().startswith('GIT_')}))"
+        # Actual inert Python child observes the same sanitizer; no Git is run.
+        with mock.patch.dict(os.environ,injected):
+            result = self.child([sys.executable,'-B','-c',script],env=injected)
+        self.assertEqual(result.returncode,0)
+        self.assertEqual(json.loads(result.stdout),dict(GIT_CONFIG_NOSYSTEM='1',
+            GIT_CONFIG_GLOBAL=os.devnull,GIT_CONFIG_SYSTEM=os.devnull,GIT_TERMINAL_PROMPT='0'))
         self.assertEqual(snapshot(outside),before)
-        self.assertFalse((outside/'trace.DATA').exists())
+        self.assertFalse((outside/'trace').exists())
 
-    def test_same_run_existing_destination_rejects_before_git(self):
-        destination = self.source_destination('200')
-        first,_ = self.fetch(destination);self.assertEqual(first.returncode,0)
-        (destination/'sentinel.DATA').write_text('unchanged')
-        before = snapshot(destination)
-        second,log = self.fetch(destination)
-        self.assertNotEqual(second.returncode,0)
-        self.assertIn(b'fresh source destination already exists',second.stderr)
-        self.assertFalse(log.exists())
-        self.assertEqual(snapshot(destination),before)
+    def test_recipe_mutations_reject_before_shell_dispatch(self):
+        text = WORKFLOW.read_text()
+        mutations = [('ubuntu-24.04','[self-hosted, conditional-separation]'),('permissions: {}','permissions: write-all'),
+            ('exit 1','exit 0'),('on: [workflow_dispatch]','on: [pull_request_target]'),
+            ("          printf '%s\\n'",'          lake build; printf'),
+            ('    steps:','    env: {SOURCE_APPROVED: true}\n    steps:')]
+        for old,new in mutations:
+            self.assertIn(old,text)
+            with self.subTest(mutation=old),self.assertRaises(AssertionError):retired_body(text.replace(old,new,1))
+        with self.assertRaises(AssertionError):retired_body(text+'      - run: python3 untrusted.py\n')
 
-    def test_existing_regular_file_destination_rejects(self):
-        destination = self.source_destination('300');destination.write_text('PRESERVE')
-        result,log = self.fetch(destination)
-        self.assertNotEqual(result.returncode,0)
-        self.assertEqual(destination.read_text(),'PRESERVE')
-        self.assertFalse(log.exists())
-
-    def test_existing_and_dangling_symlink_destinations_reject(self):
-        for run_id,existing in [('400',True),('401',False)]:
-            with self.subTest(existing_target=existing):
-                destination = self.source_destination(run_id);target=self.data/('target-'+run_id)
-                if existing: target.mkdir();(target/'sentinel.DATA').write_text('PRESERVE')
-                try: destination.symlink_to(target,target_is_directory=True)
-                except OSError as error:
-                    if error.errno in {errno.EACCES,errno.EPERM,errno.ENOSYS,errno.ENOTSUP}:
-                        self.skipTest('symlink capability unavailable: '+str(error))
-                    raise
-                before = snapshot(target) if existing else None
-                result,log = self.fetch(destination)
-                self.assertNotEqual(result.returncode,0)
-                self.assertTrue(destination.is_symlink());self.assertFalse(log.exists())
-                self.assertEqual(snapshot(target) if target.exists() else None,before)
+    def test_existing_file_directory_and_symlink_paths_are_untouched(self):
+        for kind in ['file','directory','symlink','dangling']:
+            with self.subTest(path_kind=kind):
+                parent=self.data/kind;parent.mkdir();destination=parent/'legacy-selected-source'
+                target=parent/'target'
+                if kind=='file':destination.write_text('PRESERVE')
+                elif kind=='directory':destination.mkdir();(destination/'sentinel.DATA').write_text('PRESERVE')
+                else:
+                    if kind=='symlink':target.mkdir();(target/'sentinel.DATA').write_text('PRESERVE')
+                    try:destination.symlink_to(target,target_is_directory=True)
+                    except OSError as error:
+                        if error.errno in {errno.EACCES,errno.EPERM,errno.ENOSYS,errno.ENOTSUP}:
+                            self.skipTest('symlink capability unavailable: '+str(error))
+                        raise
+                before=snapshot(parent)
+                link=os.readlink(destination)if destination.is_symlink()else None
+                self.refusal({'RUNNER_TEMP':str(parent)})
+                self.assertEqual(snapshot(parent),before)
+                if link is not None:self.assertTrue(destination.is_symlink());self.assertEqual(os.readlink(destination),link)
 
 
 if __name__ == '__main__': unittest.main()

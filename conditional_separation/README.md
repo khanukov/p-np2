@@ -127,6 +127,12 @@ This replaces the old automatic PR-event policy; it is not a new required local
 The publisher, independently reviewed immutable controller SHA and workflow
 policy are trust roots. A PR-context job with the same name is not this gate.
 
+The older `ci/conditional-separation.yml.proposed` source-execution recipe is
+retired. Its only prospective job is a fixed hosted refusal with no checkout,
+source execution, bootstrap, installer or tests. It exits nonzero regardless of
+the selected branch. It is not installed and is not an alternative native build;
+the admitted, pinned controller route above remains the Linux/macOS executor.
+
 The controller fetches its two authenticated admission helpers from its exact
 controller revision, then independently fetches the exact tested source head.
 The raw-blob materializer and Python/artifact actions remain hash/commit pinned.
@@ -151,6 +157,17 @@ cache. It runs source build, root audit, Python unit tests, exact-R rejection
 attempts and an installed-source conditional consumer/cache-identity check.
 No positive proof of R is supplied or expected. Generic True validator success
 is not a proof of R.
+
+Portable source ZIP extraction permits at most 2,048 members, 16 MiB per member,
+and 64 MiB total uncompressed payload. The complete exact92fb package has 1,180
+members and 17,689,864 bytes including its inventory: margins are 868 members
+and 49,419,000 bytes. Every declared size/type and the total are checked before
+the first member read; actual returned bytes must also meet the cumulative cap
+and each declared size. Inventory/digest/name-set checks still precede destination
+creation. These bound retained payload, not total process RSS, compressed input,
+ZIP-parser metadata or Python-object overhead. Finite DATA tests exercise budget
+boundaries and complete current-package extraction; they do not observe an OOM
+or establish native/installation acceptance.
 
 The proposed native layout uses genuinely short runner-private `s/p` source,
 `g` bare Git and `w` work directories under `RUNNER_TEMP`, with no source alias or

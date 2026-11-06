@@ -14,6 +14,13 @@ import zipfile
 
 TOOLCHAIN = "leanprover/lean4:v4.22.0-rc2"
 LOCK_SHA = "5b19b358e6f9c81df0e5f935bd0bf483ddf4339b50f0cb1b828724d2b76dda3a"
+# Fixed source-payload budgets, not caller-controlled limits. Exact92fb's complete
+# package has 1180 members/17,689,864 bytes (including PACKAGE_FILES.json).
+# These leave 868 members and 49,419,000 bytes of declared/retained-payload margin.
+# ZIP parsing, compressed input, Python objects and temporary copies also use RAM.
+SOURCE_MAX_MEMBERS = 2048
+SOURCE_MAX_MEMBER_BYTES = 16 * 1024 * 1024
+SOURCE_MAX_TOTAL_BYTES = 64 * 1024 * 1024
 RUNNERS = {
     "ubuntu-24.04": ("Linux", "x86_64", "x64"),
     "ubuntu-24.04-arm": ("Linux", "aarch64", "arm64"),
@@ -171,12 +178,27 @@ def source_payloads(data):
     try:
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
             members = archive.infolist()
+            require(len(members) <= SOURCE_MAX_MEMBERS, "source member-count budget")
             source_name_set([member.filename for member in members])
+            declared_total = 0
+            # Validate EVERY member and the complete declared budget before the
+            # first read/decompression; late invalid metadata cannot force reads.
             for member in members:
                 path = safe_name(member.filename)
                 require(not member.is_dir() and not stat.S_ISLNK(member.external_attr >> 16), "source regular files only")
-                require(str(path) not in result and member.file_size <= 16 * 1024 * 1024, "source duplicate/oversize")
-                result[path.as_posix()] = archive.read(member)
+                require(type(member.file_size) is int and 0 <= member.file_size <= SOURCE_MAX_MEMBER_BYTES,
+                        "source member declared size")
+                declared_total += member.file_size
+                require(declared_total <= SOURCE_MAX_TOTAL_BYTES, "source declared aggregate budget")
+            actual_total = 0
+            for member in members:
+                payload = archive.read(member)
+                require(type(payload) is bytes, "source member payload type")
+                actual_total += len(payload)
+                require(actual_total <= SOURCE_MAX_TOTAL_BYTES, "source actual aggregate budget")
+                require(len(payload) <= SOURCE_MAX_MEMBER_BYTES and len(payload) == member.file_size,
+                        "source member actual size mismatch")
+                result[member.filename] = payload
     except zipfile.BadZipFile as error:
         raise ValueError("malformed source archive") from error
     require("PACKAGE_FILES.json" in result, "source inventory absent")

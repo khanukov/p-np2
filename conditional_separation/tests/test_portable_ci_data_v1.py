@@ -10,6 +10,7 @@ import ast
 import re
 import tarfile
 import unittest
+from unittest import mock
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -168,6 +169,90 @@ class PortableDataTests(unittest.TestCase):
         for path in (".lake/build/Fake.olean", ".git/config", "reports/log.txt", "__pycache__/cache.pyc"):
             with self.assertRaises(ValueError):
                 m.unpack_source(source_archive([(path, b"x")]), self.destination)
+
+    def test_source_count_budget_exact_and_over_before_reads(self):
+        data = source_archive()
+        with mock.patch.object(m, 'SOURCE_MAX_MEMBERS', 2):
+            self.assertEqual(len(m.source_payloads(data)), 2)
+        with mock.patch.object(m, 'SOURCE_MAX_MEMBERS', 1), \
+             mock.patch.object(m.zipfile.ZipFile, 'read', side_effect=AssertionError('unexpected decompression')) as read:
+            with self.assertRaisesRegex(ValueError, 'member-count budget'):
+                m.unpack_source(data, self.destination)
+            read.assert_not_called()
+        self.assertFalse(self.destination.exists())
+
+    def test_many_individually_small_members_rejected_before_reads(self):
+        files = [('Data'+str(i)+'.lean', b'-- FAKE DATA\n') for i in range(12)]
+        inv = dict(schema='conditional-separation-source-files-v1', files=[
+            dict(path=n, bytes=len(b), sha256=hashlib.sha256(b).hexdigest()) for n,b in files])
+        data = zip_data(files + [('PACKAGE_FILES.json', json.dumps(inv).encode())])
+        # Lowered constant tests the actual production guard; no large allocation.
+        with mock.patch.object(m, 'SOURCE_MAX_MEMBERS', 12), \
+             mock.patch.object(m.zipfile.ZipFile, 'read', side_effect=AssertionError('unexpected decompression')) as read:
+            with self.assertRaisesRegex(ValueError, 'member-count budget'):
+                m.unpack_source(data, self.destination)
+            read.assert_not_called()
+        self.assertFalse(self.destination.exists())
+
+    def test_source_total_budget_exact_and_over_before_reads(self):
+        data = source_archive()
+        with zipfile.ZipFile(io.BytesIO(data)) as z:
+            total = sum(i.file_size for i in z.infolist())
+        with mock.patch.object(m, 'SOURCE_MAX_TOTAL_BYTES', total):
+            self.assertEqual(len(m.source_payloads(data)), 2)
+        with mock.patch.object(m, 'SOURCE_MAX_TOTAL_BYTES', total-1), \
+             mock.patch.object(m.zipfile.ZipFile, 'read', side_effect=AssertionError('unexpected decompression')) as read:
+            with self.assertRaisesRegex(ValueError, 'declared aggregate budget'):
+                m.unpack_source(data, self.destination)
+            read.assert_not_called()
+        self.assertFalse(self.destination.exists())
+
+    def test_all_declared_metadata_checked_before_first_read(self):
+        original = m.zipfile.ZipFile.infolist
+        for bad in [False, -1, 'wrong type', m.SOURCE_MAX_MEMBER_BYTES+1, 'symlink']:
+            def members(z):
+                rows = original(z)
+                if bad == 'symlink': rows[-1].external_attr = (stat.S_IFLNK | 0o777) << 16
+                else: rows[-1].file_size = bad
+                return rows
+            with self.subTest(metadata=bad), mock.patch.object(m.zipfile.ZipFile, 'infolist', members), \
+                 mock.patch.object(m.zipfile.ZipFile, 'read', side_effect=AssertionError('unexpected decompression')) as read:
+                with self.assertRaises(ValueError): m.unpack_source(source_archive(), self.destination)
+                read.assert_not_called()
+            self.assertFalse(self.destination.exists())
+
+    def test_actual_cumulative_bytes_checked_even_with_false_metadata(self):
+        data = source_archive()
+        with zipfile.ZipFile(io.BytesIO(data)) as z:
+            total = sum(i.file_size for i in z.infolist())
+        with mock.patch.object(m, 'SOURCE_MAX_TOTAL_BYTES', total), \
+             mock.patch.object(m.zipfile.ZipFile, 'read', return_value=b'X'*(total+1)):
+            with self.assertRaisesRegex(ValueError, 'actual aggregate budget'):
+                m.unpack_source(data, self.destination)
+        self.assertFalse(self.destination.exists())
+
+    def test_actual_member_size_and_payload_type_must_match(self):
+        for payload in [b'', b'wrong size', None]:
+            with self.subTest(payload=payload), mock.patch.object(m.zipfile.ZipFile, 'read', return_value=payload):
+                with self.assertRaisesRegex(ValueError, 'actual size mismatch|payload type'):
+                    m.unpack_source(source_archive(), self.destination)
+            self.assertFalse(self.destination.exists())
+
+    def test_complete_current_package_fits_and_extracts_exactly(self):
+        inventory = json.loads((ROOT/'PACKAGE_FILES.json').read_bytes())['files']
+        files = [(r['path'], (ROOT/r['path']).read_bytes()) for r in inventory]
+        files.append(('PACKAGE_FILES.json', (ROOT/'PACKAGE_FILES.json').read_bytes()))
+        self.assertEqual(len(files), 1180)
+        self.assertLessEqual(len(files), m.SOURCE_MAX_MEMBERS)
+        self.assertLessEqual(sum(len(b) for _,b in files), m.SOURCE_MAX_TOTAL_BYTES)
+        self.assertLessEqual(max(len(b) for _,b in files), m.SOURCE_MAX_MEMBER_BYTES)
+        data = zip_data(files)
+        self.destination.with_suffix('.zip').write_bytes(data) # Retained SOURCE/DATA, not compiler evidence.
+        root = m.unpack_source(data, self.destination)
+        actual = {p.relative_to(root).as_posix() for p in root.rglob('*') if p.is_file()}
+        self.assertEqual(actual, {n for n,_ in files})
+        for name,body in files:
+            self.assertEqual(hashlib.sha256((root/name).read_bytes()).digest(), hashlib.sha256(body).digest())
 
     def test_frozen_dependency_lock(self):
         fixture = ROOT / "dependency-lock.fixture.json"

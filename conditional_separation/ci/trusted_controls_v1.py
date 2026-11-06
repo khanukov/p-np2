@@ -18,7 +18,7 @@ import re
 import stat
 import types
 
-MANIFEST_SHA256 = '0defb1f8b3b99998683704b6c7e72e229539d67762bcf2a9e2996b37049bc611'
+MANIFEST_SHA256 = '020cdc2e9196831b7182f9d011e3ab294d38a7c890ceb0634752abff3b655cd8'
 MANIFEST = 'ci/TRUSTED_NATIVE_CONTROLS_V1.json'
 SELF = 'ci/trusted_controls_v1.py'
 WORKFLOW_DATA = 'ci/conditional-separation-native-v2.yml'

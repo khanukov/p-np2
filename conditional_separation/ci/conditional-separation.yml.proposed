@@ -1,36 +1,16 @@
-# Proposal only. Coordinator may install at repository .github/workflows later.
-# Uses no third-party actions; official hosted-action SHA discovery is pending.
-name: conditional-separation-source
+# Retired proposal only; not an installed native workflow.
+# No dispatched source, checkout, bootstrap, installer or tests are executed.
+# The supported route is the independently admitted conditional-separation-native.yml.
+name: conditional-separation-unadmitted-source-refused
 on: [workflow_dispatch]
+permissions: {}
 jobs:
-  source:
-    # Runner must supply git, pinned Lean/elan and Python >=3.10.
-    runs-on: [self-hosted, conditional-separation]
-    env:
-      SOURCE_RUN: conditional-separation-source-${{ github.run_id }}-${{ github.run_attempt }}
+  refuse-unadmitted-source:
+    runs-on: ubuntu-24.04
     steps:
-      - name: Fetch exact requested source
+      - name: Refuse unadmitted source execution
         shell: bash
         run: |
           set -euo pipefail
-          umask 077
-          SOURCE_DEST="${RUNNER_TEMP:?}/${SOURCE_RUN:?}"
-          if [[ -e "$SOURCE_DEST" || -L "$SOURCE_DEST" ]]; then
-            echo "fresh source destination already exists" >&2
-            exit 1
-          fi
-          mkdir -- "$SOURCE_DEST" # Exclusive creation also rejects a racing destination.
-          git init "$SOURCE_DEST"
-          git -C "$SOURCE_DEST" remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git"
-          git -C "$SOURCE_DEST" fetch --depth=1 origin "$GITHUB_SHA"
-          git -C "$SOURCE_DEST" checkout --detach FETCH_HEAD
-      - name: Source build and workbench tests
-        shell: bash
-        run: |
-          set -euo pipefail
-          SOURCE_DEST="${RUNNER_TEMP:?}/${SOURCE_RUN:?}"
-          cd -- "$SOURCE_DEST/conditional_separation"
-          lake build
-          python3 -B ci/run_data_tests_v2.py
-# Native Linux/macOS jobs and negative compiler fixtures require independent CI
-# before claiming those platforms tested. No workflow is installed by this file.
+          printf '%s\n' 'unadmitted-source-refused: use the independently admitted native controller workflow' >&2
+          exit 1

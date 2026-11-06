@@ -139,7 +139,19 @@ def reconstruct_text_export(output, manifest, original):
     descriptor = root / "EVIDENCE_MANIFEST.json"
     require(descriptor.stat().st_size <= 8*1024**2 and len(pins)+1 <= 4096
             and manifest["payload_bytes"]+descriptor.stat().st_size <= 64*1024**2, "physical export limits")
-    descriptor.read_bytes().decode("utf-8")
+    descriptor_bytes = descriptor.read_bytes()
+    require(len(descriptor_bytes) == descriptor.stat().st_size and len(descriptor_bytes) <= 8*1024**2,
+            "descriptor changed/size")
+    def unique_object(pairs):
+        value = {}
+        for key, item in pairs:
+            require(key not in value, "duplicate descriptor key")
+            value[key] = item
+        return value
+    actual_manifest = json.loads(descriptor_bytes.decode("utf-8"), object_pairs_hook=unique_object)
+    # Canonical JSON comparison retains full JSON types (True is not 1).
+    require(json.dumps(actual_manifest, sort_keys=True, allow_nan=False) ==
+            json.dumps(manifest, sort_keys=True, allow_nan=False), "descriptor/manifest mismatch")
     if manifest.get("fragmented_text"):
         physical = manifest.get("physical_export")
         expected = {"files": len(pins)+1, "manifest_bytes": descriptor.stat().st_size,
@@ -261,6 +273,8 @@ def stage_evidence(work, package, output, identity, *, max_file_bytes=8*1024**2,
 
     for name in sorted(TOP | {phase + ".COMPLETE.json" for phase in PHASES}):
         capture(work / name, work, "producer/" + name)
+    if not any(row["path"] == "producer/HEAD_IDENTITY.json" for row in files):
+        omit("producer/HEAD_IDENTITY.json", "required head admission not staged: UNKNOWN")
     command_states = {}
     for label in sorted(COMMANDS):
         root = work / label

@@ -90,6 +90,8 @@ class EvidenceCompletion(unittest.TestCase):
         self.package.mkdir()
         (self.package / "PACKAGE_FILES.json").write_text('{"schema":"DATA","files":[]}')
         self.identity = {"event": "DATA", "tested_head": "a" * 40}
+        # Inert admission bytes only; these fixtures make no native/head claim.
+        (self.work / "HEAD_IDENTITY.json").write_text('{"FAKE_DATA":true}')
 
     def test_PR_identity_and_wrong_merge_rejection(self):
         event = {"pull_request": {"head": {"sha": "a" * 40}}}
@@ -300,6 +302,13 @@ class EvidenceCompletion(unittest.TestCase):
             value = copy.deepcopy(result)
             change(value)
             (self.root / (label + '.mutation.json')).write_text(json.dumps(value))
+            # Keep the fake physical descriptor bound too, so these cases reach
+            # fragment/type/accounting guards rather than only the new binding.
+            if label in {'physical_count', 'descriptor_size', 'physical_total'}:
+                descriptor = (json.dumps(value, indent=2, sort_keys=True) + '\n').encode()
+            else:
+                descriptor = self.m._evidence_descriptor(value)
+            (out / 'EVIDENCE_MANIFEST.json').write_bytes(descriptor)
             with self.subTest(mutation=label), self.assertRaises((ValueError, UnicodeError)):
                 self.m.reconstruct_text_export(out, value, original)
         rejected('order', lambda m: m['fragmented_text'][0]['parts'].reverse())
@@ -400,3 +409,100 @@ class EvidenceCompletion(unittest.TestCase):
         ):
             with self.subTest(case=label), self.assertRaises(ValueError):
                 self.m._evidence_descriptor(value)
+
+    def test_missing_head_admission_is_incomplete_best_effort(self):
+        for label, command_started in (("before-bootstrap", False), ("before-head", True)):
+            with self.subTest(boundary=label):
+                work = self.root / label
+                work.mkdir()
+                if command_started:
+                    command = work / "project-source-build"
+                    command.mkdir()
+                    (command / "stdout.txt").write_text("FAKE DATA available diagnostic")
+                    (command / "terminal.json").write_text('{"FAKE_DATA":true}')
+                out = self.root / (label + "-export")
+                result = self.m.stage_evidence(work, self.package, out, self.identity)
+                self.assertFalse(result["export_complete"])
+                self.assertTrue(any(r["path"] == "producer/HEAD_IDENTITY.json"
+                                    and "required head admission" in r["reason"] for r in result["omissions"]))
+                self.assertFalse((out / "producer/HEAD_IDENTITY.json").exists())
+                self.assertTrue((out / "source-pins/PACKAGE_FILES.json").is_file())
+                self.assertEqual(bool(result["command_states"]), command_started)
+                self.assertFalse(result["native_validation_pass"])
+                self.assertTrue(all(v == "UNKNOWN_NO_COMPLETE_MARKER" for v in result["phase_states"].values()))
+                if command_started:
+                    self.assertEqual((out / "commands/project-source-build/stdout.txt").read_text(),
+                                     "FAKE DATA available diagnostic")
+                # Evaluate only the actual pure final status expression, never exporter.main.
+                import ast
+                tree = ast.parse((P / "export_ci_evidence_v2.py").read_text())
+                main = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "main")
+                expression = ast.Expression(main.body[-1].value)
+                self.assertFalse(any(isinstance(n, ast.Call) for n in ast.walk(expression)))
+                self.assertEqual(eval(compile(expression, "FAKE_DATA_export_status", "eval"),
+                                      {"__builtins__": {}}, {"result": result}), 1)
+
+    def test_present_head_admission_preserves_unknown_phase_semantics(self):
+        out = self.root / "present"
+        result = self.m.stage_evidence(self.work, self.package, out, self.identity)
+        self.assertTrue(result["export_complete"], result["omissions"])
+        self.assertEqual((out / "producer/HEAD_IDENTITY.json").read_bytes(),
+                         (self.work / "HEAD_IDENTITY.json").read_bytes())
+        self.assertEqual(result["command_states"], {})
+        self.assertTrue(all(v == "UNKNOWN_NO_COMPLETE_MARKER" for v in result["phase_states"].values()))
+        self.assertFalse(result["native_validation_pass"])
+
+    def test_head_admission_must_be_staged_not_only_present(self):
+        from unittest.mock import patch
+        head = self.work / "HEAD_IDENTITY.json"
+        original = Path.is_symlink
+        with patch.object(Path, "is_symlink", new=lambda p: p == head or original(p)):
+            result = self.m.stage_evidence(self.work, self.package, self.root / "aliased-head", self.identity)
+        self.assertFalse(result["export_complete"])
+        self.assertTrue(any(r["path"] == "producer/HEAD_IDENTITY.json" for r in result["omissions"]))
+        head.write_text("x" * 65)
+        result = self.m.stage_evidence(self.work, self.package, self.root / "oversized-head", self.identity,
+                                       max_file_bytes=64)
+        self.assertFalse(result["export_complete"])
+        self.assertFalse((self.root / "oversized-head/producer/HEAD_IDENTITY.json").exists())
+
+    def test_physical_descriptor_binds_supplied_manifest(self):
+        for label, payload, limit in (("plain", b"FAKE DATA small", 64), ("fragmented", b"x" * 200, 64)):
+            with self.subTest(stream=label):
+                self.write("project-source-build/stdout.txt", payload.decode())
+                self.write("project-source-build/terminal.json", '{"FAKE_DATA":true}')
+                out = self.root / label
+                result = self.m.stage_evidence(self.work, self.package, out, self.identity, max_file_bytes=limit)
+                original = "commands/project-source-build/stdout.txt"
+                self.assertEqual(self.m.reconstruct_text_export(out, result, original), payload)
+                descriptor = out / "EVIDENCE_MANIFEST.json"
+                before = descriptor.read_bytes()
+                changed = before.replace(b'"event": "DATA"', b'"event": "FAKE"', 1)
+                self.assertNotEqual(before, changed)
+                self.assertEqual(len(before), len(changed))
+                descriptor.write_bytes(changed)
+                with self.assertRaisesRegex(ValueError, "descriptor/manifest"):
+                    self.m.reconstruct_text_export(out, result, original)
+                descriptor.write_bytes(b"{" + b" " * (len(before) - 1))
+                with self.assertRaises(ValueError):
+                    self.m.reconstruct_text_export(out, result, original)
+
+    def test_descriptor_duplicate_keys_and_types_are_not_equivalent(self):
+        self.identity["typed_fixture"] = 1
+        self.write("project-source-build/stdout.txt", "FAKE DATA")
+        self.write("project-source-build/terminal.json", '{"FAKE_DATA":true}')
+        for label in ("boolean", "float", "duplicate"):
+            with self.subTest(mutation=label):
+                out = self.root / label
+                result = self.m.stage_evidence(self.work, self.package, out, self.identity)
+                descriptor = out / "EVIDENCE_MANIFEST.json"
+                before = descriptor.read_bytes()
+                if label == "duplicate":
+                    changed = before.replace(b'"event": "DATA"', b'"event": "FAKE", "event": "DATA"', 1)
+                else:
+                    value = b"true" if label == "boolean" else b"1.0"
+                    changed = before.replace(b'"typed_fixture": 1', b'"typed_fixture": ' + value, 1)
+                self.assertNotEqual(before, changed)
+                descriptor.write_bytes(changed)
+                with self.assertRaises(ValueError):
+                    self.m.reconstruct_text_export(out, result, "commands/project-source-build/stdout.txt")

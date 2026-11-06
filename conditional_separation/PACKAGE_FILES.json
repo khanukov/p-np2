@@ -58,13 +58,13 @@
     },
     {
       "path": "ci/ci_evidence_data_v2.py",
-      "bytes": 19187,
-      "sha256": "bcd5f189d90bfd08ba05830dc5d9030308dd75151f205e13c20156af47b0b881"
+      "bytes": 20048,
+      "sha256": "bef875a430a4242a2ae1b06f663e6790037ae525872af736a2f9acd80a0fcaa6"
     },
     {
       "path": "ci/conditional-separation-native-v2.yml",
       "bytes": 11609,
-      "sha256": "82addff484fd0c0283f6843f2957e57007bbb4dbfa2daec87ad45c11abe7a356"
+      "sha256": "458d7cdd97924e2746ceb8917f776ab0c39e00a2364342f10e9b8cc31fe48944"
     },
     {
       "path": "ci/conditional-separation.yml.proposed",
@@ -5438,8 +5438,8 @@
     },
     {
       "path": "tests/test_completion_v2.py",
-      "bytes": 23963,
-      "sha256": "3240b65d4859e5e10f2f86e602a277d2ee2328d4a84337f838f4f1c543780fcf"
+      "bytes": 31001,
+      "sha256": "708fd835f9fbc2f90a202d6b7ef20cf668878927ec407d086067646ea5adeb0a"
     },
     {
       "path": "tests/test_portable_ci_data_v1.py",
@@ -5488,8 +5488,8 @@
     },
     {
       "path": "tests/test_locked_evidence_v1.py",
-      "bytes": 3280,
-      "sha256": "74b38d73551ec944241c694e98ff6db0b8f5b71bb0cb3a141e1e0e451552699d"
+      "bytes": 3864,
+      "sha256": "6f58950354796d70261ded20a9205d3fee623025129a7b532553db1a118a126e"
     },
     {
       "path": "ConditionalSeparation/AuditSupportChecks.lean",
@@ -5879,12 +5879,12 @@
     {
       "path": "ci/TRUSTED_NATIVE_CONTROLS_V1.json",
       "bytes": 6024,
-      "sha256": "a4ba03bdc600192a7b195f3e94552685a342f1f5d11ac6c5e611b53d0b10d986"
+      "sha256": "73d28a8037ba20b888763f97d2fa071590cc5b28c95bb7ecddaef64f69a7ebf3"
     },
     {
       "path": "ci/trusted_controls_v1.py",
       "bytes": 13168,
-      "sha256": "59b4dd176ee473bec91788bc6744ab7e7cbddee7561373f217bd32ea135b61da"
+      "sha256": "35590aa3a84527323b07b7b71b5b123ffa638eb30f437f278194c55403966f26"
     },
     {
       "path": "tests/test_trusted_controls_v1.py",

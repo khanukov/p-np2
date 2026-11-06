@@ -19,6 +19,7 @@ class AcquisitionEvidence(unittest.TestCase):
  def fixture(self,name,rc):
   base=self.root/name;base.mkdir();work=base/'work';package=base/'package';work.mkdir();package.mkdir()
   (package/'PACKAGE_FILES.json').write_text('{"schema":"SYNTHETIC_DATA_ONLY","files":[]}')
+  (work/'HEAD_IDENTITY.json').write_text(json.dumps({'scope':'SYNTHETIC_FAKE_ADMISSION_NOT_ACTUAL_HEAD'}))
   command=work/LABEL;command.mkdir()
   payload={'launch.json':{'argv':['SYNTHETIC_DATA_NOT_EXECUTED']},'process.json':{'pid':'SYNTHETIC_NOT_OS_PID'},
            'stdout.txt':'DATA stdout','stderr.txt':'DATA stderr'}
@@ -31,6 +32,8 @@ class AcquisitionEvidence(unittest.TestCase):
    with self.subTest(input_exit=rc):
     base,result,payload=self.fixture('exit-'+str(rc),rc)
     names={r['path'] for r in result['files']}
+    self.assertIn('producer/HEAD_IDENTITY.json',names)
+    self.assertEqual((base/'work/HEAD_IDENTITY.json').read_bytes(),(base/'evidence/producer/HEAD_IDENTITY.json').read_bytes())
     self.assertTrue({'commands/'+LABEL+'/'+p for p in payload}<=names)
     for p in payload:self.assertEqual((base/'work'/LABEL/p).read_bytes(),(base/'evidence/commands'/LABEL/p).read_bytes())
     self.assertEqual(result['command_states'][LABEL],'TERMINAL_PRESENT_UNINTERPRETED')
@@ -38,6 +41,7 @@ class AcquisitionEvidence(unittest.TestCase):
  def test_started_without_terminal_is_UNKNOWN_and_incomplete(self):
   base,result,payload=self.fixture('started',None)
   self.assertEqual(result['command_states'].get(LABEL),'STARTED_NO_TERMINAL_UNKNOWN')
+  self.assertTrue((base/'evidence/producer/HEAD_IDENTITY.json').is_file())
   self.assertFalse(result['export_complete']);self.assertFalse(result['native_validation_pass'])
   self.assertFalse((base/'evidence/commands'/LABEL/'terminal.json').exists())
   self.assertTrue(any(o['path']=='commands/'+LABEL+'/terminal.json' for o in result['omissions']))
@@ -46,4 +50,7 @@ class AcquisitionEvidence(unittest.TestCase):
   (package/'PACKAGE_FILES.json').write_text('{"schema":"SYNTHETIC_DATA_ONLY","files":[]}')
   result=self.m.stage_evidence(work,package,self.root/'evidence',{'event':'SYNTHETIC_DATA'})
   self.assertNotIn(LABEL,result['command_states']);self.assertFalse(result['native_validation_pass'])
+  self.assertFalse(result['export_complete'])
+  self.assertTrue(any(o['path']=='producer/HEAD_IDENTITY.json' for o in result['omissions']))
+  self.assertFalse((self.root/'evidence/producer/HEAD_IDENTITY.json').exists())
 if __name__=='__main__':unittest.main(verbosity=2)

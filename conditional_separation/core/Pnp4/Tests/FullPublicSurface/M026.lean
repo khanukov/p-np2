@@ -1,0 +1,12 @@
+import Pnp4.Frontier.ContractExpansion.QueryComposition
+import ConditionalSeparation.AuditLiteralData
+open ConditionalSeparation.AuditSupport
+namespace Pnp4.Tests.FullPublicSurface.M026
+#check (@(checked_const% "[\"literal-ref-v1\",\"ConditionalSeparation.AuditLiteralData\",1118,\"Pnp4.Frontier.ContractExpansion.composeDeciderWithQuery\"]") : frozen_type% "[\"literal-ref-v1\",\"ConditionalSeparation.AuditLiteralData\",1118,\"Pnp4.Frontier.ContractExpansion.composeDeciderWithQuery\"]")
+#check (@(checked_const% "[\"literal-ref-v1\",\"ConditionalSeparation.AuditLiteralData\",1370,\"Pnp4.Frontier.ContractExpansion.eval_composeDeciderWithQuery\"]") : frozen_type% "[\"literal-ref-v1\",\"ConditionalSeparation.AuditLiteralData\",1370,\"Pnp4.Frontier.ContractExpansion.eval_composeDeciderWithQuery\"]")
+theorem check_138bed721e8f4d1b : frozen_type% "[\"literal-ref-v1\",\"ConditionalSeparation.AuditLiteralData\",1370,\"Pnp4.Frontier.ContractExpansion.eval_composeDeciderWithQuery\"]" := @(checked_const% "[\"literal-ref-v1\",\"ConditionalSeparation.AuditLiteralData\",1370,\"Pnp4.Frontier.ContractExpansion.eval_composeDeciderWithQuery\"]")
+#check (@(checked_const% "[\"literal-ref-v1\",\"ConditionalSeparation.AuditLiteralData\",2607,\"Pnp4.Tests.FullPublicSurface.M026.check_138bed721e8f4d1b\"]") : frozen_type% "[\"literal-ref-v1\",\"ConditionalSeparation.AuditLiteralData\",1370,\"Pnp4.Frontier.ContractExpansion.eval_composeDeciderWithQuery\"]")
+#check (@(checked_const% "[\"literal-ref-v1\",\"ConditionalSeparation.AuditLiteralData\",1739,\"Pnp4.Frontier.ContractExpansion.size_composeDeciderWithQuery_le\"]") : frozen_type% "[\"literal-ref-v1\",\"ConditionalSeparation.AuditLiteralData\",1739,\"Pnp4.Frontier.ContractExpansion.size_composeDeciderWithQuery_le\"]")
+theorem check_c7633430bcef6ff7 : frozen_type% "[\"literal-ref-v1\",\"ConditionalSeparation.AuditLiteralData\",1739,\"Pnp4.Frontier.ContractExpansion.size_composeDeciderWithQuery_le\"]" := @(checked_const% "[\"literal-ref-v1\",\"ConditionalSeparation.AuditLiteralData\",1739,\"Pnp4.Frontier.ContractExpansion.size_composeDeciderWithQuery_le\"]")
+#check (@(checked_const% "[\"literal-ref-v1\",\"ConditionalSeparation.AuditLiteralData\",2608,\"Pnp4.Tests.FullPublicSurface.M026.check_c7633430bcef6ff7\"]") : frozen_type% "[\"literal-ref-v1\",\"ConditionalSeparation.AuditLiteralData\",1739,\"Pnp4.Frontier.ContractExpansion.size_composeDeciderWithQuery_le\"]")
+end Pnp4.Tests.FullPublicSurface.M026

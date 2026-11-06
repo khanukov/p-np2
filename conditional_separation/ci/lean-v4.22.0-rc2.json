@@ -1,0 +1,68 @@
+{
+  "assets": [
+    {
+      "browser_download_url": "https://github.com/leanprover/lean4/releases/download/v4.22.0-rc2/lean-4.22.0-rc2-darwin.tar.zst",
+      "digest": "sha256:18623ffd946985df12a0247dd51515d0b3e0072f1bec5720dd84af3cfaa7214e",
+      "name": "lean-4.22.0-rc2-darwin.tar.zst",
+      "size": 386865335
+    },
+    {
+      "browser_download_url": "https://github.com/leanprover/lean4/releases/download/v4.22.0-rc2/lean-4.22.0-rc2-darwin.zip",
+      "digest": "sha256:869cee7947c1d51df8cc61a595a2d1ffa1cbd18fda48fd4652d4f8113a1eae5d",
+      "name": "lean-4.22.0-rc2-darwin.zip",
+      "size": 540414989
+    },
+    {
+      "browser_download_url": "https://github.com/leanprover/lean4/releases/download/v4.22.0-rc2/lean-4.22.0-rc2-darwin_aarch64.tar.zst",
+      "digest": "sha256:1ef8370bb0fdfc335b29e3c2c830fce48af501e6ed7a90cdea1367803ca88fed",
+      "name": "lean-4.22.0-rc2-darwin_aarch64.tar.zst",
+      "size": 380243677
+    },
+    {
+      "browser_download_url": "https://github.com/leanprover/lean4/releases/download/v4.22.0-rc2/lean-4.22.0-rc2-darwin_aarch64.zip",
+      "digest": "sha256:1efae7a73bdc88e64d285964f6e4ae0cb83050cf0b2edfa6d40a5ddc6edf867f",
+      "name": "lean-4.22.0-rc2-darwin_aarch64.zip",
+      "size": 532620849
+    },
+    {
+      "browser_download_url": "https://github.com/leanprover/lean4/releases/download/v4.22.0-rc2/lean-4.22.0-rc2-linux.tar.zst",
+      "digest": "sha256:73223e5077a2c691389c79900306c520d3f98d03bfffcf4590a7100e59e42c3a",
+      "name": "lean-4.22.0-rc2-linux.tar.zst",
+      "size": 393625073
+    },
+    {
+      "browser_download_url": "https://github.com/leanprover/lean4/releases/download/v4.22.0-rc2/lean-4.22.0-rc2-linux.zip",
+      "digest": "sha256:b63870619faead5c350f685c909b76a8fd5a0fa298e77b8c49b5ecbe7dec4380",
+      "name": "lean-4.22.0-rc2-linux.zip",
+      "size": 622502204
+    },
+    {
+      "browser_download_url": "https://github.com/leanprover/lean4/releases/download/v4.22.0-rc2/lean-4.22.0-rc2-linux_aarch64.tar.zst",
+      "digest": "sha256:74c86c048869572ffb502d0123bafa486cebd29eb01d17ac1e6e48f129daef86",
+      "name": "lean-4.22.0-rc2-linux_aarch64.tar.zst",
+      "size": 392430672
+    },
+    {
+      "browser_download_url": "https://github.com/leanprover/lean4/releases/download/v4.22.0-rc2/lean-4.22.0-rc2-linux_aarch64.zip",
+      "digest": "sha256:daf0f38fdaa942b990422b352c0cf7a540a62981a7eea38c054d639dd5960141",
+      "name": "lean-4.22.0-rc2-linux_aarch64.zip",
+      "size": 618253608
+    },
+    {
+      "browser_download_url": "https://github.com/leanprover/lean4/releases/download/v4.22.0-rc2/lean-4.22.0-rc2-windows.tar.zst",
+      "digest": "sha256:f404b2206b6bbfc2731490efb10c529204dba8e75d4b2894bd3146edf6687f55",
+      "name": "lean-4.22.0-rc2-windows.tar.zst",
+      "size": 394412795
+    },
+    {
+      "browser_download_url": "https://github.com/leanprover/lean4/releases/download/v4.22.0-rc2/lean-4.22.0-rc2-windows.zip",
+      "digest": "sha256:7c60dd10653c317cc4be4377368e38739cde0a8f4a291be58776af787d038dcd",
+      "name": "lean-4.22.0-rc2-windows.zip",
+      "size": 553365525
+    }
+  ],
+  "published_at": "2025-06-30T20:10:29Z",
+  "repository": "leanprover/lean4",
+  "tag_name": "v4.22.0-rc2",
+  "url": "https://github.com/leanprover/lean4/releases/tag/v4.22.0-rc2"
+}

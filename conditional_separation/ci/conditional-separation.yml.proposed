@@ -1,0 +1,16 @@
+# Retired proposal only; not an installed native workflow.
+# No dispatched source, checkout, bootstrap, installer or tests are executed.
+# The supported route is the independently admitted conditional-separation-native.yml.
+name: conditional-separation-unadmitted-source-refused
+on: [workflow_dispatch]
+permissions: {}
+jobs:
+  refuse-unadmitted-source:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Refuse unadmitted source execution
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s\n' 'unadmitted-source-refused: use the independently admitted native controller workflow' >&2
+          exit 1

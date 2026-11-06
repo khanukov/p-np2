@@ -346,7 +346,7 @@ class AssemblyNegativeDATA(unittest.TestCase):
         tree=ast.parse((ROOT/'tests/lean_rejections.py').read_bytes())
         fixture=next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name=='assembly_negative')
         work=ast.parse((ROOT/'tools/workbench.py').read_bytes())
-        names={'name','guard_source','guard_body','check','command'}
+        names={'name','guard_source','guard_body','check','command','attempt_core'}
         functions=[n for n in work.body if isinstance(n,ast.FunctionDef) and n.name in names]
         self.assertEqual({n.name for n in functions},names)
         compiler=next(n for n in work.body if isinstance(n,ast.FunctionDef) and n.name=='compile_source')

@@ -53,8 +53,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 13396,
-      "sha256": "9245a4e6ed03ccea44f53962f89464b3cbd3230ade87485c722eaf4e5a8e3636"
+      "bytes": 13418,
+      "sha256": "0c3193d0add18beaca9e900978b5aa118e3d15da1ce306569efe7406fe24c157"
     },
     {
       "path": "ci/ci_evidence_data_v2.py",
@@ -64,12 +64,12 @@
     {
       "path": "ci/conditional-separation-native-v2.yml",
       "bytes": 11609,
-      "sha256": "458d7cdd97924e2746ceb8917f776ab0c39e00a2364342f10e9b8cc31fe48944"
+      "sha256": "9ada627f3d0f79caa154177e9056c9725bf0e17f07b81b9e956bf458aa17aa63"
     },
     {
       "path": "ci/conditional-separation.yml.proposed",
-      "bytes": 1046,
-      "sha256": "48d30b7b49d54d697a195eb745c052507382a71d5b9c92ebf4ffd7ccc48bae03"
+      "bytes": 1606,
+      "sha256": "3116bf0b4fa4841948684861d747e5fe0df239931effe69a32f08a36a396ede2"
     },
     {
       "path": "ci/elan-v4.2.4.json",
@@ -5458,8 +5458,8 @@
     },
     {
       "path": "tools/workbench.py",
-      "bytes": 24659,
-      "sha256": "8cf153fa3c5eff7b6ec3c358007e72a41cf7be29eb016fbfda98030bb4359f92"
+      "bytes": 25052,
+      "sha256": "9b3f11b994d5a6949f0758fad8393f90a94307e858ab69229f65321f6c461358"
     },
     {
       "path": "ci/package_source_v1.py",
@@ -5468,8 +5468,8 @@
     },
     {
       "path": "tests/test_native_first_run_v1.py",
-      "bytes": 34486,
-      "sha256": "c7d99673a4575a35d22a843157e7aef40d070029f8e4769c9c25446fa9928f9c"
+      "bytes": 34501,
+      "sha256": "be83030ea962c036cc8462463efddf1537b30dbd5b084c1e98cf9fc81e5b3289"
     },
     {
       "path": "core/Pnp4/Tests/AxiomsAudit.lean",
@@ -5878,18 +5878,23 @@
     },
     {
       "path": "ci/TRUSTED_NATIVE_CONTROLS_V1.json",
-      "bytes": 6024,
-      "sha256": "73d28a8037ba20b888763f97d2fa071590cc5b28c95bb7ecddaef64f69a7ebf3"
+      "bytes": 6188,
+      "sha256": "0defb1f8b3b99998683704b6c7e72e229539d67762bcf2a9e2996b37049bc611"
     },
     {
       "path": "ci/trusted_controls_v1.py",
       "bytes": 13168,
-      "sha256": "35590aa3a84527323b07b7b71b5b123ffa638eb30f437f278194c55403966f26"
+      "sha256": "85666bca607cb2381b9c0e710b8458a751a5a76e2f3cfbf66219a29dd5437836"
     },
     {
       "path": "tests/test_trusted_controls_v1.py",
       "bytes": 23277,
       "sha256": "cf69a615c752a42e5866873ff299862bac30210c046fa6112f666434d9aa0262"
+    },
+    {
+      "path": "tests/test_reliability_v1.py",
+      "bytes": 14843,
+      "sha256": "eb8e0f1adb7c22ff1ff187338d85cae87d6de53f54b449987903c149ac7ef871"
     }
   ]
 }

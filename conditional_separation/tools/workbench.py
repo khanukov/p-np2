@@ -30,6 +30,17 @@ def read_json(path):
     return json.loads(Path(path).read_text(encoding='utf-8'), object_pairs_hook=pairs)
 
 
+def attempt_core(attempt):
+    """Read the core path without turning malformed external metadata into a traceback."""
+    metadata = read_json(Path(attempt)/'attempt.json')
+    if not isinstance(metadata, dict):
+        raise ValueError('attempt metadata must be a JSON object')
+    value = metadata.get('core')
+    if not isinstance(value, str) or not value.strip() or '\0' in value:
+        raise ValueError('attempt metadata core must be a nonempty path string')
+    return Path(value).resolve()
+
+
 def name(value):
     if not isinstance(value,str) or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_']*(\.[A-Za-z_][A-Za-z0-9_']*)*", value):
         raise ValueError("use a fully qualified ordinary Lean declaration name")
@@ -292,7 +303,7 @@ def verify_core(core):
 
 
 def source_imports(attempt, root, label, sources):
-    core = Path(read_json(attempt/'attempt.json')['core']).resolve()
+    core = attempt_core(attempt)
     requests = [{'module':module,'source':str(path.resolve())} for module,path in sources.items()]
     request = root/(label+'.imports.request.json')
     output = root/(label+'.imports.json')
@@ -345,7 +356,7 @@ def module_sources(attempt, root):
 
 
 def compile_source(attempt, root, label, source, module, overrides):
-    core = Path(read_json(attempt/'attempt.json')['core']).resolve()
+    core = attempt_core(attempt)
     header = source_imports(attempt,root,label+'-header',{module:source})[module]
     for imported in header['imports']:
         local = attempt/Path(*imported.split('.')).with_suffix('.lean')
@@ -406,7 +417,7 @@ def write_new_output(path, text):
 def check(attempt, proof, *, expected='ConditionalSeparation.OpenProblem.R', assemble=True):
     """`expected=True`-style internal fixtures test validation, never prove R."""
     attempt = Path(attempt).resolve()
-    core = Path(read_json(attempt/'attempt.json')['core']).resolve()
+    core = attempt_core(attempt)
     fingerprint = verify_core(core)
     root = fresh_check_run(attempt)
     write_new_output(root/'STATUS.json', json.dumps({'status':'STARTED_NOT_PASS','core_source_inventory_sha256':fingerprint})+'\n')

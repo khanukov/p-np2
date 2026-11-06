@@ -64,8 +64,8 @@
     },
     {
       "path": "ci/conditional-separation.yml.proposed",
-      "bytes": 1046,
-      "sha256": "48d30b7b49d54d697a195eb745c052507382a71d5b9c92ebf4ffd7ccc48bae03"
+      "bytes": 1606,
+      "sha256": "3116bf0b4fa4841948684861d747e5fe0df239931effe69a32f08a36a396ede2"
     },
     {
       "path": "ci/elan-v4.2.4.json",
@@ -144,8 +144,8 @@
     },
     {
       "path": "tests/test_native_first_run_v1.py",
-      "bytes": 34486,
-      "sha256": "c7d99673a4575a35d22a843157e7aef40d070029f8e4769c9c25446fa9928f9c"
+      "bytes": 34501,
+      "sha256": "be83030ea962c036cc8462463efddf1537b30dbd5b084c1e98cf9fc81e5b3289"
     },
     {
       "path": "tests/test_path_archive_hardening_v1.py",
@@ -156,6 +156,11 @@
       "path": "tests/test_portable_ci_data_v1.py",
       "bytes": 14840,
       "sha256": "b0f40ab6abb9c16eba1f65a9d84f132419594492bb0225be61f292f1bd638b2c"
+    },
+    {
+      "path": "tests/test_reliability_v1.py",
+      "bytes": 14843,
+      "sha256": "eb8e0f1adb7c22ff1ff187338d85cae87d6de53f54b449987903c149ac7ef871"
     },
     {
       "path": "tests/test_trusted_controls_v1.py",
@@ -179,8 +184,8 @@
     },
     {
       "path": "tools/workbench.py",
-      "bytes": 24659,
-      "sha256": "8cf153fa3c5eff7b6ec3c358007e72a41cf7be29eb016fbfda98030bb4359f92"
+      "bytes": 25052,
+      "sha256": "9b3f11b994d5a6949f0758fad8393f90a94307e858ab69229f65321f6c461358"
     }
   ]
 }

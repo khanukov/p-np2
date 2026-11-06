@@ -7,7 +7,9 @@
 | core SingleResearchGap | same-language Ordinary NP plus conditional non-Ppoly using concrete threshold growth | accepted source copied exactly |
 | Ordinary.uniformP_ppolyDAG | SAME arbitrary L: Ordinary P implies canonical DAG P/poly | unconditional accepted source copied exactly |
 | close | R implies SAME k/language in Ordinary NP and outside PpolyDAG/Ordinary P | composition of accepted proofs; extracted build/review status is separate |
-| LightAudit / Audit / KernelAudit | fully expanded named mirrors, separate type pins, presence-checked direct roots and allowed transitive axioms | elaboration checks, not independent reproofs |
+| Audit | fully expanded named mirrors and separate type pins; seven printed roots | elaboration and axiom reporting; does not enforce an axiom allowlist |
+| LightAudit | exact equivalence mirror/type pins; three presence-checked direct roots and transitive axiom allowlist | fail-closed axiom checks, not independent reproofs |
+| KernelAudit | eight presence-checked direct roots and transitive axiom allowlist | fail-closed axiom checks, not independent reproofs |
 | attempt template | imports only the light problem API | PARTIAL, final rejection required today |
 
 The simulation uses the literal six-symbol Bool x Option Bool alphabet, two-sided

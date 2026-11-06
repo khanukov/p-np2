@@ -176,7 +176,8 @@ def command(root, label, argv, cwd):
     with (directory/'stdout.txt').open('wb') as out, (directory/'stderr.txt').open('wb') as err:
         p = subprocess.Popen(argv,cwd=cwd,stdout=out,stderr=err,**options)
         try:
-            (directory/'process.json').write_text(json.dumps({'pid':p.pid,'pgid':os.getpgid(p.pid) if os.name != 'nt' else None})+'\n',encoding='utf-8')
+            # start_new_session establishes POSIX pgid=pid without an exit-racy lookup.
+            (directory/'process.json').write_text(json.dumps({'pid':p.pid,'pgid':p.pid if os.name != 'nt' else None})+'\n',encoding='utf-8')
             code = p.wait()
         except BaseException as original:
             try:

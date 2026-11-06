@@ -41,6 +41,16 @@ this new installed/head tuple or native macOS. No build occurs as part
 of this local source-installation invocation. Windows is not a CI or release-validation target;
 native Windows support is not claimed.
 
+Audit roles differ: compiling Audit.lean alone elaborates its named mirrors/type
+pins and prints seven axiom roots; printing does not enforce an allowlist.
+LightAudit checks three direct roots and KernelAudit checks eight, rejecting
+missing roots or transitive axioms outside propext, Classical.choice and Quot.sound.
+The native build's `fresh-public-root-audit` command compiles
+`ConditionalSeparation/KernelAudit.lean` with `-DwarningAsError=true` and rejects a
+nonzero compiler exit. Enforcement comes from that module's `run_cmd` guards,
+not from treating Audit.lean's printed output as a fail-closed check. These
+elaboration/axiom checks are not independent reproofs or a proof of R.
+
 ## Independent attempts
 
 After building an installed copy of this core:
@@ -126,6 +136,16 @@ This replaces the old automatic PR-event policy; it is not a new required local
 691 build or another executor. Root17/fullrepo and all existing final gates remain.
 The publisher, independently reviewed immutable controller SHA and workflow
 policy are trust roots. A PR-context job with the same name is not this gate.
+
+Automatic runs are limited to this existing authorized feature branch.
+There is no automatic native CI for main or later PRs. Subsequent use requires
+independently admitted exact controller/source manual dispatch on a non-main branch,
+with the same immutable SHA, current PR1821 source and parent/owner authorization
+joins; selecting the inputs does not supply that authorization. There is
+no promise after branch deletion or merge: the reviewed workflow must still be
+available at the explicitly selected non-main controller revision. Future main
+regression coverage is outside this feature-only scope; no main trigger,
+schedule, installation or workflow dispatch is added here.
 
 The older `ci/conditional-separation.yml.proposed` source-execution recipe is
 retired. Its only prospective job is a fixed hosted refusal with no checkout,

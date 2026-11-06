@@ -159,8 +159,8 @@
     },
     {
       "path": "tests/test_reliability_v1.py",
-      "bytes": 13337,
-      "sha256": "2a907382a9a6dcf79cb05e8b45cfef86e56cad1a5bdfb706111c5d480859e496"
+      "bytes": 18920,
+      "sha256": "ef505b050490f68ae3545bc3518b0c0594c10509bbb03d919b187348d847e9d0"
     },
     {
       "path": "tests/test_trusted_controls_v1.py",
@@ -184,8 +184,8 @@
     },
     {
       "path": "tools/workbench.py",
-      "bytes": 25052,
-      "sha256": "9b3f11b994d5a6949f0758fad8393f90a94307e858ab69229f65321f6c461358"
+      "bytes": 25128,
+      "sha256": "cb05830d17cd24d7f20affd7d119203b58fe16775b3a5a0225f14ddcf3553371"
     }
   ]
 }

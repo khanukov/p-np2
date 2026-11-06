@@ -1,4 +1,7 @@
 # Independently reviewed controller policy; native/runtime admission remains separate.
+# Feature-only automatic push; no main/later-PR native coverage.
+# Later use requires independently admitted exact controller/source manual dispatch.
+# Availability after branch deletion/merge is not promised; non-main guards remain.
 name: conditional-separation-native-prospective-v2
 
 on:
@@ -95,7 +98,7 @@ jobs:
               raise ValueError('fetched controller mismatch')
           for relative, name, expected in (
               ('ci/package_source_v1.py', 'conditional-package-source-v1.py', 'ffdd862bfadf3845ae86373eb806a6f2b99192abfe0e00d860533aae9c053b2f'),
-              ('ci/trusted_controls_v1.py', 'trusted-native-controls-v1.py', 'efe96243528113955fa4f865095a15c665e7409db3b420a11d25147f61a6da7f')):
+              ('ci/trusted_controls_v1.py', 'trusted-native-controls-v1.py', 'd6715db88a130df340f3a7015c8daa22fa4640516d5027ab37993ce61253b035')):
               code = git('cat-file', 'blob', controller+':conditional_separation/'+relative)
               if hashlib.sha256(code).hexdigest() != expected:
                   raise ValueError('controller helper differs from independently reviewed workflow pin')
@@ -108,14 +111,14 @@ jobs:
           subprocess.run([sys.executable, '-I', '-S', '-B', str(temp/'conditional-package-source-v1.py'),
                           str(bare), head, str(source), '--short-layout-v1'], check=True)
           subprocess.run([sys.executable, '-I', '-S', '-B', str(temp/'trusted-native-controls-v1.py'),
-                          '--check', 'efe96243528113955fa4f865095a15c665e7409db3b420a11d25147f61a6da7f', str(source/'p')], check=True)
+                          '--check', 'd6715db88a130df340f3a7015c8daa22fa4640516d5027ab37993ce61253b035', str(source/'p')], check=True)
       - name: Verified Elan asset and exact Lean toolchain
         working-directory: ${{ runner.temp }}/s/p
         run: |
           import os, subprocess, sys
           from pathlib import Path
           helper = Path(os.environ['RUNNER_TEMP'])/'trusted-native-controls-v1.py'
-          anchor = 'efe96243528113955fa4f865095a15c665e7409db3b420a11d25147f61a6da7f'
+          anchor = 'd6715db88a130df340f3a7015c8daa22fa4640516d5027ab37993ce61253b035'
           # Compile only authenticated bytes: -B alone does not exclude cached helpers.
           stub = ("import hashlib,pathlib,sys; p=pathlib.Path(sys.argv[1]); b=p.read_bytes(); "
                   "assert hashlib.sha256(b).hexdigest()==sys.argv[2], 'dispatcher hash'; "
@@ -129,7 +132,7 @@ jobs:
           import os, subprocess, sys
           from pathlib import Path
           helper = Path(os.environ['RUNNER_TEMP'])/'trusted-native-controls-v1.py'
-          anchor = 'efe96243528113955fa4f865095a15c665e7409db3b420a11d25147f61a6da7f'
+          anchor = 'd6715db88a130df340f3a7015c8daa22fa4640516d5027ab37993ce61253b035'
           # Compile only authenticated bytes: -B alone does not exclude cached helpers.
           stub = ("import hashlib,pathlib,sys; p=pathlib.Path(sys.argv[1]); b=p.read_bytes(); "
                   "assert hashlib.sha256(b).hexdigest()==sys.argv[2], 'dispatcher hash'; "
@@ -143,7 +146,7 @@ jobs:
           import os, subprocess, sys
           from pathlib import Path
           helper = Path(os.environ['RUNNER_TEMP'])/'trusted-native-controls-v1.py'
-          anchor = 'efe96243528113955fa4f865095a15c665e7409db3b420a11d25147f61a6da7f'
+          anchor = 'd6715db88a130df340f3a7015c8daa22fa4640516d5027ab37993ce61253b035'
           # Compile only authenticated bytes: -B alone does not exclude cached helpers.
           stub = ("import hashlib,pathlib,sys; p=pathlib.Path(sys.argv[1]); b=p.read_bytes(); "
                   "assert hashlib.sha256(b).hexdigest()==sys.argv[2], 'dispatcher hash'; "
@@ -157,7 +160,7 @@ jobs:
           import os, subprocess, sys
           from pathlib import Path
           helper = Path(os.environ['RUNNER_TEMP'])/'trusted-native-controls-v1.py'
-          anchor = 'efe96243528113955fa4f865095a15c665e7409db3b420a11d25147f61a6da7f'
+          anchor = 'd6715db88a130df340f3a7015c8daa22fa4640516d5027ab37993ce61253b035'
           # Compile only authenticated bytes: -B alone does not exclude cached helpers.
           stub = ("import hashlib,pathlib,sys; p=pathlib.Path(sys.argv[1]); b=p.read_bytes(); "
                   "assert hashlib.sha256(b).hexdigest()==sys.argv[2], 'dispatcher hash'; "
@@ -172,7 +175,7 @@ jobs:
           import os, subprocess, sys
           from pathlib import Path
           helper = Path(os.environ['RUNNER_TEMP'])/'trusted-native-controls-v1.py'
-          anchor = 'efe96243528113955fa4f865095a15c665e7409db3b420a11d25147f61a6da7f'
+          anchor = 'd6715db88a130df340f3a7015c8daa22fa4640516d5027ab37993ce61253b035'
           # Compile only authenticated bytes: -B alone does not exclude cached helpers.
           stub = ("import hashlib,pathlib,sys; p=pathlib.Path(sys.argv[1]); b=p.read_bytes(); "
                   "assert hashlib.sha256(b).hexdigest()==sys.argv[2], 'dispatcher hash'; "

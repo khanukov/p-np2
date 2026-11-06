@@ -43,8 +43,8 @@
     },
     {
       "path": "PROOF_MAP.md",
-      "bytes": 2640,
-      "sha256": "59321b4742d4309ed254068b06924e16fddea490b5155ac44537887ebcd81f87"
+      "bytes": 2911,
+      "sha256": "ed7c452b19c079d8c42834adf67fe88c5ffcc7f226f61dfdc4d0ef0a2f7da777"
     },
     {
       "path": "PROVENANCE.json",
@@ -53,8 +53,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 14582,
-      "sha256": "2a068c247e18a0885e73e973ec9cf61e46bc60c4c108d6cdb3644d86e98aef69"
+      "bytes": 15953,
+      "sha256": "36c92c43f3e7c9fbcecadb9df9e9534e561fedc6d67989b761656211271f32fa"
     },
     {
       "path": "ci/ci_evidence_data_v2.py",
@@ -63,8 +63,8 @@
     },
     {
       "path": "ci/conditional-separation-native-v2.yml",
-      "bytes": 11609,
-      "sha256": "9e4e7842a6c14f4d83bafc493092c9f3b60aa60d700ae28d0060b63e6c2daa11"
+      "bytes": 11843,
+      "sha256": "d0d2e2dcb8943f67d04b85632689d29369e52b1b241a9e1ffe5c0dfb3deeb710"
     },
     {
       "path": "ci/conditional-separation.yml.proposed",
@@ -5458,8 +5458,8 @@
     },
     {
       "path": "tools/workbench.py",
-      "bytes": 25052,
-      "sha256": "9b3f11b994d5a6949f0758fad8393f90a94307e858ab69229f65321f6c461358"
+      "bytes": 25128,
+      "sha256": "cb05830d17cd24d7f20affd7d119203b58fe16775b3a5a0225f14ddcf3553371"
     },
     {
       "path": "ci/package_source_v1.py",
@@ -5879,12 +5879,12 @@
     {
       "path": "ci/TRUSTED_NATIVE_CONTROLS_V1.json",
       "bytes": 6187,
-      "sha256": "020cdc2e9196831b7182f9d011e3ab294d38a7c890ceb0634752abff3b655cd8"
+      "sha256": "762a6d2a5b81d6ae7ad21962d186cac1ab3a5ff0d74fc7d50eb3d932618b99f7"
     },
     {
       "path": "ci/trusted_controls_v1.py",
       "bytes": 13168,
-      "sha256": "efe96243528113955fa4f865095a15c665e7409db3b420a11d25147f61a6da7f"
+      "sha256": "d6715db88a130df340f3a7015c8daa22fa4640516d5027ab37993ce61253b035"
     },
     {
       "path": "tests/test_trusted_controls_v1.py",
@@ -5893,8 +5893,8 @@
     },
     {
       "path": "tests/test_reliability_v1.py",
-      "bytes": 13337,
-      "sha256": "2a907382a9a6dcf79cb05e8b45cfef86e56cad1a5bdfb706111c5d480859e496"
+      "bytes": 18920,
+      "sha256": "ef505b050490f68ae3545bc3518b0c0594c10509bbb03d919b187348d847e9d0"
     }
   ]
 }

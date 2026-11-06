@@ -244,4 +244,95 @@ class ReliabilityData(unittest.TestCase):
                 if link is not None:self.assertTrue(destination.is_symlink());self.assertEqual(os.readlink(destination),link)
 
 
+    def session_command_data(self, exitcode):
+        """Actual inert Python child; only the ESRCH lookup is injected DATA."""
+        if os.name == 'nt': self.skipTest('POSIX session contract; no Windows requirement')
+        spec = importlib.util.spec_from_file_location('session_DATA_workbench', WORKBENCH)
+        wb = importlib.util.module_from_spec(spec);spec.loader.exec_module(wb)
+        argv = [sys.executable, '-I', '-S', '-B', '-c',
+                "print('SYNTHETIC PYTHON DATA'); raise SystemExit("+str(exitcode)+")"]
+        label = 'python-DATA-'+str(exitcode)
+        real_popen = subprocess.Popen
+        children = []
+        def launch(actual, **options):
+            self.assertEqual(actual, argv, 'only this inert Python DATA may execute')
+            self.assertIs(options.get('start_new_session'), True)
+            child = real_popen(actual, **options)
+            children.append(child)
+            return child
+        try:
+            with mock.patch.object(wb.subprocess, 'Popen', side_effect=launch), \
+                 mock.patch.object(wb.os, 'getpgid', side_effect=ProcessLookupError(errno.ESRCH, 'INJECTED DATA lookup race')) as lookup:
+                if exitcode:
+                    with self.assertRaisesRegex(RuntimeError, r'^'+label+r' rejected or failed \(exit '+str(exitcode)+r'\); see '):
+                        wb.command(self.data, label, argv, self.data)
+                else:
+                    self.assertEqual(wb.command(self.data, label, argv, self.data), 'SYNTHETIC PYTHON DATA\n')
+                lookup.assert_not_called()
+        finally:
+            # Preserve actual child results even when the old implementation raises.
+            waited = [{'pid':child.pid, 'OS_exit':child.wait()} for child in children]
+            (self.data/(label+'-owned-wait.DATA.json')).write_text(json.dumps(dict(
+                scope='actual inert Python child; ESRCH is injected, not observed macOS evidence',
+                argv=argv, children=waited,
+                production_terminal_present=(self.data/label/'terminal.json').exists()))+'\n')
+        self.assertEqual(len(children), 1)
+        process = json.loads((self.data/label/'process.json').read_text())
+        terminal = json.loads((self.data/label/'terminal.json').read_text())
+        launch_record = json.loads((self.data/label/'launch.json').read_text())
+        self.assertEqual(process, {'pid':children[0].pid, 'pgid':children[0].pid})
+        self.assertEqual(terminal['OS_exit'], exitcode)
+        self.assertEqual(children[0].returncode, exitcode)
+        self.assertEqual(launch_record['argv'], argv)
+        self.assertEqual(launch_record['cwd'], str(self.data))
+        self.assertEqual((self.data/label/'stderr.txt').read_bytes(), b'')
+
+    def test_posix_command_records_session_pgid_without_lookup(self):
+        self.session_command_data(0)
+
+    def test_posix_command_preserves_nonzero_terminal(self):
+        self.session_command_data(7)
+
+    def test_audit_docs_distinguish_prints_from_allowlist_enforcement(self):
+        proof_map = (ROOT/'PROOF_MAP.md').read_text()
+        self.assertNotIn('| LightAudit / Audit / KernelAudit |', proof_map)
+        rows = {line.split('|')[1].strip():line for line in proof_map.splitlines() if line.startswith('| ')}
+        self.assertIn('does not enforce an axiom allowlist', rows['Audit'])
+        self.assertIn('seven printed roots', rows['Audit'])
+        for layer in ['LightAudit', 'KernelAudit']:
+            self.assertIn('fail-closed', rows[layer])
+            self.assertIn('transitive axiom allowlist', rows[layer])
+        audit = (ROOT/'ConditionalSeparation/Audit.lean').read_text()
+        self.assertEqual(audit.count('#print axioms '), 7)
+        self.assertNotIn('run_cmd', audit)
+        for name in ['LightAudit', 'KernelAudit']:
+            body = (ROOT/'ConditionalSeparation'/ (name+'.lean')).read_text()
+            self.assertIn('collectAxioms', body)
+            self.assertIn('nonallowed transitive axiom', body)
+        native = (ROOT/'ci/native_ci_v1.py').read_text()
+        self.assertIn('command("fresh-public-root-audit",', native)
+        self.assertIn('"ConditionalSeparation/KernelAudit.lean"', native)
+        self.assertIn('compiling Audit.lean alone', (ROOT/'README.md').read_text())
+
+    def test_native_ci_documents_feature_only_and_admitted_manual_dispatch(self):
+        readme = (ROOT/'README.md').read_text()
+        self.assertIn('Automatic runs are limited to this existing authorized feature branch', readme)
+        self.assertIn('no automatic native CI for main or later PRs', readme)
+        self.assertIn('no promise after branch deletion or merge', readme)
+        self.assertIn('non-main branch', readme)
+        self.assertIn('independently admitted exact controller/source manual dispatch', readme)
+        a = ROOT.parent/'.github/workflows/conditional-separation-native.yml'
+        b = ROOT/'ci/conditional-separation-native-v2.yml'
+        if a.is_file(): self.assertEqual(a.read_bytes(), b.read_bytes())
+        text = b.read_text()
+        self.assertIn('# Feature-only automatic push; no main/later-PR native coverage.', text)
+        self.assertIn("branches: ['infrastructure/conditional-separation-package-docfix-20261031']", text)
+        self.assertIn('workflow_dispatch:', text)
+        self.assertNotIn('  pull_request:', text)
+        self.assertNotIn('  schedule:', text)
+        self.assertIn("ref in {'refs/heads/main', 'refs/heads/master'}", text)
+        self.assertIn("'PR-controlled workflow definitions are not trusted controllers'", text)
+
+
+
 if __name__ == '__main__': unittest.main()

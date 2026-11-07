@@ -1,10 +1,36 @@
 # P vs NP: Lean Formalization (Honest Status)
 
-Status date: 2026-08-21.
+## Current standalone research entry (7 November 2026)
 
-`STATUS.md` is the authoritative, most-recently-updated snapshot; this README is a
-stable high-level overview and may lag it by weeks or months.  Where the two differ,
-`STATUS.md` wins.
+Start with the [Conditional Separation package](conditional_separation/README.md),
+its [mathematical research note](conditional_separation/PROOF_MAP.md#research-note)
+and [partial-work transfer guide](conditional_separation/README.md#partial-work-across-machines).
+The precise open premise is [`ConditionalSeparation.OpenProblem.R`](conditional_separation/ConditionalSeparation/OpenProblem.lean).
+[`ConditionalSeparation.close`](conditional_separation/ConditionalSeparation/Conditional.lean)
+conditionally gives one and the same fixed-k language in `Ordinary.UniformNP`,
+outside `PpolyDAG` and outside `Ordinary.UniformP`. **R is UNPROVED.** This
+Infrastructure package supplies neither an unconditional P≠NP theorem, a new
+lower bound, model-equivalence/novelty evidence nor institutional endorsement.
+
+A reproducible starting source revision is
+[`a86a6ce9720b71a6bd5439c90d86edd6b6bc25b6`](https://github.com/khanukov/p-np2/tree/a86a6ce9720b71a6bd5439c90d86edd6b6bc25b6/conditional_separation),
+subdirectory `conditional_separation/` (PR1822's reproducibility ancestry).
+This documentation follow-up does not certify a new release/head build; use
+an exact reviewed revision and its matching receipts, not a mutable branch.
+See [publication navigation and boundaries](README_PUBLICATION.md).
+
+The direct route proves its Ordinary-NP membership internally and does **not**
+require the differently typed legacy `ContentVerifierBridge` or its old
+runtime/advice obligations. The old [Preprint](Preprint.latex) is historical,
+not the paper accompanying this direct route. The dated pnp3/pnp4 overview
+below is retained for research history; its legacy open bridges are separate
+from the direct R endpoint above.
+
+## Historical monorepo overview (21 August 2026)
+
+`STATUS.md` supplies the dated monorepo history below. For the current direct
+standalone route, use the explicit API and package documentation linked above;
+a historical route status is not an additional premise of `ConditionalSeparation.close`.
 
 Canonical checklist for unconditional readiness:
 `CHECKLIST_UNCONDITIONAL_P_NE_NP.md`.
@@ -82,12 +108,13 @@ inconsistent from `params` and `easyData` alone, before solver correctness is us
 names are not a standard AC0 lower bound and not P-vs-NP progress.
 
 On the pnp4 side there is a machine-checked **conditional** chain from a concrete
-tree-MCSP search lower bound to `NP_not_subset_PpolyDAG`. The original
+tree-MCSP search lower bound to `NP_not_subset_PpolyDAG`. The legacy
 `NP_not_subset_PpolyDAG_treePoly` and preferred content-truthful
 `NP_not_subset_PpolyDAG_treePolyCT` capstones each still depend on exactly two unproved hypotheses
 at a concrete polynomial threshold. They prove neither `P != NP` nor
 `NP_not_subset_PpolyDAG` unconditionally. See `STATUS.md` and
-`pnp4/Pnp4/Frontier/ContractExpansion/README.md`.
+`pnp4/Pnp4/Frontier/ContractExpansion/README.md`. These two-hypothesis legacy
+capstones do not describe the standalone single-R Ordinary endpoint linked above.
 
 ## Fixed-Params Candidate
 
@@ -123,13 +150,14 @@ closed:
 - **pnp3 route** — a non-vacuous fixed-params support/locality source theorem that
   cannot be satisfied by truth-table hardwiring or singleton provenance, wired through
   `ResearchGapWitness`.
-- **pnp4 route** (the mainline per `AGENTS.md`) — the same concrete
+- **legacy pnp4 verifier route** (within the mainline policy of `AGENTS.md`) — the same concrete
   `NoPolynomialBoundedSearchSolver` lower bound plus a concrete NP-verifier witness. The preferred
   content target has closed non-vacuity and parser-length/gamma gates, but its actual verifier
   bridge and runtime/advice enforcement remain open.
 
-Both remaining obligations are research-level or engineering-heavy mathematics, not
-missing Lean wrappers.
+Those historical obligations are not missing Lean wrappers. The direct standalone
+route has separately discharged Ordinary-NP membership and inclusion; its remaining
+research premise is exactly R, not that legacy verifier/runtime interface.
 
 ## Verification
 
@@ -147,7 +175,10 @@ done
 
 ## Primary Documents
 
-- `STATUS.md` - authoritative current snapshot.
+- `conditional_separation/README.md` - current direct-route entry and partial-work guide.
+- `conditional_separation/PROOF_MAP.md` - exact R, language, model and literature note.
+- `README_PUBLICATION.md` - current/legacy publication navigation.
+- `STATUS.md` - dated monorepo route snapshot.
 - `TODO.md` - remaining execution order.
 - `CHECKLIST_UNCONDITIONAL_P_NE_NP.md` - exact closure checklist.
 - `pnp3/Magnification/UnconditionalResearchGap.lean` - single-file remaining
@@ -161,6 +192,6 @@ done
 
 ## Wording Policy
 
-Until the checklist is fully closed, any statement of `P != NP` in this
-repository must explicitly say that the current final theorem surface remains
-conditional and that the support-bounds source theorem is still open.
+Every separation claim must identify its route and unproved premises. The
+direct standalone endpoint is conditional on R; the historical pnp3 support-bounds
+route remains unclosed. Neither supplies an unconditional `P != NP` theorem.

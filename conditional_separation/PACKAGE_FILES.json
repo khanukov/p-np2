@@ -58,8 +58,8 @@
     },
     {
       "path": "PROOF_MAP.md",
-      "bytes": 3422,
-      "sha256": "2d020f02990b720228248bf99fe7ee1857c0e0379df843a5a7d7cec3c72849c0"
+      "bytes": 13677,
+      "sha256": "dc8b6b75dbc1db7a7820b8ab22736d7f5b3f964aa2ccaa57dae33a773648e015"
     },
     {
       "path": "PROVENANCE.json",
@@ -68,8 +68,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 17622,
-      "sha256": "79d48b5a0610380e4d9ce6422dc139e444f895ba7269c73df0f249e4abdafca8"
+      "bytes": 31678,
+      "sha256": "5eff3bbca721dd7c6312eb776ea9d7dda601ba76c8294ca4f9ae43e0a1f43e6e"
     },
     {
       "path": "ci/TRUSTED_NATIVE_CONTROLS_V1.json",

@@ -51,6 +51,17 @@ A Blueprint for $P \neq NP$ via Switching--Atlas Lemma, Capacity Bounds, and Har
 \begin{document}
 \maketitle
 
+\begin{quote}
+\textbf{Historical draft notice (7 November 2026).}
+This retained SAL/anti-checker draft is not the accompanying paper for the
+current direct \texttt{ConditionalSeparation} route. Its step, axiom and
+magnification claims are historical, not current release or proof evidence.
+For the exact unproved premise R, the conditional same-language endpoint and
+model/literature limits, see
+\texttt{conditional\_separation/PROOF\_MAP.md} and the package README.
+No unconditional $P\ne NP$ theorem or proof of R is claimed by this notice.
+\end{quote}
+
 \begin{abstract}
 We present a Lean-verified framework that derives lower bounds for \emph{GapMCSP} from a
 \emph{switching-type} shrinkage certificate, and then upgrades these bounds to the nonuniform
@@ -59,7 +70,7 @@ Two foundational layers are \textbf{Step~A}---the \emph{Switching--Atlas Lemma (
 \textbf{Step~B}---the \emph{Covering--Power (capacity) bound}. Both steps are fully formalized
 and machine-checked in Lean~4. Our current formalization of \textbf{Step~A} uses a single
 external axiom packaging the classical $\AC$ switching lemma. \textbf{Step~C} (the
-\emph{anti-checker} lower bounds for \GapMCSP) and \textbf{Step~D} (OPS'20/CJW'22
+\emph{anti-checker} lower bounds for \GapMCSP) and \textbf{Step~D} (OPS'19/CJW'22
 \emph{magnification triggers}) are stated in detail and can be either imported from the
 literature or formalized within the same framework. Under these standard assumptions, we
 conditionally derive $NP \not\subseteq \Ppoly$; combined with $P \subseteq \Ppoly$, this
@@ -72,7 +83,7 @@ conditionally yields $P \neq NP$.
 
 \section{Introduction}
 The $P$ vs.\ $NP$ problem is the central challenge in computational complexity. Recent
-\emph{hardness magnification} results (e.g., Oliveira--Pich--Santhanam '20; Chen--Jin--Williams '22)
+\emph{hardness magnification} results (e.g., Oliveira--Pich--Santhanam '19; Chen--Jin--Williams '22)
 show that seemingly modest circuit/formula lower bounds for explicit problems can
 \emph{trigger} the nonuniform separation $NP \not\subseteq \Ppoly$. This paper
 develops and formalizes a modular pipeline that produces such lower bounds for \GapMCSP,
@@ -93,7 +104,7 @@ and then applies magnification triggers to arrive at $P \neq NP$.
   \GapMCSP\ (e.g.\ depth-2 formulas of size $N^{2+\delta}$ or $\polylog$-local circuits of size
   $N \cdot (\log N)^\kappa$), we build a \emph{rich} subfamily $Y$ and a test set $T$ that
   contradict capacity; hence super-quadratic (or near-linear) lower bounds follow.
-  \item \textbf{Step D (Magnification; detailed and conditional).} Using OPS'20 and CJW'22
+  \item \textbf{Step D (Magnification; detailed and conditional).} Using OPS'19 and CJW'22
   triggers, these \GapMCSP\ lower bounds imply $NP \not\subseteq \Ppoly$, and together with
   $P \subseteq \Ppoly$ yield $P \neq NP$.
 \end{itemize}
@@ -113,7 +124,7 @@ module locations. Every statement in this preprint references the corresponding 
 \begin{condmain}
 Assuming (i) an $\AC$ switching lemma (including the derived shrinkage bounds used by SAL),
 (ii) the anti-checker theorems stated in Section~\ref{sec:anti}, and
-(iii) the OPS'20/CJW'22 magnification triggers in Section~\ref{sec:magnification},
+(iii) the OPS'19/CJW'22 magnification triggers in Section~\ref{sec:magnification},
 we obtain $NP \not\subseteq \Ppoly$, hence $P \neq NP$. Steps A and B are Lean-verified;
 Steps C and D rely on well-known results.
 \end{condmain}
@@ -318,7 +329,7 @@ Instantiations with concrete GapMCSP parameters appear in
 \textbf{Our LB (Step C)} & \Longrightarrow & \textbf{Trigger hypothesis (Step D)} \\ 
 \hline
 \GapMCSP not in depth-2 formulas of size $N^{2+\delta}$ &
-\Rightarrow & OPS'20 depth-2 trigger $\Rightarrow \NP \not\subseteq \Ppoly$ \\ 
+\Rightarrow & OPS'19 depth-2 trigger $\Rightarrow \NP \not\subseteq \Ppoly$ \\
 \GapMCSP not in $\kappa$-local circuits of size $N(\log N)^\kappa$ &
 \Rightarrow & CJW'22 locality trigger $\Rightarrow \NP \not\subseteq \Ppoly$
 \end{tabular}
@@ -326,9 +337,9 @@ Instantiations with concrete GapMCSP parameters appear in
 
 \section{Step D: Magnification triggers and the final separation}
 \label{sec:magnification}
-The Step~C lower bounds match the hypotheses of the OPS'20 and CJW'22 magnification theorems.
+The Step~C lower bounds match the hypotheses of the OPS'19 and CJW'22 magnification theorems.
 
-\paragraph{The OPS'20 depth-2 trigger.}
+\paragraph{The OPS'19 depth-2 trigger.}
 \begin{description}[leftmargin=*,style=nextline]
   \item[Instance family] \GapMCSP on inputs of length $N=2^n$ with thresholds
         $(s_{\mathrm{YES}}(n), s_{\mathrm{NO}}(n))$.
@@ -413,10 +424,10 @@ R.~Servedio and L.-Y.~Tan.
 \newblock Pseudorandom multi-switching lemmas.
 \newblock In \emph{Proc. 59th IEEE Symp. on Foundations of Computer Science (FOCS)}, pages 555--566, 2018. Extended version: \emph{SIAM J. Comput.} 51(2):422--481, 2022. doi:10.1137/19M1277231.
 
-\bibitem{OPS20}
-I.~Oliveira, P.~Pich, and R.~Santhanam.
+\bibitem{OPS19}
+I.~Oliveira, J.~Pich, and R.~Santhanam.
 \newblock Hardness magnification near state-of-the-art lower bounds.
-\newblock In \emph{Proc. 11th Innovations in Theoretical Computer Science Conference (ITCS)}, LIPIcs~151, Article~21, 2020. arXiv:1811.02065.
+\newblock In \emph{34th Computational Complexity Conference (CCC 2019)}, Article~27, 2019. doi:10.4230/LIPIcs.CCC.2019.27.
 
 \bibitem{CJW22}
 X.~Chen, Y.~Jin, and R.~Williams.

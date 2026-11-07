@@ -1,3 +1,31 @@
+Current whole-candidate finalization (2026-10-24, LOCAL UNCOMMITTED): the complete
+parent source graph passed its local compiler gates, and six independent native
+Codex scopes have parent-verified source approval with qualified LOW findings.
+Every Lean byte in this child is unchanged from that reviewed parent; its compiler
+outputs are REUSED evidence, not fresh child compiles or committed-head approval.
+The human instruction “Попробуй доделать все без Claude” now removes future Claude
+gates for this campaign. No Claude probe, retry or approval is required or inferred.
+Fresh independent review of the exact current source/docs/control tuple remains
+required through Codex, followed by authorized local commit, exact-head full17,
+latest-pushed-SHA Qodo, real protected-owner authority and all duplicate raw CI/CLEAN.
+No release gate is inherited from the six precommit source opinions. Part A remains
+OPEN; this is Infrastructure, not a legacy TM bridge or a P-vs-NP lower bound.
+Earlier dated status and former Claude/Qodo policies below retain historical scope.
+See pnp3/Docs/PART_A_FULL_CANDIDATE.md for exact evidence and interface limits.
+
+Historical initial whole-candidate status (2026-10-24; superseded above):
+
+Current whole-candidate integration (2026-10-24, LOCAL UNCOMMITTED): accepted
+R1 is merged at `3ae0b4be46d488bafce54cebc1f80dda1e0d9521`. The human-approved
+acceleration assembles the finite 872-original corpus and full public consumers
+in this child; it supersedes intermediate R2 publication cadence. Earlier dated
+R1/R2/C0/C1/C2 status below is historical, including former uncommitted states
+and the superseded no-Qodo waiver. Latest-pushed-SHA Qodo is required alongside
+fresh exact-head source/docs/control review, kernel, protected-owner and raw CI
+gates. None is inherited as release acceptance for this candidate. Full17 is a
+later coordinator gate. Part A remains OPEN; this is Infrastructure, not a legacy
+TM bridge or a P-vs-NP lower bound. See pnp3/Docs/PART_A_FULL_CANDIDATE.md.
+
 <!-- Part A R1 local prefix; publication is coordinator-owned. -->
 
 Current R1 performance/type-pin follow-up (2026-10-24, uncommitted over

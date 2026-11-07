@@ -58,6 +58,7 @@ Generic circuit carriers may be infinite and relations need not be decidable.
   explicitly classified compiler-generated entries.
 - `Attempt.lean`: ordinary import entry point.
 - `prepare.py`, `check.py`: fresh workbench source preparation and validation.
+- `test_prepare.py`: finite real-copy DATA regressions; only core acquisition is stubbed.
 - `TASK_RU.md`: engineering task, acceptance criteria and next research task.
 - `VALIDATION.md`: the actual verification results and limitations.
 
@@ -114,7 +115,18 @@ Compiler stdout/stderr, source snapshots, setups and process terminals remain
 under the fresh attempt's `.lake/conditional-check/runs/` directory. A successful
 partial check supplies no proof of R. If research sources change, prepare a
 new attempt; the source manifest intentionally rejects in-place source drift.
+Preparation snapshots source names, sizes and hashes before acquisition/copying,
+then checks every copied byte and the complete output file set against that
+snapshot plus the acquired scaffold. Corrupt, missing or extra copies fail
+without a success manifest. This is copy fidelity, not signed provenance.
 These scripts execute trusted research code; they are not a hostile-code sandbox.
+
+The copy regressions need no Lean or installed core. Choose an existing private
+scratch directory; their fault fixtures are intentionally retained there:
+
+```sh
+TMPDIR="$SCRATCH" python3 -B research/lengthwise_search/test_prepare.py -v
+```
 
 ## Why it helps
 
@@ -135,8 +147,20 @@ polynomial-size construction are a separate task, not implemented here and
 not a prerequisite for this interface PR. No uniform generator, enumerator,
 weaker hypothesis, new lower bound or novelty claim is supplied.
 
-Local Linux compilation passed for six modules and all 131 direct roots; the
-conditional exact-R conversion was rejected at the expected closed-type guard.
-See VALIDATION.md for receipts, object-reuse warnings, failed attempts and the
-separate supplied handoff history. Independent reviews, root CI, other-platform
-reproduction and publication remain pending.
+## Verification records and their time scope
+
+The initial source-01 checkpoint compiled six modules and all 131 direct roots
+locally, then rejected the conditional conversion at the production closed-R
+guard. It is historical execution evidence, not a live publication checklist.
+See VALIDATION.md for that checkpoint, subsequent local repairs and the separate
+supplied donor history, including object reuse and retained failed attempts.
+
+For the latest published head's scoped reviews and CI, consult the verification
+record in [PR1824](https://github.com/khanukov/p-np2/pull/1824). Both preceding-head
+source/docs opinions completed APPROVE; they do not approve subsequent repairs.
+On `bd302d42874454f3486183f136fb0bf04b7b2684`, hosted `./scripts/check.sh`
+[run 42416247912](https://github.com/khanukov/p-np2/actions/runs/42416247912/job/128534861275)
+passed all 17 stages on 7 November 2026. That root script does not compile this
+optional Attempt tree; the separate published prepare/check route covers it.
+Neither result supplies CI or review acceptance for later bytes. No other-platform
+reproduction or cold foundation build is claimed.

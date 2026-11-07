@@ -1,10 +1,11 @@
 # Local validation and supplied handoff history — 7 November 2026
 
-## This author's actual local execution
+## Initial source-01 execution — historical checkpoint
 
 Accepted source base: `ffba57655ac76e31f9e26304b2437139e47d4b08`.
 Branch: `infrastructure/lengthwise-search-interface-20261107`.
-No commit, push, PR action, merge, core edit or foundation build was performed.
+At that source-only checkpoint no commit, push, PR action, merge, core edit or
+foundation build was performed. Later publication/review status is separate.
 
 - Native Linux x86_64 Lean 4.22.0-rc2, commit
   `6a60de2ac701d1a3f5dc88894b7822f17c3a980b` (Release).
@@ -73,5 +74,59 @@ uniform generator or executable bounded-DAG enumeration. Generic empty promise,
 empty carrier and zero-width behavior remains; n=0 and n=1 are explicitly
 elaborated. Direct R and other research routes are retained. The proposed
 solver-to-DAG recognition/polynomial construction is separate and absent.
-No new full conditional consumer, full root CI, cold core build, cross-platform
-reproduction, independent source approval or release acceptance is claimed.
+The source-01 execution did not run a new full conditional consumer, root CI or
+cross-platform replay, and supplied no independent opinion or release acceptance.
+No cold core build is claimed.
+
+## Subsequent preceding-head evidence and current verification record
+
+The parent authenticated both completed scoped source and dedicated-docs/effects
+APPROVE opinions for preceding head
+`bd302d42874454f3486183f136fb0bf04b7b2684`. Those opinions remain at those bytes;
+they do not review the later copy-fidelity/owned-module repair. The source-a
+procedural metadata overrun and all earlier failed attempts remain recorded.
+
+On 7 November 2026, hosted `./scripts/check.sh` succeeded on that exact head:
+[run 42416247912, job 128534861275](https://github.com/khanukov/p-np2/actions/runs/42416247912/job/128534861275),
+all 17 main stages and final pass observed. This is actual preceding-head root-CI
+evidence, not an author rerun, not compilation of the optional Attempt tree and
+not acceptance of future bytes. The separate addon prepare/check execution
+covers that tree. See the [PR1824 verification record](https://github.com/khanukov/p-np2/pull/1824)
+for the latest published-head review and CI scope; these historical paragraphs
+are not an assertion that those gates are perpetually pending or passed.
+
+## Source-02 bounded repair — local execution, 7 November 2026
+
+The copy-fidelity regression first failed on the unchanged preceding prepare
+implementation: a corrupted real copy returned normally. Preparation now takes
+source names/bytes/hashes before copying and verifies the full copied output
+against those rows plus the acquired workbench scaffold before writing its
+manifest. Seven finite DATA tests pass: normal bytes, corrupt bytes, missing
+file, extra Lean file, extra non-Lean file, existing directory and existing
+symlink. Only workbench acquisition is stubbed in those tests; copying is real.
+The initial post-fix normal-copy test exposed an ordering mismatch; that failed
+run is retained, and the subsequent runs pass without weakening the comparison.
+
+A private negative fixture imports `Attempt.Unclassified` with declaration
+`UnclassifiedData.sentinel`. The old audit accepted it, so the regression failed.
+The hardened audit discovers all imported owners under Lean's `Attempt` name
+prefix, including declarations outside the API namespace, and rejects this
+fixture at `unexpected lengthwise declaration UnclassifiedData.sentinel`.
+This closes a future-module gap; it does not invalidate the old current-131 audit.
+
+Fresh published prepare/check commands then returned OS0/OS0 on the unchanged
+read-only installed core, with fresh own import overrides and warning-as-error.
+All six current Lean modules compiled (850 physical lines); the complete
+131-name declaration/root set, mirrors, type pins and allowed axiom sets remain
+unchanged. Run `d891b74b-e579-4d76-9c4b-1c4bf9711927` recorded 14 OS0 workbench
+commands and the expected final production-guard OS1:
+`declaration must have CLOSED exact expected type`. No final-R result or assembly
+was produced. The addon now has 12 source/tool/doc/test files.
+
+Core/dependency objects were reused, not rebuilt cold; the existing Mathlib
+local-changes warning is retained. Compilation used the same pinned native
+Linux Lean, global-SH/lane-a-EX order, CPU 0,1 and checked 5 GiB floor as above.
+The source-02 report retains exact argv, waits, source/SDK pins and fault fixtures.
+This local repair is not its own independent review, new-head root CI, other-platform
+reproduction, proof of R or release approval; the current PR record supplies the
+scope of subsequent independent checks.

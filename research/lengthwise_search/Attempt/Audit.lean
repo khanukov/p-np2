@@ -186,13 +186,14 @@ run_cmd do
     `Research.LengthwiseSearch.threshold_one_le._proof_1_2,
     `Research.LengthwiseSearch.witness_width_four_le._proof_1_1,
   ]
-  let ownModules : List Name := [`Attempt.Lengthwise, `Attempt.RNormalForm,
-    `Attempt.Examples, `Attempt.Surface]
+  -- Include every imported Attempt owner, even when its declarations use an
+  -- unrelated namespace. A new module must not evade explicit classification.
+  let ownModulePrefix : Name := `Attempt
   let env ← getEnv
   let actual := env.constants.toList.filterMap fun (n, _) => do
     let idx ← env.getModuleIdxFor? n
     let owner ← env.header.moduleNames[idx.toNat]?
-    if ownModules.contains owner then some n else none
+    if ownModulePrefix.isPrefixOf owner then some n else none
   for n in actual do
     logInfo m!"[LENGTHWISE_DECL] {n}"
   for n in actual do

@@ -233,20 +233,23 @@ def verify_core(core):
     provenance_path = core/'PROVENANCE.json'
     if provenance_path.is_symlink(): raise ValueError('provenance symlink')
     provenance = read_json(provenance_path)
-    if not isinstance(provenance,dict) or set(provenance) != {'schema','donor_commit','copy_exception','not_declaration_minimum','modules'}:
+    if not isinstance(provenance,dict) or set(provenance) != {'schema','source_repository','source_commit','historical_origin','copy_exception','not_declaration_minimum','modules'}:
         raise ValueError('provenance schema')
-    if provenance['schema'] != 'conditional-separation-exact-core-v1' or not isinstance(provenance['modules'],list):
+    if provenance['schema'] != 'conditional-separation-public-core-v2' or not isinstance(provenance['modules'],list) or not provenance['modules']:
         raise ValueError('provenance version/modules')
-    if not isinstance(provenance['donor_commit'],str) or not re.fullmatch('[0-9a-f]{40}',provenance['donor_commit']):
-        raise ValueError('provenance revision')
+    # A precise public source anchor, not an arbitrary fetch URL or review claim.
+    if provenance['source_repository'] != 'https://github.com/khanukov/p-np2.git' or provenance['source_commit'] != 'c96d9d72c99120e3775437414417505fd4904a3d':
+        raise ValueError('public provenance repository/revision')
+    if provenance['historical_origin'] != {'donor_commit':'e5dbbe7fd6dee72ae3c3b31a84b54fc1b2727f8f', 'visibility':'local-non-public', 'source_path_field':'donor_relative'}:
+        raise ValueError('historical local provenance role')
     if not isinstance(provenance['copy_exception'],str) or provenance['not_declaration_minimum'] is not True:
         raise ValueError('provenance role')
     modules, copied_paths = set(), set()
     for row in provenance['modules']:
-        if not isinstance(row,dict) or set(row) != {'module','path','donor_relative','sha256','bytes','physical_lines','imports'}:
+        if not isinstance(row,dict) or set(row) != {'module','path','source_relative','donor_relative','sha256','bytes','physical_lines','imports'}:
             raise ValueError('provenance row schema')
         name(row['module'])
-        for key in ['path','donor_relative']:
+        for key in ['path','source_relative','donor_relative']:
             value = row[key]
             if not isinstance(value,str): raise ValueError('provenance path type')
             relative = Path(value)
@@ -254,6 +257,8 @@ def verify_core(core):
                 raise ValueError('provenance canonical relative path')
         if not row['path'].startswith('core/') or not row['donor_relative'].startswith(('pnp3/','pnp4/')):
             raise ValueError('provenance source roles')
+        if row['source_relative'] != 'conditional_separation/' + row['path']:
+            raise ValueError('public provenance source mapping')
         if row['module'] in modules or row['path'] in copied_paths:
             raise ValueError('provenance duplicate module/path')
         modules.add(row['module']); copied_paths.add(row['path'])

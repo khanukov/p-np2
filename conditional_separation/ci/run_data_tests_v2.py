@@ -2,8 +2,12 @@
 import sys
 if sys.flags.optimize:
     raise SystemExit("optimized unit runner rejected; workbench tests require ordinary Python")
-import argparse
+# Set this before discovering/importing any package test or control. The main
+# script itself is not cached; descendants also inherit the no-bytecode policy.
+sys.dont_write_bytecode = True
 import os
+os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
+import argparse
 from pathlib import Path
 import tempfile
 import unittest

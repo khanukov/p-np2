@@ -27,7 +27,20 @@ access or an independently verified external cache. No monorepo source/object
 path is a package dependency. `ConditionalSeparation.LightAudit` checks the exact
 problem equivalence without importing the heavy final theorem;
 `ConditionalSeparation.KernelAudit` checks eight named endpoint roots. Its imported `Pnp4.Tests.AxiomsAudit` retains the four bridge mirrors and imports `Pnp4.Tests.FullPublicSurfaceTests`: 72 separately owned audit modules cover the 2093 public logical constants in the original 72 Pnp4 modules, including generated auxiliaries, with literal complete type pins and direct axiom roots. It adds 1157 full-proposition theorem mirrors and reuses the existing matched bridge/final mirrors without an infinite mirror-of-mirror obligation. Twelve public audit-support definitions have separate complete type pins and direct roots. A transparent topologically ordered shared literal table reconstructs every independently frozen complete contract; reference notation never looks up a target type as its expectation. Compiler-generated literal types preserve binders, universe arrays, private constant identities and full proof-dependent premises; generated mirror authorship is not an independent semantic reproof. `core/` preserves original module names, private
-identities and source bytes. PROVENANCE.json contains relative SHA256 provenance.
+identities and source bytes. PROVENANCE.json v2 maps all 1062 copied core files
+by path, byte count and SHA256 directly to the public repository
+`https://github.com/khanukov/p-np2.git`, exact snapshot
+`c96d9d72c99120e3775437414417505fd4904a3d`. Each `source_relative` is exactly
+`conditional_separation/` plus the installed `core/...` path. The original
+`donor_relative` pnp3/pnp4 paths and historical donor
+`e5dbbe7fd6dee72ae3c3b31a84b54fc1b2727f8f` remain recorded as LOCAL/NON-PUBLIC
+origin; fetching that old donor from the public remote is not a supported route.
+The public snapshot permits byte reproduction, not an independent demonstration
+of historical review acceptance, novelty or a proof of R. `verify-core` checks
+local source/schema/inventory identity; it does not fetch or authenticate a remote.
+To reproduce the core independently, retrieve the exact public snapshot, compare
+every listed `source_relative` byte count/SHA256, and check the installed mapping:
+`python3 -B tools/workbench.py verify-core --core .`.
 LICENSE is copied verbatim from the donor; extraction creates no new licensing
 permission. Copied, newly authored and retired source are accounted separately. The task-specific source-size limits were prospectively removed; historical HOLD records are preserved.
 
@@ -67,8 +80,8 @@ The starting template is PARTIAL and contains NO proof named
 attempt needs a named CLOSED declaration of EXACT type OpenProblem.R. A theorem
 R -> R, an implicit extra premise, a different degree/k order, an assumed False,
 or a custom axiom is not such a proof. Failed attempts remain separate projects.
-No published Git dependency revision is provided or invented; the initial mode
-uses an explicit local installed source package.
+The public provenance snapshot is a source anchor, not a Lake Git dependency;
+attempts still use an explicit local installed source package.
 
 The checker recompiles every own attempt module from source to fresh private
 outputs, orders literal imports with Lean's own parser, and overrides all own import
@@ -206,9 +219,9 @@ existence alone is not native-validation success. Two 330-minute job allowances
 are not a measured runtime, cost or hosted-resource sufficiency guarantee.
 
 For the proposed package, the ordinary portable unit command above exercises
-the original workbench tests and nine CI DATA modules:
+the original workbench tests and ten CI DATA modules:
 `test_portable_ci_data_v1`, `test_completion_v2`, `test_native_first_run_v1`,
-`test_windows_layout_v1`, `test_locked_foundations_v1`, `test_locked_evidence_v1`, `test_path_archive_hardening_v1`, `test_trusted_controls_v1`, and `test_reliability_v1`.
+`test_windows_layout_v1`, `test_locked_foundations_v1`, `test_locked_evidence_v1`, `test_path_archive_hardening_v1`, `test_trusted_controls_v1`, `test_reliability_v1`, and `test_reproducibility_v1`.
 Native compiler
 rejection tests remain a separate, explicit command; Python DATA is not a native
 platform or kernel result. The original Linux cold-source checkpoint alone does not certify another
@@ -218,11 +231,20 @@ raw CI and release acceptance remain separately scoped evidence. No assumption-f
 claim follows. R remains UNPROVED and the legacy bridge remains unfilled.
 
 The portable Python unit runner supplies a fresh private `CI_DATA_ROOT` without
-weakening the CI DATA suites' guards. Its default temporary directory follows
+weakening the CI DATA suites' guards. The advertised plain command disables
+project bytecode writes before discovery and sets `PYTHONDONTWRITEBYTECODE=1`
+for child Python imports; `python3 -B ci/run_data_tests_v2.py` is also supported.
+Existing/untrusted `__pycache__` or compiled controls remain rejected: `-B` does
+not clean a source copy contaminated by an older run. Recover by taking a NEW
+source-only package copy from the exact published revision, then rerun the
+command there; preserve the old copy/evidence rather than deleting caches to
+make a trust check pass. The finite entrypoint regression uses a synthetic
+one-test tuple and the real trust validator, with one child import and no full
+suite recursion. Its default temporary directory follows
 the platform's normal temporary-directory configuration. To retain fixtures,
 pass `--data-root /path/to/new/private-data`; the path must not already exist.
 It never runs Lean, Lake or the native operational driver and rejects Python
 optimization because ordinary discovery includes workbench tests. Direct
-`python3 -m unittest discover -s tests -v` remains available when the caller
+`python3 -B -m unittest discover -s tests -v` remains available when the caller
 explicitly supplies an existing private `CI_DATA_ROOT` directory. Native CI's
 unit command now uses the runner with its own fresh runner-private path.

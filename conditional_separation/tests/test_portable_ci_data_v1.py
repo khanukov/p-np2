@@ -242,7 +242,7 @@ class PortableDataTests(unittest.TestCase):
         inventory = json.loads((ROOT/'PACKAGE_FILES.json').read_bytes())['files']
         files = [(r['path'], (ROOT/r['path']).read_bytes()) for r in inventory]
         files.append(('PACKAGE_FILES.json', (ROOT/'PACKAGE_FILES.json').read_bytes()))
-        self.assertEqual(len(files), 1180)
+        self.assertEqual(len(files), 1181)
         self.assertLessEqual(len(files), m.SOURCE_MAX_MEMBERS)
         self.assertLessEqual(sum(len(b) for _,b in files), m.SOURCE_MAX_TOTAL_BYTES)
         self.assertLessEqual(max(len(b) for _,b in files), m.SOURCE_MAX_MEMBER_BYTES)

@@ -29,7 +29,14 @@ source options, heartbeat caps and scoped linter settings are preserved. Strict
 new API checks do not imply unsuppressed whole-dependency lint or clean history.
 
 PROVENANCE.json records the actual copied module/header closure, not a
-proof-body/declaration minimum. All names, including private owners, remain the
+proof-body/declaration minimum. Its strict v2 direct source mapping uses the
+public `https://github.com/khanukov/p-np2.git` snapshot
+`c96d9d72c99120e3775437414417505fd4904a3d` and exact
+`conditional_separation/core/...` paths. All 1062 copied core hashes remain
+unchanged. The original pnp3/pnp4 paths and donor
+`e5dbbe7fd6dee72ae3c3b31a84b54fc1b2727f8f` are preserved as historical
+LOCAL/NON-PUBLIC origin, not publicly fetchable inputs. Byte reproduction does
+not independently establish prior internal acceptance, novelty, or a proof of R. All names, including private owners, remain the
 original ones. The one additional accepted full-proposition surface is copied
 because this package explicitly promises its roots. License terms are inherited,
 not independently adjudicated. No literature/novelty audit is claimed.

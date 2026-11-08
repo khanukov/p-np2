@@ -46,7 +46,7 @@ theorem negation_not_size_one : ¬ treeMCSPPredicate 1 1 negationTable := by
     change true = false at h
     contradiction
 
-/-- An arbitrary NO table is rejected by the actual threshold-one graph. -/
+/-- The n=1 negationTable NO fixture is rejected by the threshold-one graph. -/
 theorem negation_no : eval (leafRecognizer 1) negationTable = false := by
   cases h : eval (leafRecognizer 1) negationTable with
   | false => rfl

@@ -1,4 +1,5 @@
 import Attempt.Fixtures
+import Attempt.LowerBound
 
 namespace Research.SolverToDag
 open Pnp3.ComplexityInterfaces Pnp3.ComplexityInterfaces.DagCircuit
@@ -162,6 +163,37 @@ theorem check_malformed_not_verifies : ∀ (tt : TruthTable 0),
   ¬ (treeCircuitWitnessCodec (thresholdPoly 0)).verifies 0 tt malformedBits := @malformed_not_verifies
 
 end Research.SolverToDag
+
+namespace Research.SolverToDag.LowerBound
+open Pnp3.ComplexityInterfaces Pnp3.ComplexityInterfaces.DagCircuit
+open Pnp4.Frontier Pnp4.Frontier.ContractExpansion Pnp4.AlgorithmsToLowerBounds
+
+def type_FixedKTreeMCSPDAGExclusion : Nat → Prop := @FixedKTreeMCSPDAGExclusion
+def type_TreeMCSPDAGLowerBound : Prop := TreeMCSPDAGLowerBound
+#check (@FixedKTreeMCSPDAGExclusion : Nat → Prop)
+#check (TreeMCSPDAGLowerBound : Prop)
+
+theorem check_fixedK_excludes_solver : ∀ k : Nat,
+    (∀ e : Nat, ∃ n : Nat,
+      ∀ c : DagCircuit (Pnp3.Models.Partial.tableLen n),
+        size c ≤ Pnp3.Models.Partial.tableLen n ^ e + e →
+          ∃ tt : TruthTable n,
+            ¬ (eval c tt = true ↔ treeMCSPPredicate n (n ^ k + k) tt)) →
+    ∀ d : Nat, ¬ Nonempty (ConcreteSolver k d) := @fixedK_excludes_solver
+
+theorem check_lowerBound_implies_R :
+    (∃ k : Nat, ∀ e : Nat, ∃ n : Nat,
+      ∀ c : DagCircuit (Pnp3.Models.Partial.tableLen n),
+        size c ≤ Pnp3.Models.Partial.tableLen n ^ e + e →
+          ∃ tt : TruthTable n,
+            ¬ (eval c tt = true ↔ treeMCSPPredicate n (n ^ k + k) tt)) →
+    (∃ k : Nat, ∀ d : Nat, ¬ Nonempty
+      (BoundedSearchSolver
+        (treeMCSPSearchProblem (thresholdPoly k)
+          (TreeMCSPSearchWitnessEncoding.ofCodec (treeCircuitWitnessCodec (thresholdPoly k))))
+        C_DAG (fun n => Pnp3.Models.Partial.tableLen n ^ d + d))) := @lowerBound_implies_R
+
+end Research.SolverToDag.LowerBound
 
 -- SOURCE02_LITERAL_SURFACE
 

@@ -8,6 +8,14 @@ run_cmd do
   let env ← getEnv
   let modules := env.header.moduleNames
   let requested : List Name := [
+    ``Research.SolverToDag.LowerBound.FixedKTreeMCSPDAGExclusion,
+    ``Research.SolverToDag.LowerBound.TreeMCSPDAGLowerBound,
+    ``Research.SolverToDag.LowerBound.fixedK_excludes_solver,
+    ``Research.SolverToDag.LowerBound.lowerBound_implies_R,
+    ``Research.SolverToDag.LowerBound.type_FixedKTreeMCSPDAGExclusion,
+    ``Research.SolverToDag.LowerBound.type_TreeMCSPDAGLowerBound,
+    ``Research.SolverToDag.LowerBound.check_fixedK_excludes_solver,
+    ``Research.SolverToDag.LowerBound.check_lowerBound_implies_R,
     ``Pnp3.ComplexityInterfaces.DagCircuit.constCircuit.eq_1,
     ``Pnp3.ComplexityInterfaces.DagCircuit.inputProj.eq_1,
     ``Pnp4.Frontier.ContractExpansion.thresholdPoly.eq_1,

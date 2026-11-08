@@ -91,3 +91,64 @@ identity and optimization cases too; those cases explicitly skip if omitted.
 Use caller-owned `TMPDIR` and `PYTHONPYCACHEPREFIX` for all fixture/bytecode output.
 Inert substitution seams test loader ordering and same-buffer execution, not Lean
 acceptance, observed exploitation or general hostile-installation safety.
+
+## Optional decision lower-bound interface (Infrastructure)
+
+`Attempt/LowerBound.lean` defines `FixedKTreeMCSPDAGExclusion k`. In full:
+
+```text
+forall e, exists n, forall c : DagCircuit (2^n),
+  size(c) <= (2^n)^e + e -> exists tt : TruthTable n,
+    not (eval(c,tt) = true iff treeMCSPPredicate n (n^k+k) tt).
+```
+
+`TreeMCSPDAGLowerBound` is `exists k, FixedKTreeMCSPDAGExclusion k`: ONE k is
+chosen before every excluded degree, and each small circuit has its own table
+counterexample. The input length is N=2^n; size includes the output +1. This is
+exact TREE-MCSP at threshold n^k+k, not an arbitrary language or a prefix solver.
+No lower bound is established. We do not claim equivalence, weaker/easier
+hardness, novelty, a uniform algorithm or unconditional P!=NP.
+
+`fixedK_excludes_solver` uses `Codec.solver_to_dag_capstone` to contradict any
+`ConcreteSolver k d`, whose size bound is PER witness-output bit and correctness
+is promised only on YES inputs. The capstone's recognizer is nevertheless correct
+on ALL tables. `lowerBound_implies_R` packages the same k into the literal
+installed `ConditionalSeparation.OpenProblem.R`. Surface independently restates
+both full propositions; Audit checks the added exact roots and standard axioms.
+Direct R and LengthwiseR sources/APIs remain unchanged. The new hypothesis is
+another optional sufficient assumption, not the missing lower bound itself.
+
+## Dedicated optional-addon CI
+
+The proposed `.github/workflows/solver-to-dag.yml` is independent of existing
+root CI/Lean CI. It triggers on relevant addon/core/workflow pushes on ALL
+branches and main-target PR opened/synchronize/reopened/edited events, including
+retargeting. One standard Ubuntu job has contents:read and no persistent runner.
+Its JSON-subset YAML syntax permits strict local stdlib parsing; local JSON,
+context and bash checks do not claim an actual GitHub-hosted run.
+
+The job installs hash-pinned elan4.2.4 and exact Lean4.22.0-rc2, materializes the
+unchanged standalone lock (no lake update), verifies dependency Git revisions and
+gets pinned external Mathlib cache. It then builds only the source dependency
+closure of `+Complexity.DagGadgets` and `+ConditionalSeparation.OpenProblem` in
+`conditional_separation`, not root PnP3/Pnp4 or the entire ProofCore library.
+No standalone project objects are admitted from the foundation-cache step.
+
+`ci_runner.py --core /verified/built/core --output /NEW/private/output` requires
+the same caller lock/resource scope as check.py. It sets SOLVER_DAG_TEST_CORE to
+that actual admitted core and runs exactly the existing nine bootstrap test IDs;
+any skip, missing/extra ID, failure, error or missing report fails BEFORE Lean.
+It then invokes the REAL check.py, validates its actual exit, complete module
+and source roster, command terminals, COMPONENT_RESULT and matching root stdout.
+The separate `test_ci_runner.py` DATA suite does not inflate those nine tests.
+
+The workflow takes global SH then lane-a EX once, CPUs0,1, two Lean threads and
+checks >=5GiB disk/MemAvailable before source builds and addon compilation.
+All temp/output is private; upload always selects only owned `artifacts` and
+build-evidence logs, never downloaded archives, credentials, core caches or SDK.
+Artifacts retain test IDs/outcomes, actual check stdout/stderr/terminal, source
+pins and compiler/import/axiom evidence; private compiled objects stay outside
+the upload paths. Missing COMPONENT_RESULT/terminal is failure even after exit0.
+The author's local admitted-object replay is NOT a hosted/cold core build.
+Fresh exact-head hosted acceptance, independent reviews and publication remain
+separate gates. This source change supplies no main-merge or release authority.

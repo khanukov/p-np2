@@ -48,3 +48,26 @@ or a sandbox for hostile source. Never rerun into an existing output directory.
 The author checkpoint records actual execution, including failures, separately.
 No compilation of this slice constitutes independent review, full bridge,
 standard-model reconciliation, native CI, publication or release approval.
+
+### Installed-core bootstrap identity
+
+Before executing any installed workbench Python, `check.py` checks the exact
+workbench bytes and complete package inventory against the reviewed public
+`khanukov/p-np2` snapshot `1180e5e0ffe760bbc3a1c70143ec09b362d33a8e`.
+It executes the same authenticated byte buffer, with standard-library bootstrap
+imports only; a caller-supplied inventory cannot authorize a different loader.
+The normal complete `verify_core` check still precedes attempt creation and is
+repeated after compilation. The inventory also binds `tools/SourceImports.lean`.
+A different installed version needs a separately reviewed pin update.
+
+The core must already be independently trusted and remain immutable throughout
+execution. This narrow bootstrap guard is not an arbitrary-code sandbox or a
+transactional filesystem defense against concurrent replacement of core files.
+It does not authenticate Python, its standard library, Lean or external tools.
+
+Discoverable stdlib DATA regressions: `python3 -B -m unittest discover -s . -p test_bootstrap.py`. Set
+`SOLVER_DAG_TEST_CORE` to the pre-trusted installed core to exercise the positive
+identity and optimization cases too; those cases explicitly skip if omitted.
+Use caller-owned `TMPDIR` and `PYTHONPYCACHEPREFIX` for all fixture/bytecode output.
+Inert substitution seams test loader ordering and same-buffer execution, not Lean
+acceptance, observed exploitation or general hostile-installation safety.

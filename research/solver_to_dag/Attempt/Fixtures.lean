@@ -1,4 +1,4 @@
-import Attempt.Leaves
+import Attempt.Codec
 
 namespace Research.SolverToDag
 open Pnp3.ComplexityInterfaces Pnp3.ComplexityInterfaces.DagCircuit
@@ -63,5 +63,56 @@ theorem malformed_not_verifies (tt : TruthTable 0) :
   have h := malformed_decode
   rw [hc] at h
   contradiction
+
+/-- The actual general parser rejects an empty physical witness at every bound. -/
+theorem parser_empty (n width T : Nat) (hw : n ≤ 2 ^ width) (x : Pnp3.Core.BitVec n) (v : Bool) :
+    eval (Parser.acceptCircuit n width 0 T hw x v) (fun i => Fin.elim0 i) = false := by
+  cases h : eval (Parser.acceptCircuit n width 0 T hw x v) (fun i => Fin.elim0 i) with
+  | false => rfl
+  | true =>
+    obtain ⟨c, rest, hd, _, _⟩ := (Codec.parser_native_iff n width 0 T hw x v _).mp h
+    simp [List.ofFn, decodeCircuitFull, decodeCircuit,
+      Pnp3.Internal.PsubsetPpoly.TM.Encoding.decodeCircuitTreeAtDepth] at hd
+
+/-- Invalid tag 111 rejects for every n, bound, assignment and requested value. -/
+theorem parser_invalid_tag (n width T : Nat) (hw : n ≤ 2 ^ width) (x : Pnp3.Core.BitVec n) (v : Bool) :
+    eval (Parser.acceptCircuit n width 3 T hw x v) (fun _ => true) = false := by
+  cases h : eval (Parser.acceptCircuit n width 3 T hw x v) (fun _ => true) with
+  | false => rfl
+  | true =>
+    obtain ⟨c, rest, hd, _, _⟩ := (Codec.parser_native_iff n width 3 T hw x v _).mp h
+    simp [decodeCircuitFull, decodeCircuit,
+      Pnp3.Internal.PsubsetPpoly.TM.Encoding.decodeCircuitTreeAtDepth] at hd
+
+def negationWitness : Bitstring (witnessWidth 1 1) :=
+  (treeCircuitWitnessCodec (thresholdPoly 1)).encode 1 (.not (.input 0))
+
+/-- A genuine two-node TREE (k=1), not the earlier threshold-one enumerator. -/
+theorem general_negation_yes :
+    eval (Codec.head 1 1) (Fin.addCases negationTable negationWitness) = true := by
+  apply (Codec.head_iff 1 1 _ _).mpr
+  refine ⟨.not (.input 0), ?_, by decide, (computes_iff_table _ _).mpr ?_⟩
+  · exact (treeCircuitWitnessCodec (thresholdPoly 1)).decode_encode 1 _ (by decide)
+  · funext j; fin_cases j <;> rfl
+
+theorem general_negation_wrong_table :
+    eval (Codec.head 1 1) (Fin.addCases projectionTable negationWitness) = false := by
+  cases h : eval (Codec.head 1 1) (Fin.addCases projectionTable negationWitness) with
+  | false => rfl
+  | true =>
+    obtain ⟨c, hd, _, he⟩ := (Codec.head_iff 1 1 _ _).mp h
+    have hn := (treeCircuitWitnessCodec (thresholdPoly 1)).decode_encode 1
+      (.not (.input 0)) (by decide)
+    change _ = some c at hd
+    rw [show c = .not (.input 0) from Option.some.inj (hd.symm.trans hn)] at he
+    have hf := congrFun ((computes_iff_table _ _).mp he) ⟨0, by decide⟩
+    change false = true at hf
+    contradiction
+
+theorem general_malformed_reject (tt : TruthTable 0) :
+    eval (Codec.head 0 0) (Fin.addCases tt malformedBits) = false := by
+  cases h : eval (Codec.head 0 0) (Fin.addCases tt malformedBits) with
+  | false => rfl
+  | true => exact False.elim (malformed_not_verifies tt ((Codec.head_iff 0 0 tt _).mp h))
 
 end Research.SolverToDag

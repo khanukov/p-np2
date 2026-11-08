@@ -12,7 +12,7 @@ from pathlib import Path
 
 MODULES = {'Attempt', 'Attempt.Equality', 'Attempt.Assembly', 'Attempt.Leaves',
            'Attempt.Fixtures', 'Attempt.Surface', 'Attempt.Audit',
-           'Attempt.Prefix', 'Attempt.Parser', 'Attempt.Codec'}
+           'Attempt.Prefix', 'Attempt.Parser', 'Attempt.Codec', 'Attempt.LowerBound'}
 
 # Reviewed public package identity, not authority supplied by --core.
 # https://github.com/khanukov/p-np2/tree/1180e5e0ffe760bbc3a1c70143ec09b362d33a8e/conditional_separation

@@ -1,0 +1,69 @@
+{
+  "name": "solver-to-dag optional addon",
+  "on": {
+    "push": {
+      "paths": [
+        "research/solver_to_dag/**",
+        "conditional_separation/**",
+        ".github/workflows/solver-to-dag.yml"
+      ]
+    },
+    "pull_request": {
+      "branches": [
+        "main"
+      ],
+      "types": [
+        "opened",
+        "synchronize",
+        "reopened",
+        "edited"
+      ],
+      "paths": [
+        "research/solver_to_dag/**",
+        "conditional_separation/**",
+        ".github/workflows/solver-to-dag.yml"
+      ]
+    }
+  },
+  "permissions": {
+    "contents": "read"
+  },
+  "jobs": {
+    "addon": {
+      "runs-on": "ubuntu-24.04",
+      "env": {
+        "LEAN_NUM_THREADS": "2",
+        "MALLOC_ARENA_MAX": "2",
+        "PYTHONDONTWRITEBYTECODE": "1"
+      },
+      "steps": [
+        {
+          "uses": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "with": {
+            "persist-credentials": false
+          }
+        },
+        {
+          "name": "Pinned Lean toolchain",
+          "shell": "bash",
+          "run": "set -euo pipefail\nexport ELAN_HOME=\"$RUNNER_TEMP/solver-dag-elan\"\ntest ! -e \"$ELAN_HOME\"\ninstaller=\"$RUNNER_TEMP/solver-dag-installer\"\nmkdir \"$installer\"\ncurl --fail --location --proto '=https' --tlsv1.2 \\\n  https://github.com/leanprover/elan/releases/download/v4.2.4/elan-x86_64-unknown-linux-gnu.tar.gz \\\n  --output \"$installer/elan.tar.gz\"\nprintf '%s  %s\\n' 42b94d4244e8353142c456ec0e4ca6528fd898a6c604d4059f494e706e431f63 \"$installer/elan.tar.gz\" | sha256sum --check\ntar -xzf \"$installer/elan.tar.gz\" -C \"$installer\" elan-init\n\"$installer/elan-init\" -y --no-modify-path --default-toolchain none\ntest \"$(cat conditional_separation/lean-toolchain)\" = leanprover/lean4:v4.22.0-rc2\n\"$ELAN_HOME/bin/elan\" toolchain install leanprover/lean4:v4.22.0-rc2\nprintf '%s\\n' \"$ELAN_HOME/bin\" >> \"$GITHUB_PATH\"\n"
+        },
+        {
+          "name": "Required core, nine bootstrap tests and fresh addon compilation",
+          "shell": "bash",
+          "run": "set -euo pipefail\nexport ELAN_HOME=\"$RUNNER_TEMP/solver-dag-elan\"\nunset LEAN_PATH LEAN_SRC_PATH ELAN_TOOLCHAIN PYTHONOPTIMIZE PYTHONPATH\nmkdir \"$RUNNER_TEMP/solver-dag-build-evidence\"\nflock --shared /run/lock/pnp2-build-global.lock \\\n  flock --exclusive /run/lock/pnp2-build-lane-a.lock \\\n  taskset --cpu-list 0,1 bash -euo pipefail <<'LOCKED'\nfloor() {\n  python3 -B - <<'PY'\nimport os,shutil\nfrom pathlib import Path\ndisk=shutil.disk_usage(os.environ['RUNNER_TEMP']).free\nmem=int(next(s.split()[1] for s in Path('/proc/meminfo').read_text().splitlines() if s.startswith('MemAvailable:')))*1024\nif min(disk,mem)<5*1024**3:raise SystemExit('5GiB disk/MemAvailable floor not met')\nPY\n}\nfloor\npython3 -B - <<'PY'\nimport os,sys\nfrom pathlib import Path\nsys.path.insert(0,str(Path(os.environ['GITHUB_WORKSPACE'])/'research/solver_to_dag'))\nimport ci_runner\ncore=Path(os.environ['GITHUB_WORKSPACE'])/'conditional_separation'\nci_runner.CHECK.load_workbench(core).verify_core(core)\nPY\ncd \"$GITHUB_WORKSPACE/conditional_separation\"\nsha256sum lake-manifest.json > \"$RUNNER_TEMP/solver-dag-build-evidence/lock.before\"\n# Lake materializes the declared lock; never run lake update.\nlake env python3 -B -c pass\nsha256sum --check \"$RUNNER_TEMP/solver-dag-build-evidence/lock.before\"\npython3 -B - <<'PY'\nimport json,subprocess\nfrom pathlib import Path\nrows=json.loads(Path('lake-manifest.json').read_bytes())['packages']\nfor row in rows:\n    p=Path('.lake/packages')/row['name']\n    actual=subprocess.check_output(['git','-C',str(p),'rev-parse','HEAD'],text=True).strip()\n    if row['type']!='git' or actual!=row['rev']:raise SystemExit('locked dependency mismatch: '+row['name'])\nPY\nlake env lean --version | tee \"$RUNNER_TEMP/solver-dag-build-evidence/lean-version.txt\"\nlake exe cache get 2>&1 | tee \"$RUNNER_TEMP/solver-dag-build-evidence/foundation-cache.log\"\npython3 -B - <<'PY'\nfrom pathlib import Path\nif any(p.is_file() and '.olean' in p.name for p in Path('.lake/build/lib/lean').rglob('*')):\n    raise SystemExit('project objects appeared before required source build')\nPY\nfloor\n# These module targets build their dependency closure, not all ProofCore/root PnP3/Pnp4.\nlake build +Complexity.DagGadgets +ConditionalSeparation.OpenProblem 2>&1 | tee \"$RUNNER_TEMP/solver-dag-build-evidence/core-build.log\"\nsha256sum --check \"$RUNNER_TEMP/solver-dag-build-evidence/lock.before\"\nfloor\ncd \"$GITHUB_WORKSPACE\"\nmkdir \"$RUNNER_TEMP/solver-dag-unit-temp\"\nexport TMPDIR=\"$RUNNER_TEMP/solver-dag-unit-temp\"\nexport SOLVER_DAG_TEST_CORE=\"$GITHUB_WORKSPACE/conditional_separation\"\npython3 -B -m unittest discover -s research/solver_to_dag -p test_ci_runner.py -v 2>&1 | tee \"$RUNNER_TEMP/solver-dag-build-evidence/runner-DATA.log\"\npython3 -B research/solver_to_dag/ci_runner.py \\\n  --core \"$SOLVER_DAG_TEST_CORE\" --output \"$RUNNER_TEMP/solver-dag-verification\"\nLOCKED\n"
+        },
+        {
+          "name": "Owned verification evidence (always)",
+          "if": "${{ always() }}",
+          "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+          "with": {
+            "name": "solver-to-dag-evidence-${{ github.sha }}",
+            "if-no-files-found": "warn",
+            "path": "${{ runner.temp }}/solver-dag-verification/artifacts\n${{ runner.temp }}/solver-dag-build-evidence"
+          }
+        }
+      ]
+    }
+  }
+}

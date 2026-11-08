@@ -162,3 +162,125 @@ theorem check_malformed_not_verifies : ∀ (tt : TruthTable 0),
   ¬ (treeCircuitWitnessCodec (thresholdPoly 0)).verifies 0 tt malformedBits := @malformed_not_verifies
 
 end Research.SolverToDag
+
+-- SOURCE02_LITERAL_SURFACE
+
+namespace Research.SolverToDag.Prefix
+open Pnp3.ComplexityInterfaces Pnp3.ComplexityInterfaces.DagCircuit
+open Pnp4.Frontier.ContractExpansion Pnp4.AlgorithmsToLowerBounds
+
+#check (@fits : ∀ {W : Nat} (_bits : Bitstring W) (_start : Nat) (_word : List Bool),
+  Prop)
+
+#check (@wordCircuit : ∀ (W _start : Nat) (_word : List Bool),
+  DagCircuit W)
+
+theorem check_wordCircuit_iff : ∀ (W start : Nat) (word : List Bool) (bits : Bitstring W),
+  eval (wordCircuit W start word) bits = true ↔ fits bits start word := @wordCircuit_iff
+
+theorem check_wordCircuit_gates : ∀ (W start : Nat) (word : List Bool),
+  (wordCircuit W start word).gates = 2 * word.length + 2 := @wordCircuit_gates
+
+theorem check_fits_zero_prefix : ∀ {W : Nat} (bits : Bitstring W) (word : List Bool),
+  fits bits 0 word ↔ word.IsPrefix (List.ofFn bits) := @fits_zero_prefix
+
+theorem check_fits_cons : ∀ {W : Nat} (bits : Bitstring W) (start : Nat) (b : Bool)
+    (word : List Bool),
+  fits bits start (b :: word) ↔
+      (∃ h : start < W, bits ⟨start, h⟩ = b) ∧ fits bits (start + 1) word := @fits_cons
+
+theorem check_fits_append : ∀ {W : Nat} (bits : Bitstring W) (start : Nat) (a b : List Bool),
+  fits bits start (a ++ b) ↔ fits bits start a ∧ fits bits (start + a.length) b := @fits_append
+
+theorem check_matched_native_decode : ∀ {n W : Nat} (width : Nat) (hw : n ≤ 2 ^ width)
+    (c : Pnp3.Models.Circuit n) (bits : Bitstring W)
+    (_h : eval (wordCircuit W 0 (encodeCircuit width hw c)) bits = true),
+  ∃ tail, decodeCircuitFull n width (List.ofFn bits) = some (c, tail) := @matched_native_decode
+end Research.SolverToDag.Prefix
+
+namespace Research.SolverToDag.Parser
+open Pnp3.ComplexityInterfaces Pnp3.ComplexityInterfaces.DagCircuit
+open Pnp4.Frontier.ContractExpansion Pnp4.AlgorithmsToLowerBounds
+
+#check (@acceptCircuit : ∀ (n width W _T : Nat) (_hw : n ≤ 2 ^ width) (_x : Pnp3.Core.BitVec n)
+    (_value : Bool),
+  DagCircuit W)
+
+theorem check_acceptCircuit_iff : ∀ (n width W T : Nat) (hw : n ≤ 2 ^ width) (x : Pnp3.Core.BitVec n)
+    (value : Bool) (bits : Bitstring W),
+  eval (acceptCircuit n width W T hw x value) bits = true ↔
+      ∃ c : Pnp3.Models.Circuit n, c.size ≤ T ∧
+        Prefix.fits bits 0 (encodeCircuit width hw c) ∧ c.eval x = value := @acceptCircuit_iff
+
+#check (@gateBudget : ∀ (_n _width _W _T : Nat),
+  Nat)
+
+theorem check_acceptCircuit_size : ∀ (n width W T : Nat) (hw : n ≤ 2 ^ width) (x : Pnp3.Core.BitVec n)
+    (value : Bool),
+  size (acceptCircuit n width W T hw x value) ≤ gateBudget n width W T := @acceptCircuit_size
+
+theorem check_gateBudget_polynomial : ∀ (k : Nat),
+  PolyBoundedInTable (fun n => gateBudget n (bitLength n)
+      ((bitLength n + 4) * thresholdPoly k n) (thresholdPoly k n)) := @gateBudget_polynomial
+end Research.SolverToDag.Parser
+
+namespace Research.SolverToDag.Codec
+open Pnp3.ComplexityInterfaces Pnp3.ComplexityInterfaces.DagCircuit
+open Pnp4.Frontier.ContractExpansion Pnp4.AlgorithmsToLowerBounds
+
+theorem check_parser_native_iff : ∀ (n width W T : Nat) (hw : n ≤ 2 ^ width)
+    (x : Pnp3.Core.BitVec n) (value : Bool) (bits : Bitstring W),
+  eval (Parser.acceptCircuit n width W T hw x value) bits = true ↔
+      ∃ c rest, decodeCircuitFull n width (List.ofFn bits) = some (c, rest) ∧
+        c.size ≤ T ∧ c.eval x = value := @parser_native_iff
+
+#check (@head : ∀ (k n : Nat),
+  DagCircuit (Pnp3.Models.Partial.tableLen n + witnessWidth k n))
+
+theorem check_head_iff : ∀ (k n : Nat) (tt : Pnp4.AlgorithmsToLowerBounds.TruthTable n)
+    (bits : Bitstring (witnessWidth k n)),
+  eval (head k n) (Fin.addCases tt bits) = true ↔
+      (treeCircuitWitnessCodec (thresholdPoly k)).verifies n tt bits := @head_iff
+
+#check (@recognizer : ∀ {k d : Nat} (_S : ConcreteSolver k d) (n : Nat),
+  DagCircuit (Pnp3.Models.Partial.tableLen n))
+
+theorem check_recognizer_iff : ∀ {k d : Nat} (S : ConcreteSolver k d) (n : Nat)
+    (tt : Pnp4.AlgorithmsToLowerBounds.TruthTable n),
+  eval (recognizer S n) tt = true ↔
+      Pnp4.AlgorithmsToLowerBounds.treeMCSPPredicate n (thresholdPoly k n) tt := @recognizer_iff
+
+theorem check_recognizer_polynomial : ∀ (k d : Nat),
+  ∃ e : Nat, ∀ (S : ConcreteSolver k d) (n : Nat),
+      size (recognizer S n) ≤ Pnp3.Models.Partial.tableLen n ^ e + e := @recognizer_polynomial
+
+theorem check_solver_to_dag_capstone : ∀ (k d : Nat),
+  ∃ e : Nat, ∀ (S : ConcreteSolver k d) (n : Nat),
+      (∀ tt, eval (recognizer S n) tt = true ↔
+        Pnp4.AlgorithmsToLowerBounds.treeMCSPPredicate n (thresholdPoly k n) tt) ∧
+      size (recognizer S n) ≤ Pnp3.Models.Partial.tableLen n ^ e + e := @solver_to_dag_capstone
+theorem check_recognizer_size_le : ∀ {k d : Nat} (S : ConcreteSolver k d) (n : Nat),
+    size (recognizer S n) ≤ Pnp3.Models.Partial.tableLen n *
+      (2 * Parser.gateBudget n (bitLength n) ((bitLength n + 4) * (n ^ k + k)) (n ^ k + k) + 6) +
+      3 + ((bitLength n + 4) * (n ^ k + k)) * (Pnp3.Models.Partial.tableLen n ^ d + d) := @recognizer_size_le
+end Research.SolverToDag.Codec
+
+namespace Research.SolverToDag
+open Pnp3.ComplexityInterfaces Pnp3.ComplexityInterfaces.DagCircuit
+open Pnp4.Frontier.ContractExpansion Pnp4.AlgorithmsToLowerBounds
+
+theorem check_parser_empty : ∀ (n width T : Nat) (hw : n ≤ 2 ^ width) (x : Pnp3.Core.BitVec n) (v : Bool),
+  eval (Parser.acceptCircuit n width 0 T hw x v) (fun i => Fin.elim0 i) = false := @parser_empty
+
+theorem check_parser_invalid_tag : ∀ (n width T : Nat) (hw : n ≤ 2 ^ width) (x : Pnp3.Core.BitVec n) (v : Bool),
+  eval (Parser.acceptCircuit n width 3 T hw x v) (fun _ => true) = false := @parser_invalid_tag
+
+#check (@negationWitness : Bitstring (witnessWidth 1 1))
+
+theorem check_general_negation_yes : eval (Codec.head 1 1) (Fin.addCases negationTable negationWitness) = true := @general_negation_yes
+
+theorem check_general_negation_wrong_table : eval (Codec.head 1 1) (Fin.addCases projectionTable negationWitness) = false := @general_negation_wrong_table
+
+theorem check_general_malformed_reject : ∀ (tt : TruthTable 0),
+  eval (Codec.head 0 0) (Fin.addCases tt malformedBits) = false := @general_malformed_reject
+end Research.SolverToDag

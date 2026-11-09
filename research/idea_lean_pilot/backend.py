@@ -84,22 +84,23 @@ def generate(cfg, request, output):
                         receipt['reported_usage'].append(event['usage'])
                 except (ValueError, AttributeError):
                     pass
+    body = None
+    if not (receipt['timeout'] or receipt['OS_exit'] != 0 or not receipt['waited'] or receipt.get('cleanup_errors')):
+        try:
+            if response.stat().st_size > 20000:
+                raise ValueError('candidate response too large')
+            obj = K.read(response)
+            if not isinstance(obj, dict) or set(obj) != {'proof'}:
+                raise ValueError('candidate response schema')
+            body = K.proof_body(obj['proof'])
+        except (OSError, ValueError, KeyError, TypeError) as e:
+            receipt['response_error'] = repr(e)
+            K.write(output/'RESPONSE_REJECTED.json', {'reason': repr(e)})
+    # Finalize exactly once, after validation and its evidence exist. The fresh
+    # output has no PROVIDER yet, so its file roster cannot hash itself.
     receipt['files'] = [K.pin(p) for p in sorted(output.iterdir()) if p.is_file()]
     K.write(output/'PROVIDER.json', receipt)
-    if receipt['timeout'] or receipt['OS_exit'] != 0 or not receipt['waited'] or receipt.get('cleanup_errors'):
-        return None, receipt
-    try:
-        if response.stat().st_size > 20000:
-            raise ValueError('candidate response too large')
-        obj = K.read(response)
-        if not isinstance(obj, dict) or set(obj) != {'proof'}:
-            raise ValueError('candidate response schema')
-        return K.proof_body(obj['proof']), receipt
-    except (OSError, ValueError, KeyError, TypeError) as e:
-        receipt['response_error'] = repr(e)
-        # Immutable actual receipt above; a separate parsing observation follows.
-        K.write(output/'RESPONSE_REJECTED.json', {'reason': repr(e)})
-        return None, receipt
+    return body, receipt
 
 
 def owned_command(argv, output, seconds, receipt):

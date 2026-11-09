@@ -179,5 +179,83 @@ class NativeRequestTests(unittest.TestCase):
             self.assertEqual([c[2]['polarity'] for c in captures], ['prove', 'refute'])
 
 
+class ProviderReceiptTests(unittest.TestCase):
+    def assert_final_receipt(self, output, returned):
+        # The caller's existing PROVIDER pin must bind the same final object.
+        anchor = K.pin(output/'PROVIDER.json')
+        self.assertEqual(K.read(anchor['path']), returned)
+        self.assertNotIn('PROVIDER.json', [Path(r['path']).name for r in returned['files']])
+        for row in returned['files']:
+            K.match(row)
+
+    def test_malformed_response_rejection_is_in_actual_persisted_receipt(self):
+        with tempfile.TemporaryDirectory() as d:
+            output = Path(d)/'provider'
+            body, receipt = backend.generate(dict(kind='DATA', seconds=3, argv=[sys.executable,
+                '-B', '-c', 'import sys;from pathlib import Path;Path(sys.argv[2]).write_text("not-json")']),
+                {}, output)
+            self.assertIsNone(body)
+            self.assertTrue(receipt['waited'])
+            self.assertEqual(receipt['OS_exit'], 0)
+            saved = K.read(output/'PROVIDER.json')
+            self.assertIn('JSONDecodeError', saved.get('response_error', ''),
+                          'persisted receipt omits real response rejection')
+            self.assertEqual(K.read(output/'RESPONSE_REJECTED.json')['reason'], saved['response_error'])
+            self.assertIn('RESPONSE_REJECTED.json', [Path(r['path']).name for r in saved['files']])
+            self.assert_final_receipt(output, receipt)
+
+    def test_oversized_response_rejection_is_in_persisted_receipt(self):
+        with tempfile.TemporaryDirectory() as d:
+            output = Path(d)/'provider'
+            body, receipt = backend.generate(dict(kind='DATA', seconds=3, argv=[sys.executable,
+                '-B', '-c', 'import sys;from pathlib import Path;Path(sys.argv[2]).write_text("x"*20001)']),
+                {}, output)
+            self.assertIsNone(body)
+            self.assertEqual(receipt['OS_exit'], 0)
+            self.assertIn('response too large', K.read(output/'PROVIDER.json')['response_error'])
+            self.assertIn('RESPONSE_REJECTED.json', [Path(r['path']).name for r in receipt['files']])
+            self.assert_final_receipt(output, receipt)
+
+    def test_valid_response_has_final_evidence_without_rejection(self):
+        with tempfile.TemporaryDirectory() as d:
+            output = Path(d)/'provider'
+            body, receipt = backend.generate(dict(kind='DATA', seconds=3, argv=[sys.executable,
+                '-B', '-c', 'import sys,json;from pathlib import Path;Path(sys.argv[2]).write_text(json.dumps({"proof":"rfl"}))']),
+                {}, output)
+            self.assertEqual(body, 'rfl')  # valid protocol, not a Lean result
+            self.assertEqual(receipt['OS_exit'], 0)
+            self.assertTrue(receipt['waited'])
+            self.assertNotIn('response_error', receipt)
+            self.assertFalse((output/'RESPONSE_REJECTED.json').exists())
+            self.assertIn('response.json', [Path(r['path']).name for r in receipt['files']])
+            self.assert_final_receipt(output, receipt)
+
+    def test_nonzero_transport_preserves_actual_exit_and_final_receipt(self):
+        with tempfile.TemporaryDirectory() as d:
+            output = Path(d)/'provider'
+            body, receipt = backend.generate(dict(kind='DATA', seconds=3, argv=[sys.executable,
+                '-B', '-c', 'import sys,json;from pathlib import Path;Path(sys.argv[2]).write_text(json.dumps({"proof":"rfl"}));sys.exit(7)']),
+                {}, output)
+            self.assertIsNone(body)
+            self.assertEqual(receipt['OS_exit'], 7)
+            self.assertTrue(receipt['waited'])
+            self.assertFalse(receipt['timeout'])
+            self.assertNotIn('response_error', receipt)
+            self.assert_final_receipt(output, receipt)
+
+    def test_timeout_transport_preserves_actual_wait_and_final_receipt(self):
+        with tempfile.TemporaryDirectory() as d:
+            output = Path(d)/'provider'
+            body, receipt = backend.generate(dict(kind='DATA', seconds=1,
+                argv=[sys.executable, '-B', '-c', 'import time;time.sleep(3)']), {}, output)
+            self.assertIsNone(body)
+            self.assertTrue(receipt['timeout'])
+            self.assertTrue(receipt['waited'])
+            self.assertIsInstance(receipt['OS_exit'], int)
+            self.assertNotEqual(receipt['OS_exit'], 0)
+            self.assertNotIn('response_error', receipt)
+            self.assert_final_receipt(output, receipt)
+
+
 if __name__ == '__main__':
     unittest.main()

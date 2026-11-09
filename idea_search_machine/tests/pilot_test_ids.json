@@ -1,6 +1,9 @@
 [
+  "idea_search_machine.tests.test_current_context.CurrentContextTests.test_historical_budget_and_small_bounds_are_separate_from_primary",
   "idea_search_machine.tests.test_current_context.CurrentContextTests.test_old_closed_audit_is_not_formal_refutation",
   "idea_search_machine.tests.test_current_context.CurrentContextTests.test_primary_routes_survive_context_bound",
+  "idea_search_machine.tests.test_current_context.CurrentContextTests.test_stage3_call_retains_late_historical_routes",
+  "idea_search_machine.tests.test_pilot_ci.CIContractTests.test_actual_workflow_uploads_hidden_owned_kernel_receipts",
   "idea_search_machine.tests.test_pilot_ci.CIContractTests.test_empty_suite_cannot_fill_expected_roster",
   "idea_search_machine.tests.test_pilot_ci.CIContractTests.test_missing_or_extra_id_fails",
   "idea_search_machine.tests.test_pilot_ci.CIContractTests.test_real_complete_case_passes",
@@ -30,5 +33,10 @@
   "research.idea_lean_pilot.test_request.NativeRequestTests.test_current_cohort_both_arms_fit_with_real_source_references",
   "research.idea_lean_pilot.test_request.NativeRequestTests.test_real_native_request_has_exact_read_scope_and_frozen_inputs",
   "research.idea_lean_pilot.test_request.NativeRequestTests.test_required_overflow_is_unknown_without_provider",
-  "research.idea_lean_pilot.test_request.NativeRequestTests.test_unicode_feedback_bound_preserves_whole_required_context"
+  "research.idea_lean_pilot.test_request.NativeRequestTests.test_unicode_feedback_bound_preserves_whole_required_context",
+  "research.idea_lean_pilot.test_request.ProviderReceiptTests.test_malformed_response_rejection_is_in_actual_persisted_receipt",
+  "research.idea_lean_pilot.test_request.ProviderReceiptTests.test_nonzero_transport_preserves_actual_exit_and_final_receipt",
+  "research.idea_lean_pilot.test_request.ProviderReceiptTests.test_oversized_response_rejection_is_in_persisted_receipt",
+  "research.idea_lean_pilot.test_request.ProviderReceiptTests.test_timeout_transport_preserves_actual_wait_and_final_receipt",
+  "research.idea_lean_pilot.test_request.ProviderReceiptTests.test_valid_response_has_final_evidence_without_rejection"
 ]

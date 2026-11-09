@@ -98,7 +98,7 @@ scoped result even to a historical RED/CLOSED record. Use a NEW output directory
 Six fixture/audit roots retain the propext/Classical.choice/Quot.sound allowlist.
 
 `python3 -B -m idea_search_machine.pilot_ci --output NEW` runs the literal
-32-ID DATA roster, rejecting skips/missing IDs/errors. Under the same locks,
+40-ID DATA roster, rejecting skips/missing IDs/errors. Under the same locks,
 `python3 -B -m research.idea_lean_pilot.integration --core "$CORE"
 --output NEW` runs 13 kernel/DATA cases. The proposed pinned-core workflow
 retains owned goals/results/terminals/axioms, not transcripts/SDK/caches/

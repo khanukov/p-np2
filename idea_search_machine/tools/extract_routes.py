@@ -47,8 +47,10 @@ def _extract_def_lines(path: Path) -> list[str]:
     return lines
 
 
-def live_routes_excerpt(*, max_chars: int = 4000) -> str:
-    """Return a markdown excerpt of live route surfaces."""
+def live_routes_excerpt(*, max_chars: int = 4000, include_primary: bool = True) -> str:
+    """Primary context by default; Stage3 reserves its whole historical budget."""
+    if max_chars < 0:
+        raise ValueError('negative context bound')
     sections: list[str] = []
     sections.append("### pnp3 mainline routes (`FinalResultMainline.lean`)")
     sections.extend(_extract_def_lines(PNP3_MAINLINE))
@@ -62,15 +64,17 @@ def live_routes_excerpt(*, max_chars: int = 4000) -> str:
         for p in sorted(PNP4_ALGS.rglob("*.lean")):
             sections.extend(_extract_def_lines(p))
 
-    primary = current_context()
+    primary = current_context() if include_primary else ''
     if max_chars < len(primary):
         raise ValueError('context bound cannot contain all primary routes')
     # Whole optional lines only; the primary declarations are never truncated.
     out = primary
-    for line in ['\n### Optional historical route context'] + sections:
-        if len(out) + len(line) + 1 > max_chars:
+    lines = ['\n### Optional historical route context'] + sections if include_primary else sections
+    for line in lines:
+        separator = '\n' if out else ''
+        if len(out) + len(line) + len(separator) > max_chars:
             break
-        out += '\n' + line
+        out += separator + line
     return out
 
 

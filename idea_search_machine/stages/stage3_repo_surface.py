@@ -25,7 +25,7 @@ def _build_prompt(idea: registry.Idea) -> str:
     )
     template = PROMPT_PATH.read_text()
     template = template.replace("{IDEA_BODY}", body)
-    template = template.replace("{REPO_ROUTES_EXCERPT}", live_routes_excerpt())
+    template = template.replace("{REPO_ROUTES_EXCERPT}", live_routes_excerpt(include_primary=False))
     return template
 
 

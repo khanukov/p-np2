@@ -47,8 +47,10 @@ def _extract_def_lines(path: Path) -> list[str]:
     return lines
 
 
-def live_routes_excerpt(*, max_chars: int = 4000) -> str:
-    """Return a markdown excerpt of live route surfaces."""
+def live_routes_excerpt(*, max_chars: int = 4000, include_primary: bool = True) -> str:
+    """Primary context by default; Stage3 reserves its whole historical budget."""
+    if max_chars < 0:
+        raise ValueError('negative context bound')
     sections: list[str] = []
     sections.append("### pnp3 mainline routes (`FinalResultMainline.lean`)")
     sections.extend(_extract_def_lines(PNP3_MAINLINE))
@@ -62,10 +64,47 @@ def live_routes_excerpt(*, max_chars: int = 4000) -> str:
         for p in sorted(PNP4_ALGS.rglob("*.lean")):
             sections.extend(_extract_def_lines(p))
 
-    out = "\n".join(sections)
-    if len(out) > max_chars:
-        out = out[:max_chars] + "\n\n(... excerpt truncated ...)"
+    primary = current_context() if include_primary else ''
+    if max_chars < len(primary):
+        raise ValueError('context bound cannot contain all primary routes')
+    # Whole optional lines only; the primary declarations are never truncated.
+    out = primary
+    lines = ['\n### Optional historical route context'] + sections if include_primary else sections
+    for line in lines:
+        separator = '\n' if out else ''
+        if len(out) + len(line) + len(separator) > max_chars:
+            break
+        out += separator + line
     return out
+
+
+def current_context() -> str:
+    """Read literal primary definitions, with separate import roots for addons."""
+    specs = [
+        ('ConditionalSeparation.OpenProblem.R',
+         'conditional_separation/ConditionalSeparation/OpenProblem.lean',
+         'def R : Prop :=', '\n#check'),
+        ('Research.LengthwiseSearch.LengthwiseR',
+         'research/lengthwise_search/Attempt/RNormalForm.lean',
+         'def LengthwiseAt', '\ntheorem lengthwiseAt_iff'),
+        ('Research.SolverToDag.LowerBound.TreeMCSPDAGLowerBound',
+         'research/solver_to_dag/Attempt/LowerBound.lean',
+         'def FixedKTreeMCSPDAGExclusion', '\ntheorem fixedK_excludes_solver'),
+    ]
+    lines = ['### Current conditional research premises (Infrastructure)']
+    for name, relative, start, end in specs:
+        text = (REPO_ROOT / relative).read_text()
+        body = text[text.index(start):text.index(end)].strip()
+        lines += [f'`{name}` — `{relative}`', '```lean', body, '```']
+    lines += [
+        'R <-> LengthwiseR: Research.LengthwiseSearch.R_iff_lengthwise in RNormalForm.lean.',
+        'TreeMCSPDAGLowerBound -> R ONLY: Research.SolverToDag.LowerBound.lowerBound_implies_R.',
+        'R and the lower bound remain unproved. One k precedes every degree; '
+        'N=2^n, per-output solver size, promise correctness, TREE witnesses versus DAG solvers.',
+        'Separate addon Attempt module roots cannot be combined in one import map. '
+        'Legacy routes are optional context, not a mandatory method.',
+    ]
+    return '\n'.join(lines)
 
 
 if __name__ == "__main__":

@@ -12,6 +12,7 @@ parsing, registry persistence, and stage halting semantics.
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import shutil
 import tempfile
@@ -47,6 +48,18 @@ class IdeaSearchMachineSmokeTests(unittest.TestCase):
         registry.INDEX_FILE = self._original_index
         registry.IDEAS_DIR = self._original_ideas
         shutil.rmtree(self._tmp, ignore_errors=True)
+
+    def test_generic_mock_fallback_is_deterministic(self) -> None:
+        prompt = 'unrecognised generic fallback input'
+        llm = LLMClient(mock=True)
+        self.assertIsNone(llm._client, 'mock must not acquire a provider client')
+        first = llm.query(prompt)
+        second = llm.query(prompt)
+        expected = f'[mock fallback response for prompt with digest {hashlib.sha256(prompt.encode()).hexdigest()[:8]}]'
+        self.assertEqual(first.text, expected)
+        self.assertEqual(second.text, expected)
+        self.assertTrue(first.is_mock and second.is_mock)
+        self.assertIsNone(llm._client)
 
     def test_idea_generation_writes_record(self) -> None:
         llm = LLMClient(mock=True)

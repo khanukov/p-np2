@@ -1,0 +1,23 @@
+[
+  {
+    "name": "budgeted-constant-witness",
+    "statement": "\u2200 n budget : Nat, 2 \u2264 budget \u2192 \u2203 c : Pnp3.ComplexityInterfaces.DagCircuit n, Pnp3.ComplexityInterfaces.DagCircuit.size c \u2264 budget \u2227 \u2200 x, Pnp3.ComplexityInterfaces.DagCircuit.eval c x = true",
+    "imports": ["ConditionalSeparation.OpenProblem", "Complexity.DagCompose"],
+    "model": "Literal nonuniform DAG size = gates+1; constCircuit size2; n=0 included.",
+    "role": "Infrastructure helper, not R or an asymptotic lower bound"
+  },
+  {
+    "name": "false-universal-strengthening",
+    "statement": "\u2200 n budget : Nat, 2 \u2264 budget \u2192 \u2200 c : Pnp3.ComplexityInterfaces.DagCircuit n, Pnp3.ComplexityInterfaces.DagCircuit.size c \u2264 budget \u2192 \u2200 x, Pnp3.ComplexityInterfaces.DagCircuit.eval c x = true",
+    "imports": ["ConditionalSeparation.OpenProblem", "Complexity.DagCompose"],
+    "model": "Same DAG model; a size2 false constant refutes THIS entire universal, not the asymptotic premise.",
+    "role": "Deliberately false quantifier strengthening, exact-negation fixture"
+  },
+  {
+    "name": "open-R-budget-control",
+    "statement": "ConditionalSeparation.OpenProblem.R",
+    "imports": ["ConditionalSeparation.OpenProblem"],
+    "model": "Installed exact R: one k before all d; promise solver; per-output size N^d+d, N=2^n.",
+    "role": "Budget/technical UNKNOWN control; no proof or refutation claimed"
+  }
+]

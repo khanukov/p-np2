@@ -97,7 +97,7 @@ class LLMClient:
         # pipeline path within a single run.
         salted = (self._call_count - 1) % 4
         verdict_bucket = ["GREEN", "YELLOW", "RED", "UNKNOWN"][salted]
-        _ = hashlib.sha256(prompt.encode()).hexdigest()  # kept for stability
+        digest = hashlib.sha256(prompt.encode()).hexdigest()  # kept for stability
         if "Role A" in prompt or "Idea Generator" in prompt:
             return self._mock_idea_card(self._call_count)
         if "Role B" in prompt or "Literature Killer" in prompt or "literature kill" in prompt.lower():

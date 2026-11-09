@@ -1,0 +1,209 @@
+{
+  "schema": "idea-pilot-observed-measurements-v1",
+  "category": "Infrastructure",
+  "date_UTC": "2026-11-09",
+  "purpose": "Tiny synthetic fixture cohort and context/adapter smoke measurement, not held-out research efficacy",
+  "base_commit": "360e252589c10f976e508f11e4448fb024f52abe",
+  "model": "gpt-6.1-sol",
+  "effort": "xhigh",
+  "actual_native_contexts_verified": 12,
+  "native_permissions": "read-only; exact-file command scope audited, not an OS allowlist",
+  "calls_budget_per_goal_arm": 2,
+  "seconds_budget_per_candidate": 120,
+  "example_default_seconds": 300,
+  "comparison_branches": [
+    "prove"
+  ],
+  "cohort_names": [
+    "budgeted-constant-witness",
+    "false-universal-strengthening",
+    "open-R-budget-control"
+  ],
+  "runs": [
+    {
+      "relative": "comparison/00-direct",
+      "status": "PROVED",
+      "technical_reason": null,
+      "elapsed_seconds": 76.64618528308347,
+      "candidate_calls": 1,
+      "compiler_calls": 4,
+      "repeat_goal_compiles": 1
+    },
+    {
+      "relative": "comparison/00-integrated",
+      "status": "PROVED",
+      "technical_reason": null,
+      "elapsed_seconds": 82.06947952322662,
+      "candidate_calls": 1,
+      "compiler_calls": 4,
+      "repeat_goal_compiles": 1
+    },
+    {
+      "relative": "comparison/01-direct",
+      "status": "UNKNOWN",
+      "technical_reason": "candidate_failure",
+      "elapsed_seconds": 77.21164693590254,
+      "candidate_calls": 2,
+      "compiler_calls": 1,
+      "repeat_goal_compiles": 0
+    },
+    {
+      "relative": "comparison/01-integrated",
+      "status": "UNKNOWN",
+      "technical_reason": "candidate_failure",
+      "elapsed_seconds": 76.85457293502986,
+      "candidate_calls": 2,
+      "compiler_calls": 1,
+      "repeat_goal_compiles": 0
+    },
+    {
+      "relative": "comparison/02-direct",
+      "status": "UNKNOWN",
+      "technical_reason": "candidate_failure",
+      "elapsed_seconds": 70.7442667321302,
+      "candidate_calls": 2,
+      "compiler_calls": 1,
+      "repeat_goal_compiles": 0
+    },
+    {
+      "relative": "comparison/02-integrated",
+      "status": "UNKNOWN",
+      "technical_reason": "candidate_failure",
+      "elapsed_seconds": 94.65853256126866,
+      "candidate_calls": 2,
+      "compiler_calls": 3,
+      "repeat_goal_compiles": 1
+    },
+    {
+      "relative": "optional-negation",
+      "status": "REFUTED",
+      "technical_reason": null,
+      "elapsed_seconds": 165.16950901318341,
+      "candidate_calls": 2,
+      "compiler_calls": 6,
+      "repeat_goal_compiles": 2
+    }
+  ],
+  "paired_arm_totals": {
+    "direct": {
+      "elapsed_seconds_sum": 224.6020989511162,
+      "candidate_calls": 5,
+      "compiler_calls": 6,
+      "repeat_goal_compiles": 1,
+      "outcomes": [
+        "PROVED",
+        "UNKNOWN",
+        "UNKNOWN"
+      ],
+      "reported_usage_sum": {
+        "input_tokens": 245983,
+        "cached_input_tokens": 139008,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 4614,
+        "reasoning_output_tokens": 2579
+      }
+    },
+    "integrated": {
+      "elapsed_seconds_sum": 253.58258501952514,
+      "candidate_calls": 5,
+      "compiler_calls": 8,
+      "repeat_goal_compiles": 2,
+      "outcomes": [
+        "PROVED",
+        "UNKNOWN",
+        "UNKNOWN"
+      ],
+      "reported_usage_sum": {
+        "input_tokens": 242191,
+        "cached_input_tokens": 137856,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 4466,
+        "reasoning_output_tokens": 2330
+      }
+    }
+  },
+  "optional_negation_is_separate_functionality": true,
+  "optional_negation_first_real_Lean_rejection_then_exact_negation": true,
+  "current_kernel_fixture_cases": 13,
+  "current_kernel_fixture_skips": 0,
+  "current_kernel_fixture_compiler_calls": 24,
+  "native_provider_calls_total": 12,
+  "native_cli_read_events": 62,
+  "literal_allowed_file_reads": 66,
+  "native_comparison_plus_negation_compiler_calls": 20,
+  "native_request_max_UTF8_bytes": 7497,
+  "native_response_max_bytes": 334,
+  "native_command_output_max_bytes": 32568,
+  "native_command_outputs_above8500": 2,
+  "transport_qualification": "Input request ceiling is verified; complete native tool outputs were not universally below8500bytes. Exceptions retained, not clean historical transport compliance.",
+  "reported_candidate_usage_sum": {
+    "input_tokens": 605616,
+    "cached_input_tokens": 363008,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 11895,
+    "reasoning_output_tokens": 6710
+  },
+  "monetary_cost": null,
+  "price_or_billing_evidence": null,
+  "coordinator_LLM_cost_metered": false,
+  "phase_wall_and_reported_source_usage": [
+    {
+      "phase": "source01",
+      "UTC_start": "2026-11-08T22:20:18.874630+00:00",
+      "UTC_end": "2026-11-08T23:10:19.325773+00:00",
+      "actual_exit": 0,
+      "elapsed_wall_seconds": 3000.451143,
+      "reported_CLI_usage": {
+        "input_tokens": 2553835715,
+        "cached_input_tokens": 2526098048,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 12676586,
+        "reasoning_output_tokens": 8013983
+      }
+    },
+    {
+      "phase": "source02",
+      "UTC_start": "2026-11-08T23:23:17.539357+00:00",
+      "UTC_end": "2026-11-08T23:38:24.005191+00:00",
+      "actual_exit": 0,
+      "elapsed_wall_seconds": 906.465834,
+      "reported_CLI_usage": {
+        "input_tokens": 2561132269,
+        "cached_input_tokens": 2533275648,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 12707103,
+        "reasoning_output_tokens": 8024588
+      }
+    },
+    {
+      "phase": "inadmissible_native01",
+      "UTC_start": "2026-11-08T23:16:16.884002+00:00",
+      "UTC_end": "2026-11-08T23:19:24.983057+00:00",
+      "actual_exit": -9,
+      "elapsed_wall_seconds": 188.099055
+    },
+    {
+      "phase": "native02",
+      "UTC_start": "2026-11-08T23:41:45.833108+00:00",
+      "UTC_end": "2026-11-09T00:01:26.845589+00:00",
+      "actual_exit": 0,
+      "elapsed_wall_seconds": 1181.012481
+    }
+  ],
+  "phase_wall_qualification": "Do not sum overlapping phases as end-to-end elapsed. Native02 includes fresh kernel gate/setup/freeze beyond listed run timings; integration subphase duration not separately metered. Review/CI/publication future costs not included.",
+  "result": "Both prove-only arms PROVED the true helper and left false strengthening/openR UNKNOWN; separate negate REFUTED exactly the false strengthening. No acceleration is established.",
+  "prior_inadmissible_native01": "Two genuine calls:60.0528s timeout then59.3218s response, broad root filename discovery; actual controller-9 after natural compiler completion, one helper wait UNKNOWN; not a completed comparison. Retained input242982/cached203264/output1687 second-call token report; first-call usage unavailable.",
+  "new_lower_bound_or_R_proof": false,
+  "source_or_release_approval": false,
+  "raw_private_evidence_note": "Raw native/model/compiler receipts retained locally; aggregate not a public transcript dump. Reproduction commands in README; nondeterministic model replay need not reproduce these timings.",
+  "evidence_sha256": {
+    "native02_authentication": "7610652daf2354c17893f1500cc917a11b71d16eeaca937bbfd11926627ccf81",
+    "read_scope_audit": "4424abca9f21b87bbb3d07aaf2cc4c9a8e646945898be0cf976a5bd7b41fb104",
+    "native02_pipeline": "46ae879f13d915c142d9bbe75b7aace8a6b6b413f0b54314983b27cd4a90a65b",
+    "comparison": "ac334660f0de6af99b7608d50d850dc76e952d59066b038a324e70136ed61cfc"
+  },
+  "tested_source_manifest_sha256": "08e764a9bc901383d9e98112e8590c97a364b5977a12a44e8d7443081866e524",
+  "actual_compiler_version_output": "Lean (version 4.22.0-rc2, x86_64-unknown-linux-gnu, commit 6a60de2ac701d1a3f5dc88894b7822f17c3a980b, Release)",
+  "actual_python_version": "Python 3.14.7",
+  "core_inventory_sha256": "5f833d26620edc0404130be1ac445da0cb9f6a89599af1894fca94faf543c9a3"
+}

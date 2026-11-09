@@ -1,7 +1,13 @@
 # Idea Search Machine
 
-Production-grade automation of the six-stage idea-search pipeline
-specified in `pnp3/Docs/IDEA_SEARCH_PIPELINE.md`.
+Research automation of the historical pipeline in
+`pnp3/Docs/IDEA_SEARCH_PIPELINE.md`, plus an optional **idea-to-Lean pilot**.
+
+The stdlib-only `python3 -B -m idea_search_machine.probe` entrypoint freezes an
+operator-selected goal, generates candidates, returns real Lean feedback and
+tries a bounded repair. See [the pilot recipe](../research/idea_lean_pilot/README.md).
+It uses native Codex Sol/xhigh only when explicitly requested; DATA providers
+are test seams. Native model measurements and hosted CI require their own runs.
 
 This tool dispatches an LLM (Anthropic Claude) through the five
 prosecutorial roles (A — Idea Generator; B — Literature Killer;
@@ -11,13 +17,15 @@ by a human engineer.
 
 ## Scope
 
-- **In scope**: Stages 1–4 (idea generation + three kill audits +
-  self-attack).  All markdown-only.
-- **Boundary**: Stage 5 (Lean L0 probe) and Stage 6
-  (implementation) are **human work**.  The machine registers
-  survivors but does NOT auto-write Lean.
+- Historical Stages 0–4 produce LLM assessments and priorities, not proofs.
+  Old `CLOSED_AT_STAGE_*` metadata and reports remain historical audit outcomes.
+- The optional probe is independent of audit color. It records only PROVED,
+  REFUTED or UNKNOWN **for its exact frozen statement**, with technical reasons.
+  UNKNOWN can be retried. A refuted helper does not refute the idea or R.
+- Formal goals, hypotheses, models and budgets are operator choices. Partial
+  success never supplies the final closed-R/assembly checker acceptance.
 
-## Quick start
+## Historical audit quick start (separate optional SDK)
 
 ```bash
 # 1. Install dependencies
@@ -90,11 +98,11 @@ the idea is **parked** — not promoted, not killed.
 
 ## Survivor → Seed Pack
 
-After Stage 4, surviving ideas (all stages `GREEN` or `YELLOW`)
-are exported as proper seed packs under
-`seed_packs/idea_<idea_id>/` following the existing project
-convention.  These are the seeds a human engineer picks up for
-Stage 5 Lean L0 probe.
+Stage 4 registers surviving ideas (all stages `GREEN` or `YELLOW`)
+for Stage 5. These are advisory funnel labels, not mathematical results.
+Export to `seed_packs/idea_<idea_id>/` is a manual/conventional subsequent
+step; no seed-pack exporter is implemented here. A human engineer selects
+registered ideas for a Stage 5 Lean L0 probe.
 
 ## Mock mode
 
@@ -114,8 +122,8 @@ exercising every verdict path (`GREEN`, `YELLOW`, `RED`,
 This machine is a **funnel for AI-generated proof-attempt
 candidates**.  Its primary value is:
 
-1. **Throughput**: processing many candidate ideas faster than
-   any human can.
+1. **Intended throughput**: triaging many candidate ideas; this historical
+   design aim is not a measured advantage over human researchers.
 2. **Discipline**: enforcing the prosecutorial role separation
    from the pipeline spec.
 3. **Documentation**: each killed idea contributes to the

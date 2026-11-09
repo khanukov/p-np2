@@ -49,6 +49,8 @@ class Idea:
     novelty_self_assessment: str = ""
     stages: Dict[str, StageResult] = field(default_factory=dict)
     final_verdict: str = "OPEN"
+    # Historical audit statuses remain readable; none is a kernel outcome.
+    formal_outcomes: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -68,6 +70,7 @@ class Idea:
             novelty_self_assessment=d.get("novelty_self_assessment", ""),
             stages=stages,
             final_verdict=d.get("final_verdict", "OPEN"),
+            formal_outcomes=d.get("formal_outcomes", {}),
         )
         return idea
 

@@ -42,8 +42,8 @@ def cli() -> None:
 
     Implements the six-stage pipeline from
     ``pnp3/Docs/IDEA_SEARCH_PIPELINE.md``.  Stages 1-4 are automated;
-    Stage 5 (Lean L0 probe) and Stage 6 (implementation) are human
-    work and are registered for follow-up rather than auto-executed.
+    The optional probe command runs a separately frozen intermediate Lean goal.
+    Audit priorities are not mathematical outcomes or a probe admission gate.
     """
 
 
@@ -123,6 +123,34 @@ def show(idea_id: str) -> None:
     """Pretty-print one idea's record."""
     idea = registry.load_idea(idea_id)
     click.echo(json.dumps(idea.to_dict(), indent=2))
+
+
+@cli.command('probe')
+@click.option('--goal', type=click.Path(exists=True), required=True)
+@click.option('--goal-sha256', required=True)
+@click.option('--provider', type=click.Path(exists=True), required=True)
+@click.option('--output', type=click.Path(), required=True)
+@click.option('--calls', type=click.IntRange(1, 10), default=2)
+@click.option('--negate', is_flag=True, help='Optional exact whole-negation branch.')
+@click.option('--idea-id', default=None, help='Attach a scoped result even if old audits paused this idea.')
+def probe(goal, goal_sha256, provider, output, calls, negate, idea_id):
+    """Generate → Lean feedback → repair; caller supplies compiler locks/resources.
+
+    Freeze first with python -m research.idea_lean_pilot.pilot freeze.
+    No LLM audit color supplies a PROVED/REFUTED result.
+    """
+    from pathlib import Path
+    from research.idea_lean_pilot import kernel, pilot
+    idea = registry.load_idea(idea_id) if idea_id else None
+    result = pilot.run(Path(goal), goal_sha256, kernel.read(provider), Path(output),
+                       calls=calls, negate=negate)
+    if idea is not None:
+        idea.formal_outcomes[goal_sha256] = {
+            'run': kernel.pin(Path(output)/'RUN.json'), 'status': result['status'],
+            'scope': 'exact frozen intermediate goal; not the whole idea or R'}
+        registry.save_idea(idea)
+    click.echo(json.dumps({k: result[k] for k in
+                          ['status', 'technical_reason', 'candidate_calls', 'compiler_calls']}))
 
 
 if __name__ == "__main__":
